@@ -197,8 +197,13 @@ export function getEOLF(relativeThreshold: number): number {
 export function calculateRangeEVPIQuick(inputs: RangeInputs): number {
   const { lowerBound, upperBound, threshold, lossPerUnit } = inputs;
 
-  const rangeWidth = upperBound - lowerBound;
-  const rt = calculateRelativeThreshold(threshold, lowerBound, upperBound);
+  const orderedLower = Math.min(lowerBound, upperBound);
+  const orderedUpper = Math.max(lowerBound, upperBound);
+  const rangeWidth = orderedUpper - orderedLower;
+
+  if (rangeWidth === 0) return 0;
+
+  const rt = calculateRelativeThreshold(threshold, orderedLower, orderedUpper);
   const eolf = getEOLF(rt);
 
   // EVPI = (EOLF / 1000) × loss per unit × range width
@@ -229,17 +234,19 @@ export function calculateRangeEVPIDiscrete(
   numSlices: number = 1000
 ): { evpi: number; slices: EOLSlice[] } {
   const { lowerBound, upperBound, threshold, lossPerUnit, distribution, degreesOfFreedom = 5 } = inputs;
+  const orderedLower = Math.min(lowerBound, upperBound);
+  const orderedUpper = Math.max(lowerBound, upperBound);
 
   // Get distribution parameters based on distribution type
   let mean: number;
   let scaleParam: number; // stdDev for normal, scale for t-distribution
 
   if (distribution === 't-distribution') {
-    const tParams = ciToTDistributionParams(lowerBound, upperBound, degreesOfFreedom);
+    const tParams = ciToTDistributionParams(orderedLower, orderedUpper, degreesOfFreedom);
     mean = tParams.mean;
     scaleParam = tParams.scale;
   } else {
-    const normalParams = ciToParams(lowerBound, upperBound);
+    const normalParams = ciToParams(orderedLower, orderedUpper);
     mean = normalParams.mean;
     scaleParam = normalParams.stdDev;
   }
@@ -265,8 +272,9 @@ export function calculateRangeEVPIDiscrete(
 
     if (distribution === 'uniform') {
       // Uniform: constant probability within CI bounds
-      if (midpoint >= lowerBound && midpoint <= upperBound) {
-        probability = 1 / (upperBound - lowerBound) * sliceWidth;
+      if (midpoint >= orderedLower && midpoint <= orderedUpper) {
+        const width = orderedUpper - orderedLower;
+        probability = width === 0 ? 0 : (1 / width) * sliceWidth;
       } else {
         probability = 0;
       }
@@ -319,23 +327,26 @@ export function calculateRangeEVPIDiscrete(
  */
 export function calculateRangeEVPI(inputs: RangeInputs): RangeResults {
   const { lowerBound, upperBound, threshold, distribution, degreesOfFreedom = 5 } = inputs;
+  const orderedLower = Math.min(lowerBound, upperBound);
+  const orderedUpper = Math.max(lowerBound, upperBound);
+  const rangeWidth = orderedUpper - orderedLower;
 
   // Get distribution parameters based on distribution type
   let mean: number;
   let stdDev: number;
 
   if (distribution === 't-distribution') {
-    const tParams = ciToTDistributionParams(lowerBound, upperBound, degreesOfFreedom);
+    const tParams = ciToTDistributionParams(orderedLower, orderedUpper, degreesOfFreedom);
     mean = tParams.mean;
     stdDev = tParams.scale; // Use scale as stdDev equivalent for display
   } else {
-    const normalParams = ciToParams(lowerBound, upperBound);
+    const normalParams = ciToParams(orderedLower, orderedUpper);
     mean = normalParams.mean;
     stdDev = normalParams.stdDev;
   }
 
   // Calculate relative threshold
-  const relativeThreshold = calculateRelativeThreshold(threshold, lowerBound, upperBound);
+  const relativeThreshold = calculateRelativeThreshold(threshold, orderedLower, orderedUpper);
 
   // Get EOLF (note: EOLF chart is for normal distribution, but still useful as reference)
   const eolf = getEOLF(relativeThreshold);
@@ -346,12 +357,14 @@ export function calculateRangeEVPI(inputs: RangeInputs): RangeResults {
   // Calculate probability below threshold
   let probabilityBelowThreshold: number;
   if (distribution === 'uniform') {
-    if (threshold <= lowerBound) {
+    if (rangeWidth === 0) {
+      probabilityBelowThreshold = threshold < orderedLower ? 0 : 1;
+    } else if (threshold <= orderedLower) {
       probabilityBelowThreshold = 0;
-    } else if (threshold >= upperBound) {
+    } else if (threshold >= orderedUpper) {
       probabilityBelowThreshold = 1;
     } else {
-      probabilityBelowThreshold = (threshold - lowerBound) / (upperBound - lowerBound);
+      probabilityBelowThreshold = (threshold - orderedLower) / (orderedUpper - orderedLower);
     }
   } else if (distribution === 't-distribution') {
     probabilityBelowThreshold = tDistributionCDF(threshold, degreesOfFreedom, mean, stdDev);

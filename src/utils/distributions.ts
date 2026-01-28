@@ -256,18 +256,21 @@ export function generateUniformCurve(
   lowerBound: number,
   upperBound: number
 ): { x: number; y: number }[] {
-  const height = 1 / (upperBound - lowerBound);
+  const orderedLower = Math.min(lowerBound, upperBound);
+  const orderedUpper = Math.max(lowerBound, upperBound);
+  const width = orderedUpper - orderedLower;
+  const height = width === 0 ? 0 : 1 / width;
 
   // Add padding outside the bounds for visualization
-  const padding = (upperBound - lowerBound) * 0.2;
+  const padding = width === 0 ? 1 : width * 0.2;
 
   return [
-    { x: lowerBound - padding, y: 0 },
-    { x: lowerBound, y: 0 },
-    { x: lowerBound, y: height },
-    { x: upperBound, y: height },
-    { x: upperBound, y: 0 },
-    { x: upperBound + padding, y: 0 },
+    { x: orderedLower - padding, y: 0 },
+    { x: orderedLower, y: 0 },
+    { x: orderedLower, y: height },
+    { x: orderedUpper, y: height },
+    { x: orderedUpper, y: 0 },
+    { x: orderedUpper + padding, y: 0 },
   ];
 }
 

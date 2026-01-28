@@ -8,7 +8,7 @@ import {
 
 describe('Revenue Calculator', () => {
   describe('calculateRevenuePerPercentagePoint', () => {
-    it('calculates revenue per percentage point correctly', () => {
+    it('calculates revenue per 1% relative change correctly', () => {
       const inputs: RevenueCalculatorInputs = {
         baselineConversionRate: 0.05, // 5%
         averageOrderValue: 100,
@@ -17,8 +17,8 @@ describe('Revenue Calculator', () => {
 
       const result = calculateRevenuePerPercentagePoint(inputs);
 
-      // 1M × 0.01 × $100 = $1,000,000
-      expect(result).toBe(1_000_000);
+      // 1M × (0.05 × 0.01) × $100 = $50,000
+      expect(result).toBe(50_000);
     });
 
     it('handles different AOV values', () => {
@@ -30,8 +30,8 @@ describe('Revenue Calculator', () => {
 
       const result = calculateRevenuePerPercentagePoint(inputs);
 
-      // 500K × 0.01 × $50 = $250,000
-      expect(result).toBe(250_000);
+      // 500K × (0.03 × 0.01) × $50 = $7,500
+      expect(result).toBe(7_500);
     });
 
     it('handles zero traffic', () => {
@@ -65,8 +65,8 @@ describe('Revenue Calculator', () => {
 
       const result = calculateRevenuePerPercentagePoint(inputs);
 
-      // 10M × 0.01 × $200 = $20,000,000
-      expect(result).toBe(20_000_000);
+      // 10M × (0.02 × 0.01) × $200 = $400,000
+      expect(result).toBe(400_000);
     });
   });
 
@@ -115,22 +115,22 @@ describe('Revenue Calculator', () => {
     it('calculates positive impact', () => {
       const result = calculateConversionImpact(2, inputs);
 
-      // 2 percentage points × $1M per point = $2M
-      expect(result).toBe(2_000_000);
+      // 2% relative × $50K per 1% relative = $100K
+      expect(result).toBe(100_000);
     });
 
     it('calculates negative impact', () => {
       const result = calculateConversionImpact(-1, inputs);
 
-      // -1 percentage point × $1M per point = -$1M
-      expect(result).toBe(-1_000_000);
+      // -1% relative × $50K per 1% relative = -$50K
+      expect(result).toBe(-50_000);
     });
 
-    it('handles fractional percentage points', () => {
+    it('handles fractional relative percentages', () => {
       const result = calculateConversionImpact(0.5, inputs);
 
-      // 0.5 percentage points × $1M per point = $500K
-      expect(result).toBe(500_000);
+      // 0.5% relative × $50K per 1% relative = $25K
+      expect(result).toBe(25_000);
     });
 
     it('handles zero change', () => {
@@ -141,8 +141,8 @@ describe('Revenue Calculator', () => {
     it('calculates large changes correctly', () => {
       const result = calculateConversionImpact(10, inputs);
 
-      // 10 percentage points × $1M per point = $10M
-      expect(result).toBe(10_000_000);
+      // 10% relative × $50K per 1% relative = $500K
+      expect(result).toBe(500_000);
     });
   });
 
@@ -161,7 +161,7 @@ describe('Revenue Calculator', () => {
         inputs.annualTraffic
       );
 
-      expect(revenuePerPoint).toBe(1_500_000);  // $1.5M per point
+      expect(revenuePerPoint).toBe(45_000);  // $45K per 1% relative change
       expect(totalRevenue).toBe(4_500_000);      // $4.5M baseline
     });
 
@@ -179,7 +179,7 @@ describe('Revenue Calculator', () => {
         inputs.annualTraffic
       );
 
-      expect(revenuePerPoint).toBe(10_000_000);  // $10M per point
+      expect(revenuePerPoint).toBe(50_000);  // $50K per 1% relative change
       expect(totalRevenue).toBe(5_000_000);       // $5M baseline
     });
   });

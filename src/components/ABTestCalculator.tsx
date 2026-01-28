@@ -89,6 +89,8 @@ export function ABTestCalculator({ onBack }: ABTestCalculatorProps) {
   };
 
   const formatPercentSimple = (value: number) => `${(value * 100).toFixed(1)}%`;
+  const boundsValid = lowerBound < upperBound;
+  const rangeWidthDisplay = Math.abs(upperBound - lowerBound);
 
   // Step completion handlers
   const completeStep = (step: WizardStep, nextStep: WizardStep) => {
@@ -114,7 +116,13 @@ export function ABTestCalculator({ onBack }: ABTestCalculatorProps) {
     setThresholdType(type);
     if (type === 'zero') {
       setThreshold(0);
+      return;
     }
+    if (type === 'positive') {
+      setThreshold((prev) => Math.abs(prev));
+      return;
+    }
+    setThreshold((prev) => -Math.abs(prev));
   };
 
   // Compact number input component
@@ -326,7 +334,7 @@ export function ABTestCalculator({ onBack }: ABTestCalculatorProps) {
           </div>
 
           <div className="p-3 bg-slate-50 rounded-lg flex items-center justify-between">
-            <span className="text-sm text-slate-600">Revenue per 1 percentage point:</span>
+            <span className="text-sm text-slate-600">Revenue per 1% relative change:</span>
             <span className="font-semibold text-slate-900">{formatCurrency(revenuePerPoint)}/year</span>
           </div>
         </div>
@@ -362,7 +370,7 @@ export function ABTestCalculator({ onBack }: ABTestCalculatorProps) {
                 }}
                 className="w-20 px-2 py-1.5 text-sm border border-red-200 rounded-md focus:ring-2 focus:ring-red-500 text-center"
               />
-              <span className="text-sm text-red-700">% change in conversion rate</span>
+              <span className="text-sm text-red-700">% relative change in conversion rate</span>
             </div>
           </div>
 
@@ -384,13 +392,18 @@ export function ABTestCalculator({ onBack }: ABTestCalculatorProps) {
                 }}
                 className="w-20 px-2 py-1.5 text-sm border border-green-200 rounded-md focus:ring-2 focus:ring-green-500 text-center"
               />
-              <span className="text-sm text-green-700">% change in conversion rate</span>
+              <span className="text-sm text-green-700">% relative change in conversion rate</span>
             </div>
           </div>
 
           <p className="text-xs text-slate-500">
-            Your range: {formatPercent(lowerBound)} to {formatPercent(upperBound)} (width: {(upperBound - lowerBound).toFixed(1)} percentage points)
+            Your range: {formatPercent(lowerBound)} to {formatPercent(upperBound)} (width: {rangeWidthDisplay.toFixed(1)}% relative)
           </p>
+          {!boundsValid && (
+            <p className="text-xs text-red-600">
+              Lower bound must be less than upper bound.
+            </p>
+          )}
         </div>
       </Section>
 
@@ -648,10 +661,10 @@ export function ABTestCalculator({ onBack }: ABTestCalculatorProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Range Width:</span>
-                <span>{(upperBound - lowerBound).toFixed(1)}%</span>
+                <span>{(upperBound - lowerBound).toFixed(1)}% relative</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Revenue per % point:</span>
+                <span className="text-slate-500">Revenue per 1% relative:</span>
                 <span>{formatCurrency(revenuePerPoint)}</span>
               </div>
               <div className="pt-2 border-t border-slate-300 flex justify-between font-semibold">

@@ -9,7 +9,7 @@ interface RevenueCalculatorProps {
 
 /**
  * Calculator mode for revenue impact
- * Computes revenue per percentage point from business metrics
+ * Computes revenue per 1% relative change from business metrics
  */
 export function RevenueCalculator({ inputs, onChange }: RevenueCalculatorProps) {
   const revenuePerPoint = calculateRevenuePerPercentagePoint(inputs);
@@ -63,12 +63,12 @@ export function RevenueCalculator({ inputs, onChange }: RevenueCalculatorProps) 
 
       {/* Computed result */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div className="text-sm text-blue-700 mb-1">Revenue per 1 percentage point:</div>
+        <div className="text-sm text-blue-700 mb-1">Revenue per 1% relative change:</div>
         <div className="text-xl font-bold text-blue-900">
           {formatCurrency(revenuePerPoint)}/year
         </div>
         <div className="text-xs text-blue-600 mt-1">
-          = {formatNumber(inputs.annualTraffic)} visitors × 1% × ${inputs.averageOrderValue.toFixed(0)}
+          = {formatNumber(inputs.annualTraffic)} visitors × ({(inputs.baselineConversionRate * 100).toFixed(1)}% × 1%) × ${inputs.averageOrderValue.toFixed(0)}
         </div>
       </div>
     </div>

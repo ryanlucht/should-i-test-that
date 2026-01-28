@@ -40,6 +40,9 @@ export function DistributionChart({
     const svg = d3.select(svgRef.current);
     const container = svgRef.current.parentElement;
     const width = container?.clientWidth || 400;
+    const orderedLower = Math.min(lowerBound, upperBound);
+    const orderedUpper = Math.max(lowerBound, upperBound);
+    const rangeWidth = orderedUpper - orderedLower;
 
     // Clear previous content
     svg.selectAll('*').remove();
@@ -60,11 +63,11 @@ export function DistributionChart({
     let scaleParam: number;
 
     if (distribution === 't-distribution') {
-      const tParams = ciToTDistributionParams(lowerBound, upperBound, degreesOfFreedom);
+      const tParams = ciToTDistributionParams(orderedLower, orderedUpper, degreesOfFreedom);
       mean = tParams.mean;
       scaleParam = tParams.scale;
     } else {
-      const normalParams = ciToParams(lowerBound, upperBound);
+      const normalParams = ciToParams(orderedLower, orderedUpper);
       mean = normalParams.mean;
       scaleParam = normalParams.stdDev;
     }
@@ -75,9 +78,9 @@ export function DistributionChart({
 
     if (distribution === 'uniform') {
       // For uniform, show the range plus some padding
-      const padding = (upperBound - lowerBound) * 0.2;
-      xMin = lowerBound - padding;
-      xMax = upperBound + padding;
+      const padding = rangeWidth === 0 ? 1 : rangeWidth * 0.2;
+      xMin = orderedLower - padding;
+      xMax = orderedUpper + padding;
     } else {
       // For normal/t distributions
       const tailMultiplier = distribution === 't-distribution' && degreesOfFreedom < 10 ? 5 : 3.5;
@@ -87,9 +90,9 @@ export function DistributionChart({
       // If centerAtZero is true and range is reasonable (upper < 100%), center at 0
       if (centerAtZero && upperBound < 100) {
         // Calculate symmetric range around 0 that encompasses the distribution
-        const maxExtent = Math.max(Math.abs(naturalMin), Math.abs(naturalMax), Math.abs(lowerBound), Math.abs(upperBound));
+        const maxExtent = Math.max(Math.abs(naturalMin), Math.abs(naturalMax), Math.abs(orderedLower), Math.abs(orderedUpper));
         // Ensure we show at least from lowerBound to upperBound with some padding
-        const minExtent = Math.max(Math.abs(lowerBound), Math.abs(upperBound)) * 1.5;
+        const minExtent = Math.max(Math.abs(orderedLower), Math.abs(orderedUpper)) * 1.5;
         const extent = Math.max(maxExtent, minExtent);
         xMin = -extent;
         xMax = extent;
@@ -108,12 +111,12 @@ export function DistributionChart({
 
     if (distribution === 'uniform') {
       // Uniform distribution
-      const uniformHeight = 1 / (upperBound - lowerBound);
+      const uniformHeight = rangeWidth === 0 ? 0 : 1 / rangeWidth;
       curveData.push({ x: xMin, y: 0 });
-      curveData.push({ x: lowerBound, y: 0 });
-      curveData.push({ x: lowerBound, y: uniformHeight });
-      curveData.push({ x: upperBound, y: uniformHeight });
-      curveData.push({ x: upperBound, y: 0 });
+      curveData.push({ x: orderedLower, y: 0 });
+      curveData.push({ x: orderedLower, y: uniformHeight });
+      curveData.push({ x: orderedUpper, y: uniformHeight });
+      curveData.push({ x: orderedUpper, y: 0 });
       curveData.push({ x: xMax, y: 0 });
     } else {
       // Normal or t-distribution
@@ -156,12 +159,12 @@ export function DistributionChart({
 
     if (distribution === 'uniform') {
       // For uniform, create rectangular regions
-      const uniformHeight = 1 / (upperBound - lowerBound);
-      const clampedThreshold = Math.max(lowerBound, Math.min(upperBound, threshold));
+      const uniformHeight = rangeWidth === 0 ? 0 : 1 / rangeWidth;
+      const clampedThreshold = Math.max(orderedLower, Math.min(orderedUpper, threshold));
 
       lossData = [
-        { x: lowerBound, y: 0 },
-        { x: lowerBound, y: uniformHeight },
+        { x: orderedLower, y: 0 },
+        { x: orderedLower, y: uniformHeight },
         { x: clampedThreshold, y: uniformHeight },
         { x: clampedThreshold, y: 0 },
       ];
@@ -169,8 +172,8 @@ export function DistributionChart({
       safeData = [
         { x: clampedThreshold, y: 0 },
         { x: clampedThreshold, y: uniformHeight },
-        { x: upperBound, y: uniformHeight },
-        { x: upperBound, y: 0 },
+        { x: orderedUpper, y: uniformHeight },
+        { x: orderedUpper, y: 0 },
       ];
     } else {
       lossData = curveData.filter((d) => d.x <= threshold);

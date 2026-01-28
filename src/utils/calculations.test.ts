@@ -347,6 +347,42 @@ describe('Edge Cases and Error Handling', () => {
     expect(normalCDF(101, 100, 0)).toBe(1);
   });
 
+  it('handles reversed bounds without NaN/Infinity', () => {
+    const inputs: RangeInputs = {
+      lowerBound: 8,
+      upperBound: -2,
+      threshold: 0,
+      lossPerUnit: 100,
+      distribution: 'uniform',
+    };
+
+    const full = calculateRangeEVPI(inputs);
+    const discrete = calculateRangeEVPIDiscrete(inputs);
+    const quick = calculateRangeEVPIQuick(inputs);
+
+    expect(Number.isFinite(full.evpi)).toBe(true);
+    expect(Number.isFinite(discrete.evpi)).toBe(true);
+    expect(Number.isFinite(quick)).toBe(true);
+    expect(full.probabilityBelowThreshold).toBeCloseTo(0.2, 5);
+  });
+
+  it('handles zero-width uniform bounds consistently', () => {
+    const inputsAt = {
+      lowerBound: 2,
+      upperBound: 2,
+      threshold: 2,
+      lossPerUnit: 100,
+      distribution: 'uniform' as const,
+    };
+    const inputsBelow = { ...inputsAt, threshold: 1 };
+
+    const resultAt = calculateRangeEVPI(inputsAt);
+    const resultBelow = calculateRangeEVPI(inputsBelow);
+
+    expect(resultAt.probabilityBelowThreshold).toBe(1);
+    expect(resultBelow.probabilityBelowThreshold).toBe(0);
+  });
+
   it('handles very large values', () => {
     const inputs: BinaryInputs = {
       probabilitySuccess: 0.6,
