@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/* Custom component styles - keeping Tailwind usage minimal */
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-md p-4 sm:p-6;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 border border-slate-300 rounded-md
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+           transition-shadow;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+           transition-all duration-200 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300
+           focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2
+           transition-all duration-200 active:scale-95;
+  }
+
+  .result-highlight {
+    @apply bg-green-50 border-l-4 border-green-500 p-4 rounded-r-md
+           transition-all duration-300;
+  }
+
+  .insight-box {
+    @apply bg-amber-50 border border-amber-200 rounded-lg p-4;
+  }
+
+  .quote-block {
+    @apply border-l-4 border-slate-300 pl-4 italic text-slate-600;
+  }
+}
+
+/* Base styles for the app */
+body {
+  @apply bg-slate-50 text-slate-900 min-h-screen;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Smooth transitions for interactive elements */
+* {
+  @apply transition-colors duration-150;
+}
+
+/* Slider styling */
+input[type="range"] {
+  @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply appearance-none w-5 h-5 bg-blue-600 rounded-full cursor-pointer
+         shadow-md hover:bg-blue-700 transition-all;
+}
+
+input[type="range"]::-moz-range-thumb {
+  @apply w-5 h-5 bg-blue-600 rounded-full cursor-pointer border-none
+         shadow-md hover:bg-blue-700;
+}
+
+input[type="range"]:focus {
+  @apply outline-none;
+}
+
+input[type="range"]:focus::-webkit-slider-thumb {
+  @apply ring-2 ring-blue-400 ring-offset-2;
+}
+
+/* Number input - hide spinners for cleaner look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Animation for value changes */
+@keyframes pulse-green {
+  0%, 100% { background-color: rgb(240 253 244); }
+  50% { background-color: rgb(220 252 231); }
+}
+
+.result-highlight.updating {
+  animation: pulse-green 0.3s ease-in-out;
+}
+
+/* Fade in animation for cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .card {
+    @apply rounded-none shadow-sm mx-[-1rem];
+    border-radius: 0;
+  }
+
+  /* Larger touch targets on mobile */
+  input[type="range"]::-webkit-slider-thumb {
+    @apply w-6 h-6;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    @apply w-6 h-6;
+  }
+
+  /* Stack form elements on mobile */
+  .form-row {
+    @apply flex-col;
+  }
+}
+
+/* Improve checkbox appearance */
+input[type="checkbox"] {
+  @apply w-4 h-4 rounded border-slate-300 text-blue-600
+         focus:ring-blue-500 focus:ring-offset-0 cursor-pointer;
+}
+
+/* Better focus styles for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Tooltip styling */
+[title] {
+  position: relative;
+}
+
+/* Progress tracker transitions */
+.progress-step {
+  @apply transition-all duration-300;
+}
+
+/* Calculation step highlight */
+.calc-step {
+  @apply transition-all duration-200;
+}
+
+.calc-step:hover {
+  @apply bg-slate-100;
+}
