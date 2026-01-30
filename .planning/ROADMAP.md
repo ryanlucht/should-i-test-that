@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Basic Mode Inputs** - Steps 1-4 input forms with validation and help text
 - [x] **Phase 3: Calculation Engine** - EVPI calculation, closed-form and Monte Carlo, Web Worker setup
 - [x] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
-- [ ] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
+- [x] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
 - [ ] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
 - [ ] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
 
@@ -109,7 +109,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04.1-01-PLAN.md — Fix NaN handling in CDF, degenerate sigma in EVPI, and add tests
+- [x] 04.1-01-PLAN.md — Fix NaN handling in CDF, degenerate sigma in EVPI, and add tests
 
 ### Phase 5: Advanced Mode
 **Goal**: Users can calculate realistic test value using EVSI and Cost of Delay
@@ -159,7 +159,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Basic Mode Inputs | 6/6 | Complete | 2026-01-30 |
 | 3. Calculation Engine | 3/3 | Complete | 2026-01-30 |
 | 4. Visualization & Results | 3/3 | Complete | 2026-01-30 |
-| 4.1. Calculation Engine Fixes (INSERTED) | 0/1 | Not started | - |
+| 4.1. Calculation Engine Fixes (INSERTED) | 1/1 | Complete | 2026-01-30 |
 | 5. Advanced Mode | 0/5 | Not started | - |
 | 6. Export & Polish | 0/3 | Not started | - |
 
@@ -173,4 +173,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 3 planned: 2026-01-30*
 *Phase 3 completed: 2026-01-30*
 *Phase 4 completed: 2026-01-30*
+*Phase 4.1 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
