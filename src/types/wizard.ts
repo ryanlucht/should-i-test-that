@@ -126,12 +126,16 @@ export const initialSharedInputs: SharedInputs = {
 /**
  * Initial values for advanced-only inputs
  * Per 05-CONTEXT.md defaults:
+ * - priorShape: null (set to 'normal' when switching Basic -> Advanced)
+ * - studentTDf: null (only relevant when priorShape is 'student-t')
  * - trafficSplit: 0.5 (50/50 default, pre-filled)
  * - eligibilityFraction: 1.0 (100% default, pre-filled)
  * - latency fields: 0 (default, pre-filled)
  * - duration and daily traffic: null (user must enter)
  */
 export const initialAdvancedInputs: AdvancedInputs = {
+  priorShape: null, // Set to 'normal' when switching to Advanced mode
+  studentTDf: null, // Only used when priorShape is 'student-t'
   testDurationDays: null,
   dailyTraffic: null,
   trafficSplit: 0.5, // Default to 50/50 split
