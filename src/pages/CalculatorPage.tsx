@@ -37,14 +37,9 @@ import {
   ThresholdScenarioForm,
   type ThresholdScenarioFormHandle,
 } from '@/components/forms/ThresholdScenarioForm';
+import { ResultsSection } from '@/components/results';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useWizardStore } from '@/stores/wizardStore';
-import {
-  formatCurrency,
-  formatPercentage,
-  decimalToPercent,
-} from '@/lib/formatting';
-import { DEFAULT_INTERVAL } from '@/lib/prior';
 
 /**
  * Section configuration for the wizard
@@ -87,9 +82,6 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
   const uncertaintyFormRef = useRef<UncertaintyPriorFormHandle>(null);
   const thresholdFormRef = useRef<ThresholdScenarioFormHandle>(null);
-
-  // Get shared inputs for results summary display
-  const sharedInputs = useWizardStore((state) => state.inputs.shared);
 
   // Memoized completed section IDs for progress indicator
   const completedStepIds = useMemo(
@@ -298,98 +290,14 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                   <ThresholdScenarioForm ref={thresholdFormRef} />
                 )}
 
-                {/* Results section - placeholder with input summary */}
+                {/* Results section - EVPI verdict and supporting cards */}
                 {section.id === 'results' && (
-                  <div className="space-y-6">
-                    <p className="text-muted-foreground">
-                      Results will be calculated in Phase 3.
-                    </p>
-
-                    {/* Input summary for verification */}
-                    <div className="space-y-4 rounded-lg border border-border bg-surface p-4">
-                      <h4 className="font-medium text-foreground">Input Summary</h4>
-
-                      <div className="grid gap-3 text-sm">
-                        {/* Baseline metrics */}
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Conversion rate:</span>
-                          <span className="font-medium">
-                            {sharedInputs.baselineConversionRate !== null
-                              ? formatPercentage(
-                                  decimalToPercent(sharedInputs.baselineConversionRate)
-                                )
-                              : '—'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Annual {sharedInputs.visitorUnitLabel}:
-                          </span>
-                          <span className="font-medium">
-                            {sharedInputs.annualVisitors !== null
-                              ? sharedInputs.annualVisitors.toLocaleString()
-                              : '—'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Value per conversion:</span>
-                          <span className="font-medium">
-                            {sharedInputs.valuePerConversion !== null
-                              ? formatCurrency(sharedInputs.valuePerConversion)
-                              : '—'}
-                          </span>
-                        </div>
-
-                        {/* Separator */}
-                        <div className="my-1 border-t border-border" />
-
-                        {/* Prior */}
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Prior:</span>
-                          <span className="font-medium">
-                            {sharedInputs.priorType === 'default'
-                              ? `Default (0% +/- ${Math.abs(DEFAULT_INTERVAL.high).toFixed(0)}%)`
-                              : sharedInputs.priorType === 'custom' &&
-                                  sharedInputs.priorIntervalLow !== null &&
-                                  sharedInputs.priorIntervalHigh !== null
-                                ? `Custom (${formatPercentage(sharedInputs.priorIntervalLow)} to ${formatPercentage(sharedInputs.priorIntervalHigh)})`
-                                : '—'}
-                          </span>
-                        </div>
-
-                        {/* Separator */}
-                        <div className="my-1 border-t border-border" />
-
-                        {/* Threshold */}
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Threshold scenario:</span>
-                          <span className="font-medium">
-                            {sharedInputs.thresholdScenario === 'any-positive'
-                              ? 'Ship if any lift'
-                              : sharedInputs.thresholdScenario === 'minimum-lift'
-                                ? 'Minimum lift required'
-                                : sharedInputs.thresholdScenario === 'accept-loss'
-                                  ? 'Accept small loss'
-                                  : '—'}
-                          </span>
-                        </div>
-                        {(sharedInputs.thresholdScenario === 'minimum-lift' ||
-                          sharedInputs.thresholdScenario === 'accept-loss') &&
-                          sharedInputs.thresholdValue !== null && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Threshold value:</span>
-                              <span className="font-medium">
-                                {sharedInputs.thresholdUnit === 'dollars'
-                                  ? formatCurrency(Math.abs(sharedInputs.thresholdValue)) +
-                                    (sharedInputs.thresholdValue < 0 ? ' (loss)' : '')
-                                  : formatPercentage(Math.abs(sharedInputs.thresholdValue)) +
-                                    (sharedInputs.thresholdValue < 0 ? ' (loss)' : '')}
-                              </span>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  </div>
+                  <ResultsSection
+                    onAdvancedModeClick={() => {
+                      // Switch to advanced mode
+                      useWizardStore.getState().setMode('advanced');
+                    }}
+                  />
                 )}
               </div>
 
