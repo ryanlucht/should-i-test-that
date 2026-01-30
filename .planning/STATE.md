@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 3 - Calculation Engine
+**Current focus:** Phase 3 Complete - Ready for Phase 4
 
 ## Current Position
 
-Phase: 3 of 6 (Calculation Engine)
-Plan: 2 of 3 in phase 3 complete
-Status: In progress - EVPI calculation complete
-Last activity: 2026-01-30 - Completed 03-02-PLAN.md (EVPI calculation)
+Phase: 3 of 6 (Calculation Engine) - COMPLETE
+Plan: 3 of 3 in phase 3 complete
+Status: Phase 3 complete, ready for Phase 4 (Visualization & Results)
+Last activity: 2026-01-30 - Completed 03-03-PLAN.md (useEVPICalculations hook)
 
-Progress: [████████████░░░░░░░░░] 57% (12/21 plans)
+Progress: [██████████████░░░░░░░] 62% (13/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 8 min
-- Total execution time: 96 min
+- Total execution time: 102 min
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████████████░░░░░░░░░] 57% 
 |-------|-------|-------|----------|
 | 1 | 4/4 | 34 min | 9 min |
 | 2 | 6/6 | 54 min | 9 min |
-| 3 | 2/3 | 8 min | 4 min |
+| 3 | 3/3 | 14 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (8 min), 02-05 (4 min), 02-06 (4 min), 03-01 (5 min), 03-02 (3 min)
-- Trend: Pure calculation/TDD plans are quick (~4 min)
+- Last 5 plans: 02-05 (4 min), 02-06 (4 min), 03-01 (5 min), 03-02 (3 min), 03-03 (6 min)
+- Trend: Pure calculation/TDD plans are quick (~5 min)
 
 *Updated after each plan completion*
 
@@ -75,6 +75,9 @@ Recent decisions affecting current work:
 | Abramowitz-Stegun for CDF | 03-01 | Formula 7.1.26 for erfc, error < 7.5e-8, sufficient for EVPI |
 | Edge case thresholds | 03-01 | nearZeroSigma < 0.1%, oneSided Phi > 0.9999, truncation P(L<-1) > 0.1% |
 | Non-negative EVPI clamp | 03-02 | Math.max(0, evpiDollars) for floating point safety |
+| Hook returns null when incomplete | 03-03 | Results section hidden until all inputs valid |
+| Default prior when interval null OR matches defaults | 03-03 | Handles both initial state and "Use Recommended Default" action |
+| Explicit useMemo dependency array | 03-03 | All 8 input fields listed to avoid stale calculations |
 
 ### Pending Todos
 
@@ -87,5 +90,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 03-02-PLAN.md (EVPI calculation)
+Stopped at: Completed 03-03-PLAN.md (useEVPICalculations hook) - Phase 3 complete
 Resume file: None
