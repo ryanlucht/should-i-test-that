@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 5 Advanced Mode - Plan 04 Complete (EVSI Calculation Engine)
+**Current focus:** Phase 5 Advanced Mode - Plan 05 Complete (EVSI Web Worker & Hook)
 
 ## Current Position
 
 Phase: 5 of 6 (Advanced Mode)
-Plan: 4 of 6 in phase 5 complete (01, 02, 03, 04)
-Status: In progress - EVSI calculation engine complete
-Last activity: 2026-01-30 - Completed 05-04-PLAN.md (EVSI Calculation Engine)
+Plan: 5 of 6 in phase 5 complete (01, 02, 03, 04, 05)
+Status: In progress - Web Worker and hook complete
+Last activity: 2026-01-30 - Completed 05-05-PLAN.md (EVSI Web Worker & Hook)
 
-Progress: [███████████████████░░] 91% (21/23 plans)
+Progress: [████████████████████░] 96% (22/23 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: 7 min
-- Total execution time: 150 min
+- Total execution time: 155 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [███████████████████░░] 91% 
 | 3 | 3/3 | 14 min | 5 min |
 | 4 | 3/3 | 18 min | 6 min |
 | 4.1 | 1/1 | 4 min | 4 min |
-| 5 | 4/6 | 26 min | 7 min |
+| 5 | 5/6 | 31 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 04.1-01 (4 min), 05-01 (8 min), 05-02 (6 min), 05-03 (6 min), 05-04 (6 min)
-- Trend: Phase 5 calculation work executing at average pace
+- Last 5 plans: 05-01 (8 min), 05-02 (6 min), 05-03 (6 min), 05-04 (6 min), 05-05 (5 min)
+- Trend: Phase 5 executing efficiently, 1 plan remaining
 
 *Updated after each plan completion*
 
@@ -100,6 +100,9 @@ Recent decisions affecting current work:
 | Rejection sampling for EVSI feasibility | 05-04 | Samples where CR1 outside [0,1] rejected and resampled |
 | Pre-posterior sigma via conjugate update | 05-04 | sigma_preposterior = sigma_prior * sqrt(data_precision / posterior_precision) |
 | n_control = n_total - n_variant | 05-04 | Ensures exact sum after flooring, avoids rounding errors |
+| Normal priors use synchronous fast path | 05-05 | No Worker needed for O(1) closed-form calculation |
+| Request ID tracking for async Worker | 05-05 | Prevents stale async results from updating state |
+| Combined hook results type | 05-05 | Hook returns evsi, cod, netValueDollars, sampleSizes together |
 
 ### Roadmap Evolution
 
@@ -124,5 +127,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 05-04-PLAN.md (EVSI Calculation Engine)
+Stopped at: Completed 05-05-PLAN.md (EVSI Web Worker & Hook)
 Resume file: None
