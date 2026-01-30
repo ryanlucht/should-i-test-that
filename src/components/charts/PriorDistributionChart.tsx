@@ -15,8 +15,9 @@
  * - VIZ-02: Mean marker (purple dot on curve)
  * - VIZ-03: 90% interval shading (purple region between 5th/95th percentiles)
  * - VIZ-04: Threshold line (dashed vertical line with label)
- * - VIZ-05: Regret shading (subtle red on wrong-decision side)
  * - VIZ-06: Custom tooltip with dollar conversion
+ *
+ * Note: VIZ-05 (regret shading) was removed per user feedback - too confusing
  */
 
 import { useMemo } from 'react';
@@ -48,7 +49,6 @@ const Z_95 = 1.6448536;
  * @property sigma_L - Prior standard deviation as decimal (e.g., 0.05 for 5%)
  * @property threshold_L - Decision threshold in lift units (decimal)
  * @property K - Scaling constant: dollars per unit lift (N_year * CR0 * V)
- * @property defaultDecision - Current default decision based on prior mean vs threshold
  */
 interface PriorDistributionChartProps {
   /** Prior mean lift (decimal, e.g., 0.05 for 5%) */
@@ -59,8 +59,6 @@ interface PriorDistributionChartProps {
   threshold_L: number;
   /** Dollars per unit lift: K = N_year * CR0 * V */
   K: number;
-  /** Default decision based on prior mean vs threshold */
-  defaultDecision: 'ship' | 'dont-ship';
 }
 
 /**
@@ -83,7 +81,6 @@ function getThresholdLabel(thresholdPercent: number): string {
  * Displays:
  * - Smooth density curve with gradient fill
  * - 90% credible interval shading (purple)
- * - Regret shading (subtle red on decision-error side)
  * - Threshold line (dashed with label)
  * - Mean marker (purple dot)
  * - Interactive tooltip with lift and dollar values
@@ -96,7 +93,6 @@ export function PriorDistributionChart({
   sigma_L,
   threshold_L,
   K,
-  defaultDecision,
 }: PriorDistributionChartProps) {
   // Memoize chart data to prevent regeneration on every render
   // Dependency array includes both prior parameters to update when user changes inputs
@@ -120,17 +116,6 @@ export function PriorDistributionChart({
   // Get density at mean for ReferenceDot y-position (peak of curve)
   const densityAtMean = getDensityAtLift(mu_L, mu_L, sigma_L);
 
-  // Get data bounds for constraining regret shading
-  const dataMin = chartData[0]?.liftPercent ?? meanPercent - 20;
-  const dataMax = chartData[chartData.length - 1]?.liftPercent ?? meanPercent + 20;
-
-  // Calculate regret shading bounds based on default decision
-  // Per 04-CONTEXT.md: Regret shading shows where the current decision would be wrong
-  // - If default is "ship": regret is below threshold (shipping when shouldn't)
-  // - If default is "dont-ship": regret is above threshold (not shipping when should)
-  const regretStart = defaultDecision === 'ship' ? dataMin : thresholdPercent;
-  const regretEnd = defaultDecision === 'ship' ? thresholdPercent : dataMax;
-
   return (
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart
@@ -153,16 +138,6 @@ export function PriorDistributionChart({
           x2={intervalHighPercent}
           fill="#7C3AED"
           fillOpacity={0.15}
-          ifOverflow="hidden"
-        />
-
-        {/* VIZ-05: Regret Shading - subtle red on the "wrong decision" side */}
-        {/* Per 04-CONTEXT.md: Claude's discretion on prominence - using subtle 12% opacity */}
-        <ReferenceArea
-          x1={regretStart}
-          x2={regretEnd}
-          fill="#EF4444"
-          fillOpacity={0.12}
           ifOverflow="hidden"
         />
 

@@ -490,12 +490,6 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                             : 0
                         }
                         K={evpiResults?.K ?? derivedK ?? 100000}
-                        // defaultDecision: use EVPI result when available (it's computed correctly)
-                        // Otherwise derive from prior mean vs threshold (0)
-                        defaultDecision={
-                          evpiResults?.defaultDecision ??
-                          (priorParams.mu_L >= 0 ? 'ship' : 'dont-ship')
-                        }
                       />
                     </div>
                   )}
