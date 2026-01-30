@@ -81,6 +81,9 @@ Recent decisions affecting current work:
 | Explicit useMemo dependency array | 03-03 | All 8 input fields listed to avoid stale calculations |
 | 4 sigma range for density curve | 04-01 | Covers 99.99% of distribution for proper tail rendering |
 | Animation disabled for chart | 04-01 | Per 04-RESEARCH.md, animation off for live form updates |
+| Derive threshold_L from threshold_dollars / K | 04-02 | EVPIResults doesn't expose threshold_L directly |
+| 12% opacity for regret shading | 04-02 | Per 04-CONTEXT.md Claude discretion - chose subtle approach |
+| Fallback K=100000 | 04-02 | When baseline inputs not complete, use reasonable placeholder |
 | 2x2 grid layout for supporting cards | 04-03 | Per 04-CONTEXT.md allowing Claude's discretion |
 | Highlight variant threshold >20% | 04-03 | Regret card highlights when chance of being wrong exceeds 20% |
 | formatProbabilityPercent edge cases | 04-03 | Shows "<1%" and ">99%" to avoid misleading precision |
