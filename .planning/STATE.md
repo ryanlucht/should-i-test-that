@@ -9,28 +9,29 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation & Wizard Infrastructure) - COMPLETE
-Plan: 4 of 4 in phase 1
-Status: Phase 1 complete, ready for Phase 2
-Last activity: 2026-01-30 - Completed 01-04-PLAN.md (Calculator Page Assembly)
+Phase: 2 of 6 (Basic Mode Inputs)
+Plan: 1 of 3 in phase 2
+Status: In progress
+Last activity: 2026-01-30 - Completed 02-01-PLAN.md (Baseline Metrics Form)
 
-Progress: [████░░░░░░░░░░░░░░░░░] 19% (4/21 plans)
+Progress: [████▒░░░░░░░░░░░░░░░░] 24% (5/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 9 min
-- Total execution time: 34 min
+- Total execution time: 44 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 4/4 | 34 min | 9 min |
+| 2 | 1/3 | 10 min | 10 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (12 min), 01-03 (6 min), 01-04 (8 min)
+- Last 5 plans: 01-02 (12 min), 01-03 (6 min), 01-04 (8 min), 02-01 (10 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -56,6 +57,9 @@ Recent decisions affecting current work:
 | fieldset disabled for section disabling | 01-04 | Native form control disabling propagates to all descendants |
 | IntersectionObserver rootMargin top-biased | 01-04 | -10% 0px -50% 0px for scroll spy triggers in top 40% of viewport |
 | Enter key advances except in textarea | 01-04 | Allows multiline input in textareas while supporting keyboard nav elsewhere |
+| Zod v4 API (error instead of required_error) | 02-01 | Zod v4 breaking change requires new syntax |
+| FormProvider + useFormContext pattern | 02-01 | Avoids complex generic type issues with input components |
+| Format on blur, raw during editing | 02-01 | Better UX for numeric input editing |
 
 ### Pending Todos
 
@@ -68,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 01-04-PLAN.md (Phase 1 complete)
+Stopped at: Completed 02-01-PLAN.md (Baseline Metrics Form)
 Resume file: None
