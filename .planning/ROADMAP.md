@@ -24,20 +24,20 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 1: Foundation & Wizard Infrastructure
 **Goal**: Users can navigate through a 5-step wizard with data persistence and session awareness
 **Depends on**: Nothing (first phase)
-**Requirements**: WIZARD-01, WIZARD-02, WIZARD-03, WIZARD-04, WIZARD-05, WIZARD-06, WIZARD-07, DESIGN-01, DESIGN-02, DESIGN-05
+**Requirements**: WIZARD-01, WIZARD-02, WIZARD-03, WIZARD-04, WIZARD-05, WIZARD-07, DESIGN-01, DESIGN-02, DESIGN-05
 **SPEC.md Reference**: Section 11 (UX flow), Section 12 (Design requirements)
 **Success Criteria** (what must be TRUE):
-  1. User sees a 5-step progress indicator with descriptive labels (Welcome, Baseline, Uncertainty, Threshold, Results)
+  1. User sees a progress indicator with descriptive labels (Baseline, Uncertainty, Threshold, Results)
   2. User can navigate forward/back through steps without losing entered data
   3. User cannot skip ahead to later steps before completing current step
-  4. User sees a confirmation dialog when attempting to leave with unsaved data
-  5. User can toggle between Basic and Advanced modes from the wizard
-**Plans**: TBD
+  4. User can toggle between Basic and Advanced modes from the wizard
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: Project scaffolding (Vite + React 19 + TypeScript + Tailwind + shadcn/ui)
-- [ ] 01-02: Design system and base components via Stitch MCP
-- [ ] 01-03: Wizard state management and navigation
+- [ ] 01-01-PLAN.md — Project scaffolding (Vite + React 19 + TypeScript + Tailwind 4 + shadcn/ui)
+- [ ] 01-02-PLAN.md — Design system via Stitch MCP (Welcome + Calculator page designs)
+- [ ] 01-03-PLAN.md — Wizard state management (Zustand) + Welcome page with mode selection
+- [ ] 01-04-PLAN.md — Calculator page with sections, sticky indicator, and navigation
 
 ### Phase 2: Basic Mode Inputs
 **Goal**: Users can enter all Basic mode inputs with clear guidance and validation
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Wizard Infrastructure | 0/3 | Not started | - |
+| 1. Foundation & Wizard Infrastructure | 0/4 | Planned | - |
 | 2. Basic Mode Inputs | 0/3 | Not started | - |
 | 3. Calculation Engine | 0/3 | Not started | - |
 | 4. Visualization & Results | 0/3 | Not started | - |
@@ -146,4 +146,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 ---
 *Roadmap created: 2026-01-29*
+*Phase 1 planned: 2026-01-29*
 *Total requirements mapped: 67/67*
