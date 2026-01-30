@@ -6,8 +6,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { generateDensityCurveData, getDensityAtLift } from './chart-data';
+import {
+  generateDensityCurveData,
+  generateDistributionData,
+  getDensityAtLift,
+  getDensityAtLiftForPrior,
+} from './chart-data';
 import { standardNormalPDF, SQRT_2_PI } from './statistics';
+import type { PriorDistribution } from './distributions';
 
 describe('generateDensityCurveData', () => {
   it('returns 100 points by default', () => {
@@ -59,9 +65,7 @@ describe('generateDensityCurveData', () => {
     const data = generateDensityCurveData(mu_L, sigma_L);
 
     // Mean should be at 5 (percent), not 0.05 (decimal)
-    const meanPoint = data.find(
-      (p) => Math.abs(p.liftPercent - 5) < 0.5
-    );
+    const meanPoint = data.find((p) => Math.abs(p.liftPercent - 5) < 0.5);
     expect(meanPoint).toBeDefined();
 
     // All values should be in reasonable percentage range (not tiny decimals)
@@ -113,15 +117,14 @@ describe('generateDensityCurveData', () => {
     const data = generateDensityCurveData(mu_L, sigma_L);
 
     // Mean point should be at -5%
-    const meanPoint = data.find(
-      (p) => Math.abs(p.liftPercent - (-5)) < 0.5
-    );
+    const meanPoint = data.find((p) => Math.abs(p.liftPercent - -5) < 0.5);
     expect(meanPoint).toBeDefined();
 
     // Density at mean should be within 1% of the maximum
     // (due to discretization, the sampled point near mean may not hit exact peak)
     const maxDensity = Math.max(...data.map((p) => p.density));
-    const relativeError = Math.abs(meanPoint!.density - maxDensity) / maxDensity;
+    const relativeError =
+      Math.abs(meanPoint!.density - maxDensity) / maxDensity;
     expect(relativeError).toBeLessThan(0.01); // Within 1%
   });
 });
@@ -144,7 +147,11 @@ describe('getDensityAtLift', () => {
 
     const densityAtMean = getDensityAtLift(mu_L, mu_L, sigma_L);
     const densityAtOneSigma = getDensityAtLift(mu_L + sigma_L, mu_L, sigma_L);
-    const densityAtTwoSigma = getDensityAtLift(mu_L + 2 * sigma_L, mu_L, sigma_L);
+    const densityAtTwoSigma = getDensityAtLift(
+      mu_L + 2 * sigma_L,
+      mu_L,
+      sigma_L
+    );
 
     // Density decreases as we move away from mean
     expect(densityAtOneSigma).toBeLessThan(densityAtMean);
@@ -171,5 +178,194 @@ describe('getDensityAtLift', () => {
 
     // Away from mean, should return 0
     expect(getDensityAtLift(mu_L + 0.01, mu_L, sigma_L)).toBe(0);
+  });
+});
+
+/**
+ * Tests for generateDistributionData with all prior shapes
+ */
+describe('generateDistributionData', () => {
+  describe('Normal distribution', () => {
+    it('generates data matching generateDensityCurveData wrapper', () => {
+      const prior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0.02,
+        sigma_L: 0.05,
+      };
+
+      const newData = generateDistributionData(prior);
+      const legacyData = generateDensityCurveData(0.02, 0.05);
+
+      // Should produce identical results
+      expect(newData).toHaveLength(legacyData.length);
+      for (let i = 0; i < newData.length; i++) {
+        expect(newData[i].liftPercent).toBeCloseTo(
+          legacyData[i].liftPercent,
+          10
+        );
+        expect(newData[i].density).toBeCloseTo(legacyData[i].density, 10);
+      }
+    });
+  });
+
+  describe('Student-t distribution', () => {
+    it('generates data with heavier tails than Normal', () => {
+      const normalPrior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0,
+        sigma_L: 0.05,
+      };
+      const studentTPrior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0,
+        sigma_L: 0.05,
+        df: 3, // Heavy tails
+      };
+
+      const normalData = generateDistributionData(normalPrior);
+      const studentTData = generateDistributionData(studentTPrior);
+
+      // Same number of points
+      expect(studentTData).toHaveLength(100);
+
+      // Find tail points (at 3 sigma from mean)
+      const tailPoint = normalData.find(
+        (p) => Math.abs(p.liftPercent - 15) < 1 // ~3 sigma (15%)
+      );
+      const studentTTailPoint = studentTData.find(
+        (p) => Math.abs(p.liftPercent - 15) < 1
+      );
+
+      // Student-t should have higher density in tails
+      expect(studentTTailPoint!.density).toBeGreaterThan(tailPoint!.density);
+    });
+
+    it('peak density is lower than Normal with same sigma', () => {
+      const normalPrior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0,
+        sigma_L: 0.05,
+      };
+      const studentTPrior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0,
+        sigma_L: 0.05,
+        df: 3,
+      };
+
+      const normalData = generateDistributionData(normalPrior);
+      const studentTData = generateDistributionData(studentTPrior);
+
+      const normalPeak = Math.max(...normalData.map((p) => p.density));
+      const studentTPeak = Math.max(...studentTData.map((p) => p.density));
+
+      // Student-t has lower peak (mass spread to tails)
+      expect(studentTPeak).toBeLessThan(normalPeak);
+    });
+  });
+
+  describe('Uniform distribution', () => {
+    it('generates constant density within bounds', () => {
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: -0.05,
+        high_L: 0.1,
+      };
+
+      const data = generateDistributionData(prior);
+
+      // Find interior points (between bounds, excluding padding)
+      const interiorPoints = data.filter(
+        (p) => p.liftPercent >= -5 && p.liftPercent <= 10
+      );
+
+      // All interior points should have the same density
+      const firstDensity = interiorPoints[0].density;
+      interiorPoints.forEach((p) => {
+        expect(p.density).toBeCloseTo(firstDensity, 10);
+      });
+
+      // Expected density: 1 / (0.10 - (-0.05)) = 1/0.15 = 6.667
+      expect(firstDensity).toBeCloseTo(1 / 0.15, 5);
+    });
+
+    it('has zero density outside bounds', () => {
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: -0.05,
+        high_L: 0.1,
+      };
+
+      const data = generateDistributionData(prior);
+
+      // First point should be before low bound with zero density
+      expect(data[0].liftPercent).toBeLessThan(-5);
+      expect(data[0].density).toBe(0);
+
+      // Last point should be after high bound with zero density
+      expect(data[data.length - 1].liftPercent).toBeGreaterThan(10);
+      expect(data[data.length - 1].density).toBe(0);
+    });
+
+    it('covers exact bounds with padding', () => {
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: -0.1,
+        high_L: 0.2,
+      };
+
+      const data = generateDistributionData(prior);
+
+      // Should include points at exact bounds
+      const atLowBound = data.find(
+        (p) => Math.abs(p.liftPercent - -10) < 0.1
+      );
+      const atHighBound = data.find((p) => Math.abs(p.liftPercent - 20) < 0.1);
+
+      expect(atLowBound).toBeDefined();
+      expect(atHighBound).toBeDefined();
+    });
+  });
+});
+
+describe('getDensityAtLiftForPrior', () => {
+  it('returns correct density for Normal prior', () => {
+    const prior: PriorDistribution = {
+      type: 'normal',
+      mu_L: 0.02,
+      sigma_L: 0.05,
+    };
+
+    const density = getDensityAtLiftForPrior(0.02, prior);
+    const expected = standardNormalPDF(0) / 0.05;
+
+    expect(density).toBeCloseTo(expected, 10);
+  });
+
+  it('returns correct density for Uniform prior', () => {
+    const prior: PriorDistribution = {
+      type: 'uniform',
+      low_L: -0.05,
+      high_L: 0.1,
+    };
+
+    // Inside bounds
+    const densityInside = getDensityAtLiftForPrior(0, prior);
+    expect(densityInside).toBeCloseTo(1 / 0.15, 10);
+
+    // Outside bounds
+    const densityOutside = getDensityAtLiftForPrior(-0.1, prior);
+    expect(densityOutside).toBe(0);
+  });
+
+  it('handles very small sigma spike for Normal', () => {
+    const prior: PriorDistribution = {
+      type: 'normal',
+      mu_L: 0.03,
+      sigma_L: 0.00001,
+    };
+
+    expect(getDensityAtLiftForPrior(0.03, prior)).toBe(1);
+    expect(getDensityAtLiftForPrior(0.05, prior)).toBe(0);
   });
 });
