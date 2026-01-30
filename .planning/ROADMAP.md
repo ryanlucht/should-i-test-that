@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
 - [x] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
 - [x] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
-- [ ] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
+- [x] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
 
 ## Phase Details
 
@@ -145,9 +145,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — PNG export with html-to-image (ExportCard, ExportButton, useExportPng hook)
-- [ ] 06-02-PLAN.md — Design consistency: purple accent across all interactive elements
-- [ ] 06-03-PLAN.md — Accessibility: vitest-axe tests, ARIA live regions, text redundancy
+- [x] 06-01-PLAN.md — PNG export with html-to-image (ExportCard, ExportButton, useExportPng hook)
+- [x] 06-02-PLAN.md — Design consistency: purple accent across all interactive elements, placeholder visibility
+- [x] 06-03-PLAN.md — Accessibility: vitest-axe tests, ARIA live regions, text redundancy
 
 ## Progress
 
@@ -162,7 +162,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 4. Visualization & Results | 3/3 | Complete | 2026-01-30 |
 | 4.1. Calculation Engine Fixes (INSERTED) | 1/1 | Complete | 2026-01-30 |
 | 5. Advanced Mode | 6/6 | Complete | 2026-01-30 |
-| 6. Export & Polish | 0/3 | Not started | - |
+| 6. Export & Polish | 3/3 | Complete | 2026-01-30 |
 
 ---
 *Roadmap created: 2026-01-29*
@@ -178,4 +178,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 5 planned: 2026-01-30*
 *Phase 5 completed: 2026-01-30*
 *Phase 6 planned: 2026-01-30*
+*Phase 6 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
+*MILESTONE v1.0 COMPLETE: 2026-01-30*
