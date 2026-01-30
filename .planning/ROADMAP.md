@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Basic Mode Inputs** - Steps 1-4 input forms with validation and help text
 - [x] **Phase 3: Calculation Engine** - EVPI calculation, closed-form and Monte Carlo, Web Worker setup
 - [ ] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
+- [ ] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
 - [ ] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
 - [ ] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
 
@@ -96,6 +97,20 @@ Plans:
 - [ ] 04-02-PLAN.md — Chart overlays (mean marker, 90% interval, threshold, regret shading, tooltips)
 - [ ] 04-03-PLAN.md — Results section with verdict and supporting explanation cards
 
+### Phase 4.1: Calculation Engine Fixes (INSERTED)
+**Goal**: Fix edge case handling in EVPI calculations and add missing test coverage for statistics primitives
+**Depends on**: Phase 4
+**Requirements**: None (technical debt / correctness fixes)
+**SPEC.md Reference**: Section 8 (Calculations)
+**Success Criteria** (what must be TRUE):
+  1. Degenerate sigma (σ=0) produces EVPI=0, not non-zero values
+  2. standardNormalCDF returns NaN for NaN input (not 1)
+  3. Direct unit tests exist for standardNormalPDF and standardNormalCDF
+**Plans**: 1 plan
+
+Plans:
+- [ ] 04.1-01-PLAN.md — Fix NaN handling in CDF, degenerate sigma in EVPI, and add tests
+
 ### Phase 5: Advanced Mode
 **Goal**: Users can calculate realistic test value using EVSI and Cost of Delay
 **Depends on**: Phase 4
@@ -144,6 +159,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Basic Mode Inputs | 6/6 | Complete | 2026-01-30 |
 | 3. Calculation Engine | 3/3 | Complete | 2026-01-30 |
 | 4. Visualization & Results | 0/3 | Not started | - |
+| 4.1. Calculation Engine Fixes (INSERTED) | 0/1 | Not started | - |
 | 5. Advanced Mode | 0/5 | Not started | - |
 | 6. Export & Polish | 0/3 | Not started | - |
 
