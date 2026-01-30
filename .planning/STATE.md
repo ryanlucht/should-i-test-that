@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 6 Export & Polish - Design consistency complete
+**Current focus:** Phase 6 Export & Polish - PNG export and design consistency complete
 
 ## Current Position
 
 Phase: 6 of 6 (Export & Polish)
-Plan: 2 of 4 in phase 6 complete
-Status: In progress - Design consistency verified, placeholder text improved
-Last activity: 2026-01-30 - Completed 06-02-PLAN.md (Design Consistency)
+Plan: 2 of 3 in phase 6 complete
+Status: In progress - PNG export functional, design consistency verified
+Last activity: 2026-01-30 - Completed 06-01-PLAN.md (PNG Export)
 
-Progress: [█████████████████████░░] 96% (25/26 plans)
+Progress: [██████████████████████░] 96% (25/26 plans)
 
 ## Performance Metrics
 
@@ -33,11 +33,11 @@ Progress: [█████████████████████░░
 | 4 | 3/3 | 18 min | 6 min |
 | 4.1 | 1/1 | 4 min | 4 min |
 | 5 | 6/6 | 39 min | 7 min |
-| 6 | 2/4 | 5 min | 3 min |
+| 6 | 2/3 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-04 (6 min), 05-05 (5 min), 05-06 (8 min), 06-01 (planned), 06-02 (5 min)
-- Trend: Phase 6 in progress, design polish underway
+- Last 5 plans: 05-04 (6 min), 05-05 (5 min), 05-06 (8 min), 06-01 (5 min), 06-02 (5 min)
+- Trend: Phase 6 in progress, export and design polish complete
 
 *Updated after each plan completion*
 
@@ -107,6 +107,8 @@ Recent decisions affecting current work:
 | Backward-compatible component wrappers | 05-06 | Legacy suffix for old-API-compatible wrappers (PriorDistributionChartLegacy) |
 | Skip 90% interval for Uniform | 05-06 | Entire distribution bounds ARE the interval, shading would be redundant |
 | stepAfter for Uniform chart | 05-06 | Rectangle shape for Uniform distribution rendering |
+| Native <a download> for export | 06-01 | No file-saver dependency needed, simpler implementation |
+| Inline styles in ExportCard | 06-01 | Ensures html-to-image captures styling correctly |
 | 60% placeholder opacity | 06-02 | placeholder:text-muted-foreground/60 for clear distinction from entered values |
 | Theme is already purple | 06-02 | Audit confirmed --primary and --ring use oklch(0.55 0.2 260), no blue overrides |
 
@@ -135,5 +137,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 06-02-PLAN.md (Design Consistency)
+Stopped at: Completed 06-01-PLAN.md (PNG Export)
 Resume file: None
