@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 5 Advanced Mode - Plan 03 Complete
+**Current focus:** Phase 5 Advanced Mode - Plan 01 Complete (Foundation)
 
 ## Current Position
 
 Phase: 5 of 6 (Advanced Mode)
-Plan: 3 of 6 in phase 5 complete
-Status: In progress - Experiment Design Form complete
-Last activity: 2026-01-30 - Completed 05-03-PLAN.md
+Plan: 3 of 6 in phase 5 complete (01, 02, 03)
+Status: In progress - Foundation, Prior Shape, Experiment Design complete
+Last activity: 2026-01-30 - Completed 05-01-PLAN.md (Foundation)
 
-Progress: [██████████████████░░░] 86% (18/21 plans)
+Progress: [██████████████████░░░] 87% (20/23 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
+- Total plans completed: 20
 - Average duration: 7 min
-- Total execution time: 129 min
+- Total execution time: 144 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [██████████████████░░░] 86% 
 | 3 | 3/3 | 14 min | 5 min |
 | 4 | 3/3 | 18 min | 6 min |
 | 4.1 | 1/1 | 4 min | 4 min |
-| 5 | 3/6 | 5 min | 5 min |
+| 5 | 3/6 | 20 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (5 min), 04-03 (8 min), 04.1-01 (4 min), 05-01 (~), 05-02 (~), 05-03 (5 min)
-- Trend: Phase 5 plans executing quickly
+- Last 5 plans: 04-03 (8 min), 04.1-01 (4 min), 05-01 (8 min), 05-02 (6 min), 05-03 (6 min)
+- Trend: Phase 5 foundation work executing at average pace
 
 *Updated after each plan completion*
 
@@ -94,6 +94,9 @@ Recent decisions affecting current work:
 | Percentage values in form UI | 05-03 | Schema validates percentage values (10-90, 1-100), converted to decimals on submit |
 | Latency fields de-emphasized | 05-03 | Opacity-75 wrapper and border separator per 05-CONTEXT.md |
 | Section-ID based validation | 05-03 | Validation uses section ID not index for correct mode handling |
+| jStat studentt location-scale transform | 05-01 | jStat uses standardized Student-t; z=(L-mu)/sigma, scale PDF by 1/sigma |
+| Comlink plugin order | 05-01 | Must be before react() in Vite plugins array |
+| jStat type declarations | 05-01 | Custom declarations in vite-env.d.ts (no @types/jstat available) |
 
 ### Roadmap Evolution
 
@@ -118,5 +121,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 05-03-PLAN.md (Experiment Design Form)
+Stopped at: Completed 05-01-PLAN.md (Advanced Mode Foundation)
 Resume file: None
