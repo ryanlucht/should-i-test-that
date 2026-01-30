@@ -169,3 +169,24 @@ export function formatSmartCurrency(value: number): string {
     maximumSignificantDigits: 3,
   }).format(value);
 }
+
+/**
+ * Format probability as whole percentage for display
+ *
+ * Shows "<1%" or ">99%" for extremes to avoid misleading precision.
+ * Input is a decimal probability (0 to 1).
+ *
+ * Examples:
+ * - formatProbabilityPercent(0.65) => "65%"
+ * - formatProbabilityPercent(0.003) => "< 1%"
+ * - formatProbabilityPercent(0.998) => "> 99%"
+ *
+ * @param decimal - Probability value (0-1 scale)
+ * @returns Formatted percentage string
+ */
+export function formatProbabilityPercent(decimal: number): string {
+  const percent = decimal * 100;
+  if (percent < 1) return '< 1%';
+  if (percent > 99) return '> 99%';
+  return `${Math.round(percent)}%`;
+}
