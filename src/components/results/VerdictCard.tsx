@@ -16,8 +16,8 @@ interface VerdictCardProps {
 export function VerdictCard({ evpiDollars, onAdvancedModeClick }: VerdictCardProps) {
   return (
     <div className="rounded-xl border bg-card p-6 space-y-4">
-      {/* Primary verdict headline */}
-      <div className="space-y-2">
+      {/* Primary verdict headline - ARIA live region for screen reader announcements */}
+      <div role="status" aria-live="polite" className="space-y-2">
         <h3 className="text-xl font-semibold text-foreground leading-relaxed">
           If you can A/B test this idea for less than{' '}
           <span className="text-primary">{formatSmartCurrency(evpiDollars)}</span>,
