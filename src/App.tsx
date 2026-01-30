@@ -1,32 +1,54 @@
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+/**
+ * App Component
+ *
+ * Root component handling page routing between Welcome and Calculator pages.
+ * Uses simple state-based routing (no react-router needed for 2 pages).
+ */
+
+import { useState } from 'react';
+import { WelcomePage } from '@/pages/WelcomePage';
+
+/**
+ * Page identifiers for routing
+ */
+type Page = 'welcome' | 'calculator';
+
+/**
+ * Placeholder Calculator Page
+ * Will be implemented in plan 01-04
+ */
+function CalculatorPage({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Calculator</h1>
+        <p className="text-muted-foreground mb-4">
+          Calculator page placeholder. Wizard sections will be implemented in
+          plan 01-04.
+        </p>
+        <button
+          onClick={onBack}
+          className="text-primary hover:underline"
+        >
+          Back to Welcome
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function App() {
-  return (
-    <div className="min-h-screen bg-background text-foreground p-8">
-      <h1 className="text-2xl font-bold mb-6">Should I Test That?</h1>
+  const [currentPage, setCurrentPage] = useState<Page>('welcome');
 
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>Project Setup Complete</CardTitle>
-          <CardDescription>
-            Vite + React 19 + TypeScript + Tailwind 4 + shadcn/ui
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            The foundation is ready. Next: design system and wizard navigation.
-          </p>
-          <Button>Get Started</Button>
-        </CardContent>
-      </Card>
-    </div>
+  return (
+    <>
+      {currentPage === 'welcome' && (
+        <WelcomePage onGetStarted={() => setCurrentPage('calculator')} />
+      )}
+      {currentPage === 'calculator' && (
+        <CalculatorPage onBack={() => setCurrentPage('welcome')} />
+      )}
+    </>
   );
 }
 
