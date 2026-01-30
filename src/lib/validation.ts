@@ -149,3 +149,30 @@ export const thresholdScenarioSchema = z.discriminatedUnion('scenario', [
 ]);
 
 export type ThresholdScenarioFormData = z.infer<typeof thresholdScenarioSchema>;
+
+/**
+ * Prior Shape Schema (Advanced mode)
+ *
+ * Validates prior distribution type and Student-t df when applicable.
+ * Uses discriminated union pattern where df is only required for Student-t.
+ *
+ * Per 05-CONTEXT.md:
+ * - Normal: Standard bell curve (default)
+ * - Student-t: Fat-tailed, with preset df values (3, 5, 10)
+ * - Uniform: Equal probability across the interval
+ */
+export const priorShapeSchema = z.discriminatedUnion('shape', [
+  z.object({
+    shape: z.literal('normal'),
+  }),
+  z.object({
+    shape: z.literal('student-t'),
+    /** Degrees of freedom for Student-t distribution (3=Heavy, 5=Moderate, 10=Near-normal) */
+    df: z.union([z.literal(3), z.literal(5), z.literal(10)]),
+  }),
+  z.object({
+    shape: z.literal('uniform'),
+  }),
+]);
+
+export type PriorShapeFormData = z.infer<typeof priorShapeSchema>;
