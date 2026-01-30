@@ -124,10 +124,19 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
 
     /**
      * Handle successful form submission - store values in Zustand
+     * Derives priorType based on whether interval values match defaults
      */
     const onSubmit = useCallback(
       (data: PriorSelectionFormData) => {
-        setSharedInput('priorType', data.priorType);
+        // Derive priorType based on whether values match defaults
+        // Tolerance of 0.01 accounts for floating point comparison
+        const isDefault =
+          Math.abs(data.intervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
+          Math.abs(data.intervalHigh - DEFAULT_INTERVAL.high) < 0.01;
+
+        const derivedPriorType = isDefault ? 'default' : 'custom';
+
+        setSharedInput('priorType', derivedPriorType);
         setSharedInput('priorIntervalLow', data.intervalLow);
         setSharedInput('priorIntervalHigh', data.intervalHigh);
       },
@@ -175,23 +184,16 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
       setValue('priorType', 'custom');
     }, [setValue]);
 
-    // Sync form with store changes (e.g., if store is reset)
+    // Sync form with store changes (e.g., if store is reset or back nav)
+    // Note: priorType is derived at validation time, so we only sync interval values
     useEffect(() => {
-      if (sharedInputs.priorType !== null) {
-        setValue('priorType', sharedInputs.priorType);
-      }
       if (sharedInputs.priorIntervalLow !== null) {
         setValue('intervalLow', sharedInputs.priorIntervalLow);
       }
       if (sharedInputs.priorIntervalHigh !== null) {
         setValue('intervalHigh', sharedInputs.priorIntervalHigh);
       }
-    }, [
-      sharedInputs.priorType,
-      sharedInputs.priorIntervalLow,
-      sharedInputs.priorIntervalHigh,
-      setValue,
-    ]);
+    }, [sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh, setValue]);
 
     return (
       <FormProvider {...methods}>
