@@ -235,8 +235,12 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle>(
     }
 
     // Get df error if Student-t selected but no df
+    // TypeScript doesn't narrow discriminated union errors automatically,
+    // so we use type assertion after runtime check
     const dfError =
-      selectedShape === 'student-t' && errors.df ? errors.df.message : undefined;
+      selectedShape === 'student-t' && 'df' in errors
+        ? (errors as { df?: { message?: string } }).df?.message
+        : undefined;
 
     return (
       <FormProvider {...methods}>
