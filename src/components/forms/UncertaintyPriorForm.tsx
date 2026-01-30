@@ -86,6 +86,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     const methods = useForm<PriorSelectionFormData>({
       resolver: zodResolver(priorSelectionSchema),
       mode: 'onBlur', // Validate on blur per CONTEXT.md
+      reValidateMode: 'onBlur', // Re-validate on blur, not while typing
       defaultValues: {
         priorType: sharedInputs.priorType ?? 'default',
         intervalLow: sharedInputs.priorIntervalLow ?? DEFAULT_INTERVAL.low,
@@ -102,8 +103,8 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
       formState: { errors },
     } = methods;
 
-    // Watch values for computed displays
-    const priorType = watch('priorType');
+    // Watch interval values for computed displays
+    // Note: priorType is tracked in form state but not used for UI styling
     const intervalLow = watch('intervalLow');
     const intervalHigh = watch('intervalHigh');
 
@@ -167,19 +168,12 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     }, [setValue, setSharedInput]);
 
     /**
-     * When interval fields change, auto-set priorType to 'custom' if different from defaults
+     * When interval fields change, set priorType to 'custom'
+     * The priorType will be derived at validation time based on actual values
      */
     const handleIntervalChange = useCallback(() => {
-      const low = methods.getValues('intervalLow');
-      const high = methods.getValues('intervalHigh');
-      const isDefault =
-        Math.abs(low - DEFAULT_INTERVAL.low) < 0.01 &&
-        Math.abs(high - DEFAULT_INTERVAL.high) < 0.01;
-
-      if (!isDefault) {
-        setValue('priorType', 'custom');
-      }
-    }, [methods, setValue]);
+      setValue('priorType', 'custom');
+    }, [setValue]);
 
     // Sync form with store changes (e.g., if store is reset)
     useEffect(() => {
@@ -217,7 +211,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
             </p>
           </div>
 
-          {/* Default Prior Option (prominent button/card) */}
+          {/* Default Prior Option (action button, no selected state) */}
           <div className="space-y-4">
             <button
               type="button"
@@ -226,36 +220,20 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                 'w-full rounded-xl border-2 p-4 text-left transition-all',
                 'hover:border-primary/50 hover:shadow-sm',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                priorType === 'default'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border bg-card'
+                'border-border bg-card hover:bg-muted/50'
               )}
             >
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    'mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center',
-                    priorType === 'default'
-                      ? 'border-primary bg-primary'
-                      : 'border-muted-foreground'
-                  )}
-                >
-                  {priorType === 'default' && (
-                    <div className="h-2 w-2 rounded-full bg-white" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">
-                    Use Recommended Default
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    I'm 90% sure the relative lift is between -8% and +8%
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    This is a reasonable starting point if you're unsure. It
-                    assumes most changes have small effects.
-                  </p>
-                </div>
+              <div className="flex-1">
+                <p className="font-medium text-foreground">
+                  Fill with Recommended Default
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  I'm 90% sure the relative lift is between -8% and +8%
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This is a reasonable starting point if you're unsure. It
+                  assumes most changes have small effects.
+                </p>
               </div>
             </button>
           </div>
