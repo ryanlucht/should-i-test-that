@@ -128,9 +128,21 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
           What {formatSmartCurrency(evpiDollars)} represents
         </p>
         <p className="text-sm text-muted-foreground">
-          Without testing, your default decision is to{' '}
-          <strong>{defaultDecision === 'ship' ? 'ship' : 'not ship'}</strong>.
-          The {formatSmartCurrency(evpiDollars)} EVPI is the expected value of
+          {/* Explain WHY the default decision is ship/not-ship based on prior vs threshold */}
+          {defaultDecision === 'ship' ? (
+            <>
+              Based on your beliefs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
+              exceeds your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
+              so without more information you would <strong>ship</strong>.
+            </>
+          ) : (
+            <>
+              Based on your beliefs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
+              falls below your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
+              so without more information you would <strong>not ship</strong>.
+            </>
+          )}{' '}
+          The {formatSmartCurrency(evpiDollars)} is the expected value of
           the regret you'd avoid by having perfect foresight — it's the maximum
           you should pay for any information about whether this change helps.
         </p>
