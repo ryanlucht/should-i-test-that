@@ -157,23 +157,91 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WIZARD-* | TBD | Pending |
-| BASIC-IN-* | TBD | Pending |
-| BASIC-CALC-* | TBD | Pending |
-| BASIC-OUT-* | TBD | Pending |
-| ADV-IN-* | TBD | Pending |
-| ADV-CALC-* | TBD | Pending |
-| ADV-OUT-* | TBD | Pending |
-| VIZ-* | TBD | Pending |
-| UX-* | TBD | Pending |
-| EXPORT-* | TBD | Pending |
-| DESIGN-* | TBD | Pending |
+| WIZARD-01 | Phase 1 | Pending |
+| WIZARD-02 | Phase 1 | Pending |
+| WIZARD-03 | Phase 1 | Pending |
+| WIZARD-04 | Phase 1 | Pending |
+| WIZARD-05 | Phase 1 | Pending |
+| WIZARD-06 | Phase 1 | Pending |
+| WIZARD-07 | Phase 1 | Pending |
+| BASIC-IN-01 | Phase 2 | Pending |
+| BASIC-IN-02 | Phase 2 | Pending |
+| BASIC-IN-03 | Phase 2 | Pending |
+| BASIC-IN-04 | Phase 2 | Pending |
+| BASIC-IN-05 | Phase 2 | Pending |
+| BASIC-IN-06 | Phase 2 | Pending |
+| BASIC-IN-07 | Phase 2 | Pending |
+| BASIC-IN-08 | Phase 2 | Pending |
+| BASIC-CALC-01 | Phase 3 | Pending |
+| BASIC-CALC-02 | Phase 3 | Pending |
+| BASIC-CALC-03 | Phase 3 | Pending |
+| BASIC-CALC-04 | Phase 3 | Pending |
+| BASIC-CALC-05 | Phase 3 | Pending |
+| BASIC-CALC-06 | Phase 3 | Pending |
+| BASIC-CALC-07 | Phase 3 | Pending |
+| BASIC-CALC-08 | Phase 3 | Pending |
+| BASIC-OUT-01 | Phase 4 | Pending |
+| BASIC-OUT-02 | Phase 4 | Pending |
+| BASIC-OUT-03 | Phase 4 | Pending |
+| BASIC-OUT-04 | Phase 4 | Pending |
+| BASIC-OUT-05 | Phase 4 | Pending |
+| BASIC-OUT-06 | Phase 4 | Pending |
+| BASIC-OUT-07 | Phase 4 | Pending |
+| ADV-IN-01 | Phase 5 | Pending |
+| ADV-IN-02 | Phase 5 | Pending |
+| ADV-IN-03 | Phase 5 | Pending |
+| ADV-IN-04 | Phase 5 | Pending |
+| ADV-IN-05 | Phase 5 | Pending |
+| ADV-IN-06 | Phase 5 | Pending |
+| ADV-IN-07 | Phase 5 | Pending |
+| ADV-IN-08 | Phase 5 | Pending |
+| ADV-IN-09 | Phase 5 | Pending |
+| ADV-IN-10 | Phase 5 | Pending |
+| ADV-CALC-01 | Phase 5 | Pending |
+| ADV-CALC-02 | Phase 5 | Pending |
+| ADV-CALC-03 | Phase 5 | Pending |
+| ADV-CALC-04 | Phase 5 | Pending |
+| ADV-CALC-05 | Phase 5 | Pending |
+| ADV-CALC-06 | Phase 5 | Pending |
+| ADV-CALC-07 | Phase 5 | Pending |
+| ADV-OUT-01 | Phase 5 | Pending |
+| ADV-OUT-02 | Phase 5 | Pending |
+| ADV-OUT-03 | Phase 5 | Pending |
+| ADV-OUT-04 | Phase 5 | Pending |
+| ADV-OUT-05 | Phase 5 | Pending |
+| ADV-OUT-06 | Phase 5 | Pending |
+| ADV-OUT-07 | Phase 5 | Pending |
+| VIZ-01 | Phase 4 | Pending |
+| VIZ-02 | Phase 4 | Pending |
+| VIZ-03 | Phase 4 | Pending |
+| VIZ-04 | Phase 4 | Pending |
+| VIZ-05 | Phase 4 | Pending |
+| VIZ-06 | Phase 4 | Pending |
+| VIZ-07 | Phase 4 | Pending |
+| VIZ-08 | Phase 4 | Pending |
+| UX-01 | Phase 2 | Pending |
+| UX-02 | Phase 2 | Pending |
+| UX-03 | Phase 2 | Pending |
+| UX-04 | Phase 2 | Pending |
+| UX-05 | Phase 2 | Pending |
+| UX-06 | Phase 3 | Pending |
+| UX-07 | Phase 6 | Pending |
+| UX-08 | Phase 2 | Pending |
+| EXPORT-01 | Phase 6 | Pending |
+| EXPORT-02 | Phase 6 | Pending |
+| EXPORT-03 | Phase 6 | Pending |
+| EXPORT-04 | Phase 6 | Pending |
+| DESIGN-01 | Phase 1 | Pending |
+| DESIGN-02 | Phase 1 | Pending |
+| DESIGN-03 | Phase 4 | Pending |
+| DESIGN-04 | Phase 5 | Pending |
+| DESIGN-05 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 67 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 67
+- Mapped to phases: 67
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after initial definition*
+*Last updated: 2026-01-29 after roadmap creation*
