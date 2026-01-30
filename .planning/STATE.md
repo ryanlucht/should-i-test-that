@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 5 Complete - Advanced Mode UI fully functional
+**Current focus:** Phase 6 Export & Polish - Design consistency complete
 
 ## Current Position
 
-Phase: 5 of 6 (Advanced Mode) - COMPLETE
-Plan: 6 of 6 in phase 5 complete (all)
-Status: Phase 5 complete - Ready for Phase 6 Design Polish
-Last activity: 2026-01-30 - Completed 05-06-PLAN.md (Advanced Results UI)
+Phase: 6 of 6 (Export & Polish)
+Plan: 2 of 4 in phase 6 complete
+Status: In progress - Design consistency verified, placeholder text improved
+Last activity: 2026-01-30 - Completed 06-02-PLAN.md (Design Consistency)
 
-Progress: [█████████████████████] 100% (23/23 plans)
+Progress: [█████████████████████░░] 96% (25/26 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 25
 - Average duration: 7 min
-- Total execution time: 163 min
+- Total execution time: 168 min
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [█████████████████████] 100%
 | 4 | 3/3 | 18 min | 6 min |
 | 4.1 | 1/1 | 4 min | 4 min |
 | 5 | 6/6 | 39 min | 7 min |
+| 6 | 2/4 | 5 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (6 min), 05-03 (6 min), 05-04 (6 min), 05-05 (5 min), 05-06 (8 min)
-- Trend: Phase 5 complete, ready for Phase 6
+- Last 5 plans: 05-04 (6 min), 05-05 (5 min), 05-06 (8 min), 06-01 (planned), 06-02 (5 min)
+- Trend: Phase 6 in progress, design polish underway
 
 *Updated after each plan completion*
 
@@ -106,6 +107,8 @@ Recent decisions affecting current work:
 | Backward-compatible component wrappers | 05-06 | Legacy suffix for old-API-compatible wrappers (PriorDistributionChartLegacy) |
 | Skip 90% interval for Uniform | 05-06 | Entire distribution bounds ARE the interval, shading would be redundant |
 | stepAfter for Uniform chart | 05-06 | Rectangle shape for Uniform distribution rendering |
+| 60% placeholder opacity | 06-02 | placeholder:text-muted-foreground/60 for clear distinction from entered values |
+| Theme is already purple | 06-02 | Audit confirmed --primary and --ring use oklch(0.55 0.2 260), no blue overrides |
 
 ### Roadmap Evolution
 
@@ -132,5 +135,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 05-06-PLAN.md (Advanced Results UI) - Phase 5 Complete
+Stopped at: Completed 06-02-PLAN.md (Design Consistency)
 Resume file: None
