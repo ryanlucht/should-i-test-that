@@ -11,3 +11,4 @@ export * from './derived';
 export * from './evpi';
 export * from './chart-data';
 export * from './distributions';
+export * from './sample-size';
