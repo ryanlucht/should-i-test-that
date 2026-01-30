@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 5 Advanced Mode - Plan 05 Complete (EVSI Web Worker & Hook)
+**Current focus:** Phase 5 Complete - Advanced Mode UI fully functional
 
 ## Current Position
 
-Phase: 5 of 6 (Advanced Mode)
-Plan: 5 of 6 in phase 5 complete (01, 02, 03, 04, 05)
-Status: In progress - Web Worker and hook complete
-Last activity: 2026-01-30 - Completed 05-05-PLAN.md (EVSI Web Worker & Hook)
+Phase: 5 of 6 (Advanced Mode) - COMPLETE
+Plan: 6 of 6 in phase 5 complete (all)
+Status: Phase 5 complete - Ready for Phase 6 Design Polish
+Last activity: 2026-01-30 - Completed 05-06-PLAN.md (Advanced Results UI)
 
-Progress: [████████████████████░] 96% (22/23 plans)
+Progress: [█████████████████████] 100% (23/23 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 7 min
-- Total execution time: 155 min
+- Total execution time: 163 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [████████████████████░] 96% 
 | 3 | 3/3 | 14 min | 5 min |
 | 4 | 3/3 | 18 min | 6 min |
 | 4.1 | 1/1 | 4 min | 4 min |
-| 5 | 5/6 | 31 min | 6 min |
+| 5 | 6/6 | 39 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (8 min), 05-02 (6 min), 05-03 (6 min), 05-04 (6 min), 05-05 (5 min)
-- Trend: Phase 5 executing efficiently, 1 plan remaining
+- Last 5 plans: 05-02 (6 min), 05-03 (6 min), 05-04 (6 min), 05-05 (5 min), 05-06 (8 min)
+- Trend: Phase 5 complete, ready for Phase 6
 
 *Updated after each plan completion*
 
@@ -103,6 +103,9 @@ Recent decisions affecting current work:
 | Normal priors use synchronous fast path | 05-05 | No Worker needed for O(1) closed-form calculation |
 | Request ID tracking for async Worker | 05-05 | Prevents stale async results from updating state |
 | Combined hook results type | 05-05 | Hook returns evsi, cod, netValueDollars, sampleSizes together |
+| Backward-compatible component wrappers | 05-06 | Legacy suffix for old-API-compatible wrappers (PriorDistributionChartLegacy) |
+| Skip 90% interval for Uniform | 05-06 | Entire distribution bounds ARE the interval, shading would be redundant |
+| stepAfter for Uniform chart | 05-06 | Rectangle shape for Uniform distribution rendering |
 
 ### Roadmap Evolution
 
@@ -129,5 +132,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 05-05-PLAN.md (EVSI Web Worker & Hook)
+Stopped at: Completed 05-06-PLAN.md (Advanced Results UI) - Phase 5 Complete
 Resume file: None
