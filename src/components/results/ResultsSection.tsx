@@ -63,6 +63,17 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
     ? 0
     : sharedInputs.thresholdValue ?? 0;
 
+  // Determine comparison wording for EVPI explanation (BASIC-OUT-07)
+  // Uses tolerance for floating point equality comparison
+  const EQUALITY_TOLERANCE = 0.001; // 0.1% tolerance
+  const getComparisonWording = (): string => {
+    if (Math.abs(priorMean - thresholdLift) < EQUALITY_TOLERANCE) {
+      return 'meets';
+    }
+    return priorMean > thresholdLift ? 'exceeds' : 'falls below';
+  };
+  const comparisonWording = getComparisonWording();
+
   return (
     <div className="space-y-6">
       {/* Primary Verdict - BASIC-OUT-01, BASIC-OUT-02 */}
@@ -132,13 +143,13 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
           {defaultDecision === 'ship' ? (
             <>
               Based on your beliefs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
-              exceeds your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
+              {' '}{comparisonWording} your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
               so without more information you would <strong>ship</strong>.
             </>
           ) : (
             <>
               Based on your beliefs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
-              falls below your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
+              {' '}{comparisonWording} your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
               so without more information you would <strong>not ship</strong>.
             </>
           )}{' '}
