@@ -66,6 +66,8 @@ Recent decisions affecting current work:
 | RadioCard children outside button | 02-03 | Avoids nested buttons HTML validation errors with Radix |
 | ResizeObserver mock for tests | 02-03 | Required for Radix UI components using @radix-ui/react-use-size |
 | Sign convention: accept-loss stores negative | 02-03 | Per SPEC.md Section 7.3, T_$ = -Loss_$ for scenario 3 |
+| Action button for form presets | 02-05 | Use action buttons that fill values, not radio-style selectors |
+| Derive priorType at validation time | 02-05 | Compare interval values to defaults, don't track as separate UI state |
 | reValidateMode: 'onBlur' for all forms | 02-06 | Prevents validation errors updating while typing |
 | Rounded integer for default prior display | 02-06 | Shows "8%" instead of "8.22%" for cleaner UI |
 
