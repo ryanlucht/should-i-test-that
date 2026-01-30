@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation & Wizard Infrastructure** - Project setup, design system, and wizard flow mechanics
 - [x] **Phase 2: Basic Mode Inputs** - Steps 1-4 input forms with validation and help text
 - [x] **Phase 3: Calculation Engine** - EVPI calculation, closed-form and Monte Carlo, Web Worker setup
-- [ ] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
+- [x] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
 - [ ] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
 - [ ] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
 - [ ] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
@@ -93,9 +93,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Chart data utilities and base distribution chart component (Recharts)
-- [ ] 04-02-PLAN.md — Chart overlays (mean marker, 90% interval, threshold, regret shading, tooltips)
-- [ ] 04-03-PLAN.md — Results section with verdict and supporting explanation cards
+- [x] 04-01-PLAN.md — Chart data utilities and base distribution chart component (Recharts)
+- [x] 04-02-PLAN.md — Chart overlays (mean marker, 90% interval, threshold, regret shading, tooltips)
+- [x] 04-03-PLAN.md — Results section with verdict and supporting explanation cards
 
 ### Phase 4.1: Calculation Engine Fixes (INSERTED)
 **Goal**: Fix edge case handling in EVPI calculations and add missing test coverage for statistics primitives
@@ -158,7 +158,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation & Wizard Infrastructure | 4/4 | Complete | 2026-01-30 |
 | 2. Basic Mode Inputs | 6/6 | Complete | 2026-01-30 |
 | 3. Calculation Engine | 3/3 | Complete | 2026-01-30 |
-| 4. Visualization & Results | 0/3 | Not started | - |
+| 4. Visualization & Results | 3/3 | Complete | 2026-01-30 |
 | 4.1. Calculation Engine Fixes (INSERTED) | 0/1 | Not started | - |
 | 5. Advanced Mode | 0/5 | Not started | - |
 | 6. Export & Polish | 0/3 | Not started | - |
@@ -172,4 +172,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 2 gap closure completed: 2026-01-30*
 *Phase 3 planned: 2026-01-30*
 *Phase 3 completed: 2026-01-30*
+*Phase 4 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
