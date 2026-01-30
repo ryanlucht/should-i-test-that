@@ -34,6 +34,8 @@ export interface NumberInputProps {
   unitLabelValue?: string;
   /** Callback when unit label changes */
   onUnitLabelChange?: (value: string) => void;
+  /** Static suffix text shown after the input (e.g., "days") */
+  suffix?: string;
 }
 
 /**
@@ -49,6 +51,7 @@ export function NumberInput({
   error,
   unitLabelValue,
   onUnitLabelChange,
+  suffix,
 }: NumberInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
@@ -123,10 +126,15 @@ export function NumberInput({
                 aria-invalid={!!error}
                 aria-describedby={error ? `${name}-error` : helpText ? `${name}-help` : undefined}
                 className={cn(
-                  hasUnitLabel && 'flex-1',
+                  (hasUnitLabel || suffix) && 'flex-1',
                   error && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
                 )}
               />
+
+              {/* Static suffix text (e.g., "days") */}
+              {suffix && !hasUnitLabel && (
+                <span className="text-sm text-muted-foreground">{suffix}</span>
+              )}
 
               {hasUnitLabel && (
                 <Input

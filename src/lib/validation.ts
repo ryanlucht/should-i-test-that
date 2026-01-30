@@ -210,22 +210,24 @@ export const experimentDesignSchema = z.object({
     .positive('Traffic must be positive'),
 
   /**
-   * Variant allocation as a decimal (e.g., 0.5 for 50%)
-   * Pre-filled with default 0.5 (50/50 split)
+   * Variant allocation as percentage (e.g., 50 for 50%)
+   * UI shows percentage, converted to decimal (0.5) on form submit
+   * Pre-filled with default 50 (50/50 split)
    */
   trafficSplit: z
     .number()
-    .min(0.1, 'Variant split must be at least 10%')
-    .max(0.9, 'Variant split must be at most 90%'),
+    .min(10, 'Variant split must be at least 10%')
+    .max(90, 'Variant split must be at most 90%'),
 
   /**
-   * Fraction of all traffic eligible for experiment
-   * Pre-filled with default 1.0 (100%)
+   * Fraction of all traffic eligible for experiment as percentage
+   * UI shows percentage, converted to decimal (1.0) on form submit
+   * Pre-filled with default 100 (100%)
    */
   eligibilityFraction: z
     .number()
-    .min(0.01, 'Eligibility must be at least 1%')
-    .max(1, 'Eligibility cannot exceed 100%'),
+    .min(1, 'Eligibility must be at least 1%')
+    .max(100, 'Eligibility cannot exceed 100%'),
 
   /**
    * Days from exposure to expected conversion
