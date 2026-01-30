@@ -114,22 +114,23 @@ Plans:
 ### Phase 5: Advanced Mode
 **Goal**: Users can calculate realistic test value using EVSI and Cost of Delay
 **Depends on**: Phase 4
-**Requirements**: ADV-IN-01, ADV-IN-02, ADV-IN-03, ADV-IN-04, ADV-IN-05, ADV-IN-06, ADV-IN-07, ADV-IN-08, ADV-IN-09, ADV-IN-10, ADV-CALC-01, ADV-CALC-02, ADV-CALC-03, ADV-CALC-04, ADV-CALC-05, ADV-CALC-06, ADV-CALC-07, ADV-OUT-01, ADV-OUT-02, ADV-OUT-03, ADV-OUT-04, ADV-OUT-05, ADV-OUT-06, ADV-OUT-07, DESIGN-04
+**Requirements**: ADV-IN-01, ADV-IN-02, ADV-IN-03, ADV-IN-04, ADV-IN-05, ADV-IN-06, ADV-IN-07, ADV-IN-10, ADV-CALC-01, ADV-CALC-02, ADV-CALC-03, ADV-CALC-04, ADV-CALC-05, ADV-CALC-06, ADV-CALC-07, ADV-OUT-01, ADV-OUT-02, ADV-OUT-03, ADV-OUT-04, ADV-OUT-05, ADV-OUT-07, DESIGN-04
+**Note**: ADV-IN-08, ADV-IN-09 (Test Costs), ADV-OUT-06 (EVPI comparison) deferred to future phase per 05-CONTEXT.md
 **SPEC.md Reference**: Section A1-A7 (Advanced mode)
 **Success Criteria** (what must be TRUE):
   1. User can select prior shape (Normal, Student-t with df presets, Uniform)
   2. User can enter experiment design (split, duration, daily traffic, eligibility, latency)
-  3. User can enter test costs (hard costs, labor hours/rate)
-  4. System calculates EVSI via Monte Carlo in <2s without blocking UI
-  5. User sees verdict with EVSI, Cost of Delay, and Net Value = max(0, EVSI - CoD)
-**Plans**: TBD
+  3. System calculates EVSI via Monte Carlo in <2s without blocking UI
+  4. User sees verdict with EVSI, Cost of Delay, and Net Value = max(0, EVSI - CoD)
+**Plans**: 6 plans
 
 Plans:
-- [ ] 05-01: Advanced prior inputs (shape selector, Student-t, Uniform)
-- [ ] 05-02: Experiment design inputs (split, duration, traffic, eligibility)
-- [ ] 05-03: Cost inputs (hard costs, labor)
-- [ ] 05-04: EVSI calculation (Monte Carlo pre-posterior analysis)
-- [ ] 05-05: Advanced results display
+- [ ] 05-01-PLAN.md — Dependencies, distributions abstraction, store updates (Wave 1)
+- [ ] 05-02-PLAN.md — Prior shape form with radio cards and Student-t df presets (Wave 1)
+- [ ] 05-03-PLAN.md — Experiment design form with auto-derive daily traffic (Wave 1)
+- [ ] 05-04-PLAN.md — TDD: EVSI, CoD, sample size calculations (Wave 2)
+- [ ] 05-05-PLAN.md — Web Worker + useEVSICalculations hook (Wave 3)
+- [ ] 05-06-PLAN.md — Advanced results UI + chart updates for all prior shapes (Wave 3)
 
 ### Phase 6: Export & Polish
 **Goal**: Users can export results and experience polished, accessible interface
@@ -160,7 +161,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Calculation Engine | 3/3 | Complete | 2026-01-30 |
 | 4. Visualization & Results | 3/3 | Complete | 2026-01-30 |
 | 4.1. Calculation Engine Fixes (INSERTED) | 1/1 | Complete | 2026-01-30 |
-| 5. Advanced Mode | 0/5 | Not started | - |
+| 5. Advanced Mode | 0/6 | Not started | - |
 | 6. Export & Polish | 0/3 | Not started | - |
 
 ---
@@ -174,4 +175,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 3 completed: 2026-01-30*
 *Phase 4 completed: 2026-01-30*
 *Phase 4.1 completed: 2026-01-30*
+*Phase 5 planned: 2026-01-30*
 *Total requirements mapped: 67/67*
