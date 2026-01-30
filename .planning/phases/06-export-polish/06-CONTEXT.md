@@ -38,6 +38,7 @@ Users can export results as shareable PNG and experience polished, accessible in
 ### Design Consistency
 - Fix inconsistency: purple accent (#7C3AED) only appears in chart, buttons/accents are currently blue
 - Apply purple accent consistently across: buttons, focus rings, selected states, links, toggles
+- Make placeholder text lighter — currently too similar to entered values, looks pre-filled
 - Keep current layout and structure — no major redesign
 - Reference existing design specs in `.planning/phases/01-foundation-wizard-infrastructure/designs/`
 
@@ -56,6 +57,7 @@ Users can export results as shareable PNG and experience polished, accessible in
 
 - User is happy with layout and structure — just needs color consistency
 - Purple (#7C3AED) should be the primary accent everywhere, not blue
+- Placeholder text too close to actual entry color — needs to be lighter/grayed out
 
 </specifics>
 
@@ -73,4 +75,4 @@ Users can export results as shareable PNG and experience polished, accessible in
 
 *Phase: 06-export-polish*
 *Context gathered: 2026-01-30*
-*Updated: 2026-01-30 — Scoped down design polish to consistency only, deferred redesign exploration*
+*Updated: 2026-01-30 — Added placeholder text visibility fix to design consistency scope*

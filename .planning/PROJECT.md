@@ -4,6 +4,8 @@
 
 A decision-value calculator that helps non-technical users (PMs, growth, marketing) decide whether an A/B test is worth running. It outputs a single "max cost worth paying" threshold: "If you can A/B test this idea for less than $X, it's worth testing." Basic mode uses EVPI (perfect information ceiling); Advanced mode uses EVSI minus Cost of Delay for a realistic estimate.
 
+> **IMPORTANT:** This document provides a broad overview of the project. For exact specifications (formulas, UI copy, validation rules, edge cases), always reference **SPEC.md** as the source of truth. The mathematical approach and decision theory are already defined there — do not deviate.
+
 ## Core Value
 
 Help users make better testing decisions by quantifying the value of information — so they stop running tests that aren't worth it and start running tests that are.

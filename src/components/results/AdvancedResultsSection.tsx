@@ -226,6 +226,7 @@ export function AdvancedResultsSection() {
               evsiResults={results}
               sharedInputs={sharedInputs}
               prior={prior}
+              testDurationDays={advancedInputs.testDurationDays ?? undefined}
             />
           </div>
         </>
