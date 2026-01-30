@@ -60,6 +60,9 @@ Recent decisions affecting current work:
 | Zod v4 API (error instead of required_error) | 02-01 | Zod v4 breaking change requires new syntax |
 | FormProvider + useFormContext pattern | 02-01 | Avoids complex generic type issues with input components |
 | Format on blur, raw during editing | 02-01 | Better UX for numeric input editing |
+| Default interval -8.22% to +8.22% | 02-02 | Produces N(0, 0.05) prior using z_0.95 = 1.6448536 |
+| Asymmetry threshold 0.5% | 02-02 | Show explanation when implied mean > 0.5 percentage points |
+| Auto-switch to custom prior | 02-02 | When interval values differ from defaults |
 | RadioCard children outside button | 02-03 | Avoids nested buttons HTML validation errors with Radix |
 | ResizeObserver mock for tests | 02-03 | Required for Radix UI components using @radix-ui/react-use-size |
 | Sign convention: accept-loss stores negative | 02-03 | Per SPEC.md Section 7.3, T_$ = -Loss_$ for scenario 3 |
