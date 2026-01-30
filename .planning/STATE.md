@@ -98,7 +98,6 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 1. **Implement actual truncation for EVPI calculation** (calculations) - Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
-2. **Improve EVPI intuition explanation clarity** (ui) - Explain WHY the default decision is ship or not ship
 
 ### Blockers/Concerns
 
@@ -107,5 +106,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 04.1-01-PLAN.md (Calculation Engine Fixes)
+Stopped at: Completed quick-001-01 (Improve EVPI Intuition Explanation)
 Resume file: None
