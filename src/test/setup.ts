@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import 'vitest-axe/extend-expect';
 
 /**
  * Mock IntersectionObserver for JSDOM environment
