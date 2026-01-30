@@ -9,6 +9,10 @@
  * - Primary accent: #7C3AED (purple) for selected border
  * - bg-selected for selected background
  * - Cards: rounded-xl (12px)
+ *
+ * Note: The inline content (children) is rendered OUTSIDE the button element
+ * to avoid nested button issues when using ToggleGroup or other button-based
+ * components inside the card.
  */
 
 import * as React from 'react';
@@ -35,7 +39,10 @@ interface RadioCardProps {
  *
  * Uses Radix RadioGroup.Item with custom card styling.
  * When selected, shows purple border and light purple background.
- * Children (inline inputs) are only visible when selected.
+ *
+ * IMPORTANT: Children (inline inputs) are rendered in a separate div
+ * OUTSIDE the button to avoid nested button HTML validation errors.
+ * The visual card styling wraps both the button and the children.
  */
 export function RadioCard({
   value,
@@ -46,54 +53,72 @@ export function RadioCard({
   isSelected,
 }: RadioCardProps) {
   return (
-    <RadioGroupPrimitive.Item
-      value={value}
-      disabled={disabled}
+    <div
       className={cn(
-        // Base card styles
-        'relative flex cursor-pointer flex-col rounded-xl border-2 p-4 text-left',
-        'transition-all duration-200',
+        // Card wrapper - provides visual styling
+        'relative rounded-xl border-2 transition-all duration-200',
         // Default state
-        'border-border bg-card hover:border-border/80 hover:shadow-sm',
-        // Selected state (Radix data attribute)
-        'data-[state=checked]:border-primary data-[state=checked]:bg-selected',
-        // Focus state
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'border-border bg-card',
+        // Selected state - check isSelected prop since we can't use data attributes on wrapper
+        isSelected && 'border-primary bg-selected',
         // Disabled state
-        disabled && 'cursor-not-allowed opacity-50'
+        disabled && 'opacity-50'
       )}
     >
-      <div className="flex items-start gap-3">
-        {/* Custom radio indicator */}
-        <div
-          className={cn(
-            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
-            'border-muted-foreground transition-colors',
-            // Selected state uses Radix's data attribute on parent
-            'group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary'
-          )}
-        >
-          <RadioGroupPrimitive.Indicator>
-            <div className="h-2 w-2 rounded-full bg-primary" />
-          </RadioGroupPrimitive.Indicator>
+      {/* Clickable radio button area */}
+      <RadioGroupPrimitive.Item
+        value={value}
+        disabled={disabled}
+        className={cn(
+          // Make the button fill the clickable area
+          'flex w-full cursor-pointer flex-col p-4 text-left',
+          'hover:shadow-sm',
+          // Focus state
+          'rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          // If no children or not selected, round all corners
+          (!children || !isSelected) && 'rounded-b-xl',
+          // Disabled state
+          disabled && 'cursor-not-allowed'
+        )}
+      >
+        <div className="flex items-start gap-3">
+          {/* Custom radio indicator */}
+          <div
+            className={cn(
+              'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+              'transition-colors',
+              // Default state
+              'border-muted-foreground',
+              // Selected state
+              isSelected && 'border-primary bg-primary'
+            )}
+          >
+            <RadioGroupPrimitive.Indicator>
+              <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+            </RadioGroupPrimitive.Indicator>
+          </div>
+          <div className="flex-1 space-y-1">
+            <p className="font-medium text-foreground">{title}</p>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
         </div>
-        <div className="flex-1 space-y-1">
-          <p className="font-medium text-foreground">{title}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      {/* Inline content when selected - smooth transition */}
+      </RadioGroupPrimitive.Item>
+
+      {/* Inline content when selected - OUTSIDE the button to avoid nested buttons */}
       {children && (
         <div
           className={cn(
-            'mt-4 overflow-hidden transition-all duration-200',
-            isSelected ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            'overflow-hidden transition-all duration-200',
+            isSelected ? 'max-h-96 px-4 pb-4 pt-0 opacity-100' : 'max-h-0 opacity-0'
           )}
+          // Stop click from propagating to parent/radio - this area has its own inputs
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
           {children}
         </div>
       )}
-    </RadioGroupPrimitive.Item>
+    </div>
   );
 }
 
