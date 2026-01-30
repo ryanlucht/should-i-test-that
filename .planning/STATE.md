@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 4 of 6 (Visualization & Results)
-Plan: 1 of 3 in phase 4 complete
-Status: In progress
-Last activity: 2026-01-30 - Completed 04-01-PLAN.md (Chart Infrastructure)
+Plan: 3 of 3 in phase 4 complete
+Status: Phase 4 complete
+Last activity: 2026-01-30 - Completed 04-03-PLAN.md (Results Section)
 
-Progress: [███████████████░░░░░░] 67% (14/21 plans)
+Progress: [████████████████░░░░░] 76% (16/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 16
 - Average duration: 8 min
-- Total execution time: 107 min
+- Total execution time: 120 min
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [███████████████░░░░░░] 67% 
 | 1 | 4/4 | 34 min | 9 min |
 | 2 | 6/6 | 54 min | 9 min |
 | 3 | 3/3 | 14 min | 5 min |
-| 4 | 1/3 | 5 min | 5 min |
+| 4 | 3/3 | 18 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-06 (4 min), 03-01 (5 min), 03-02 (3 min), 03-03 (6 min), 04-01 (5 min)
-- Trend: Pure calculation/TDD plans are quick (~5 min)
+- Last 5 plans: 03-02 (3 min), 03-03 (6 min), 04-01 (5 min), 04-02 (5 min), 04-03 (8 min)
+- Trend: UI component plans taking slightly longer than pure calculation plans
 
 *Updated after each plan completion*
 
@@ -81,6 +81,13 @@ Recent decisions affecting current work:
 | Explicit useMemo dependency array | 03-03 | All 8 input fields listed to avoid stale calculations |
 | 4 sigma range for density curve | 04-01 | Covers 99.99% of distribution for proper tail rendering |
 | Animation disabled for chart | 04-01 | Per 04-RESEARCH.md, animation off for live form updates |
+| 2x2 grid layout for supporting cards | 04-03 | Per 04-CONTEXT.md allowing Claude's discretion |
+| Highlight variant threshold >20% | 04-03 | Regret card highlights when chance of being wrong exceeds 20% |
+| formatProbabilityPercent edge cases | 04-03 | Shows "<1%" and ">99%" to avoid misleading precision |
+
+### Roadmap Evolution
+
+- Phase 4.1 inserted after Phase 4: Calculation Engine Fixes (URGENT) — Fix degenerate sigma handling, NaN propagation in CDF, add statistics test coverage
 
 ### Pending Todos
 
@@ -93,5 +100,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 04-01-PLAN.md (Chart Infrastructure)
+Stopped at: Completed 04-03-PLAN.md (Results Section)
 Resume file: None
