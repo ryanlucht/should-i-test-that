@@ -9,6 +9,7 @@
  * - Hook recomputes when inputs change
  */
 
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useEVPICalculations } from './useEVPICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
