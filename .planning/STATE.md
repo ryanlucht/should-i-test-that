@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 Phase: 2 of 6 (Basic Mode Inputs) - COMPLETE
 Plan: 6 of 6 in phase 2 (including gap closure)
 Status: Gap closure complete, ready for Phase 3
-Last activity: 2026-01-30 - Completed 02-06-PLAN.md (validation timing + prior display fixes)
+Last activity: 2026-01-30 - Completed 02-04-PLAN.md (decimal input blocking fix)
 
 Progress: [████████░░░░░░░░░░░░░] 38% (8/21 plans)
 
@@ -70,6 +70,7 @@ Recent decisions affecting current work:
 | Derive priorType at validation time | 02-05 | Compare interval values to defaults, don't track as separate UI state |
 | reValidateMode: 'onBlur' for all forms | 02-06 | Prevents validation errors updating while typing |
 | Rounded integer for default prior display | 02-06 | Shows "8%" instead of "8.22%" for cleaner UI |
+| Parse-on-blur for decimal input | 02-04 | Store raw string while focused, parse only on blur to prevent decimal stripping |
 
 ### Pending Todos
 
@@ -82,5 +83,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: 02-06 gap closure complete, ready for UAT re-verification
+Stopped at: 02-04 gap closure complete (decimal input fix)
 Resume file: None
