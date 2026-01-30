@@ -44,22 +44,20 @@ export function CurrencyInput({
 }: CurrencyInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
+  // Local string state while focused to allow typing decimals (e.g., "50.99" won't be stripped to "50")
+  const [displayValue, setDisplayValue] = useState<string>('');
   const { control } = useFormContext();
 
   /**
-   * Format value for display based on focus state
-   * - Focused: show raw number for easier editing
-   * - Blurred: show formatted with $ prefix
+   * Format value for display when NOT focused (blurred state)
+   * Shows formatted with $ prefix
    */
   const formatDisplayValue = useCallback(
     (value: number | null | undefined): string => {
       if (value === null || value === undefined) return '';
-      if (isFocused) {
-        return String(value);
-      }
       return formatCurrency(value);
     },
-    [isFocused]
+    []
   );
 
   return (
@@ -67,18 +65,31 @@ export function CurrencyInput({
       name={name}
       control={control}
       render={({ field }) => {
+        /**
+         * On change: store raw string in local state (no parsing)
+         * This allows typing "50.99" without it being stripped to "50"
+         */
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-          const parsed = parseCurrency(e.target.value);
-          field.onChange(parsed);
+          setDisplayValue(e.target.value);
         };
 
+        /**
+         * On blur: parse the local string and propagate to react-hook-form
+         */
         const handleBlur = () => {
           setIsFocused(false);
+          const parsed = parseCurrency(displayValue);
+          field.onChange(parsed);
           field.onBlur();
         };
 
+        /**
+         * On focus: initialize local displayValue from the current field value
+         */
         const handleFocus = () => {
           setIsFocused(true);
+          const val = field.value as number | null | undefined;
+          setDisplayValue(val !== null && val !== undefined ? String(val) : '');
         };
 
         return (
@@ -94,7 +105,7 @@ export function CurrencyInput({
                 type="text"
                 inputMode="decimal"
                 placeholder={placeholder}
-                value={formatDisplayValue(field.value as number | null | undefined)}
+                value={isFocused ? displayValue : formatDisplayValue(field.value as number | null | undefined)}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onFocus={handleFocus}

@@ -52,22 +52,20 @@ export function NumberInput({
 }: NumberInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
+  // Local string state while focused to allow typing decimals without stripping
+  const [displayValue, setDisplayValue] = useState<string>('');
   const { control } = useFormContext();
 
   /**
-   * Format value for display based on focus state
-   * - Focused: show raw number for easier editing
-   * - Blurred: show formatted with commas
+   * Format value for display when NOT focused (blurred state)
+   * Shows formatted with commas
    */
   const formatDisplayValue = useCallback(
     (value: number | null | undefined): string => {
       if (value === null || value === undefined) return '';
-      if (isFocused) {
-        return String(value);
-      }
       return formatNumber(value);
     },
-    [isFocused]
+    []
   );
 
   // Check if we have a unit label feature enabled
@@ -78,18 +76,31 @@ export function NumberInput({
       name={name}
       control={control}
       render={({ field }) => {
+        /**
+         * On change: store raw string in local state (no parsing)
+         * This prevents decimal stripping during typing
+         */
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-          const parsed = parseNumber(e.target.value);
-          field.onChange(parsed);
+          setDisplayValue(e.target.value);
         };
 
+        /**
+         * On blur: parse the local string and propagate to react-hook-form
+         */
         const handleBlur = () => {
           setIsFocused(false);
+          const parsed = parseNumber(displayValue);
+          field.onChange(parsed);
           field.onBlur();
         };
 
+        /**
+         * On focus: initialize local displayValue from the current field value
+         */
         const handleFocus = () => {
           setIsFocused(true);
+          const val = field.value as number | null | undefined;
+          setDisplayValue(val !== null && val !== undefined ? String(val) : '');
         };
 
         return (
@@ -105,7 +116,7 @@ export function NumberInput({
                 type="text"
                 inputMode="numeric"
                 placeholder={placeholder}
-                value={formatDisplayValue(field.value as number | null | undefined)}
+                value={isFocused ? displayValue : formatDisplayValue(field.value as number | null | undefined)}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onFocus={handleFocus}
