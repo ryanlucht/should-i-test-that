@@ -1,4 +1,12 @@
 import '@testing-library/jest-dom';
+import * as matchers from 'vitest-axe/matchers';
+import { expect } from 'vitest';
+
+// Extend Vitest's expect with vitest-axe matchers for accessibility testing
+// This enables the toHaveNoViolations() matcher for axe-core checks
+expect.extend(matchers);
+
+// Import type extensions for TypeScript support
 import 'vitest-axe/extend-expect';
 
 /**
