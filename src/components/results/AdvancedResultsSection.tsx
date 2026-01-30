@@ -77,7 +77,7 @@ export function AdvancedResultsSection() {
             {/* Cost of Delay - ADV-OUT-04 */}
             <CostOfDelayCard
               codResults={results.cod}
-              testDurationDays={advancedInputs.testDurationDays}
+              testDurationDays={advancedInputs.testDurationDays ?? 0}
             />
 
             {/* Net Value - ADV-OUT-05 */}
