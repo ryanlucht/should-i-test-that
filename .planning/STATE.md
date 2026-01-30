@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 5 Advanced Mode - Plan 01 Complete (Foundation)
+**Current focus:** Phase 5 Advanced Mode - Plan 04 Complete (EVSI Calculation Engine)
 
 ## Current Position
 
 Phase: 5 of 6 (Advanced Mode)
-Plan: 3 of 6 in phase 5 complete (01, 02, 03)
-Status: In progress - Foundation, Prior Shape, Experiment Design complete
-Last activity: 2026-01-30 - Completed 05-01-PLAN.md (Foundation)
+Plan: 4 of 6 in phase 5 complete (01, 02, 03, 04)
+Status: In progress - EVSI calculation engine complete
+Last activity: 2026-01-30 - Completed 05-04-PLAN.md (EVSI Calculation Engine)
 
-Progress: [██████████████████░░░] 87% (20/23 plans)
+Progress: [███████████████████░░] 91% (21/23 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: 7 min
-- Total execution time: 144 min
+- Total execution time: 150 min
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [██████████████████░░░] 87% 
 | 3 | 3/3 | 14 min | 5 min |
 | 4 | 3/3 | 18 min | 6 min |
 | 4.1 | 1/1 | 4 min | 4 min |
-| 5 | 3/6 | 20 min | 7 min |
+| 5 | 4/6 | 26 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (8 min), 04.1-01 (4 min), 05-01 (8 min), 05-02 (6 min), 05-03 (6 min)
-- Trend: Phase 5 foundation work executing at average pace
+- Last 5 plans: 04.1-01 (4 min), 05-01 (8 min), 05-02 (6 min), 05-03 (6 min), 05-04 (6 min)
+- Trend: Phase 5 calculation work executing at average pace
 
 *Updated after each plan completion*
 
@@ -97,6 +97,9 @@ Recent decisions affecting current work:
 | jStat studentt location-scale transform | 05-01 | jStat uses standardized Student-t; z=(L-mu)/sigma, scale PDF by 1/sigma |
 | Comlink plugin order | 05-01 | Must be before react() in Vite plugins array |
 | jStat type declarations | 05-01 | Custom declarations in vite-env.d.ts (no @types/jstat available) |
+| Rejection sampling for EVSI feasibility | 05-04 | Samples where CR1 outside [0,1] rejected and resampled |
+| Pre-posterior sigma via conjugate update | 05-04 | sigma_preposterior = sigma_prior * sqrt(data_precision / posterior_precision) |
+| n_control = n_total - n_variant | 05-04 | Ensures exact sum after flooring, avoids rounding errors |
 
 ### Roadmap Evolution
 
@@ -121,5 +124,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 05-01-PLAN.md (Advanced Mode Foundation)
+Stopped at: Completed 05-04-PLAN.md (EVSI Calculation Engine)
 Resume file: None
