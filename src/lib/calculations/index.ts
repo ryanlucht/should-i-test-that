@@ -9,3 +9,4 @@ export * from './types';
 export * from './statistics';
 export * from './derived';
 export * from './evpi';
+export * from './chart-data';
