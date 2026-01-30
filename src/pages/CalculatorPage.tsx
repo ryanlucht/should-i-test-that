@@ -25,6 +25,10 @@ import { SectionWrapper } from '@/components/wizard/SectionWrapper';
 import { NavigationButtons } from '@/components/wizard/NavigationButtons';
 import { StickyProgressIndicator } from '@/components/wizard/StickyProgressIndicator';
 import { ModeToggle } from '@/components/wizard/ModeToggle';
+import {
+  BaselineMetricsForm,
+  type BaselineMetricsFormHandle,
+} from '@/components/forms/BaselineMetricsForm';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useWizardStore } from '@/stores/wizardStore';
 
@@ -64,6 +68,9 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
 
   // Refs for section elements (for keyboard navigation)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  // Ref for baseline form validation
+  const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
 
   // Memoized completed section IDs for progress indicator
   const completedStepIds = useMemo(
@@ -119,10 +126,9 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
 
   /**
-   * Navigate to next section (marks current as complete)
-   * For now, always allows proceeding (no validation in placeholder sections)
+   * Advance to next section after marking current complete
    */
-  const handleNext = useCallback(
+  const advanceToNextSection = useCallback(
     (sectionIndex: number) => {
       // Mark current section complete
       markSectionComplete(sectionIndex);
@@ -146,6 +152,27 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
 
   /**
+   * Navigate to next section (with validation for form sections)
+   * Per CONTEXT.md: Continue button always enabled; clicking with invalid inputs shows errors
+   */
+  const handleNext = useCallback(
+    async (sectionIndex: number) => {
+      // Validate baseline section (index 0) before proceeding
+      if (sectionIndex === 0 && baselineFormRef.current) {
+        const isValid = await baselineFormRef.current.validate();
+        if (!isValid) {
+          // Validation failed, errors are displayed by the form
+          return;
+        }
+      }
+
+      // For other sections (placeholder), just advance
+      advanceToNextSection(sectionIndex);
+    },
+    [advanceToNextSection]
+  );
+
+  /**
    * Handle keyboard navigation
    * Enter key advances to next section when focus is within a section
    */
@@ -160,7 +187,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
         event.preventDefault();
         // Only advance if this section is enabled
         if (canAccessSection(sectionIndex)) {
-          handleNext(sectionIndex);
+          void handleNext(sectionIndex);
         }
       }
     },
@@ -211,7 +238,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
               isEnabled={isEnabled}
               isCompleted={isCompleted}
             >
-              {/* Section content - placeholder for now */}
+              {/* Section content */}
               <div
                 ref={(el) => {
                   sectionRefs.current[section.id] = el;
@@ -219,23 +246,30 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 className="min-h-32"
               >
-                {/* Placeholder content - will be replaced with actual forms in future plans */}
-                <p className="text-muted-foreground">
-                  {section.title} section content will be implemented in Phase 2.
-                </p>
+                {/* Baseline section - actual form */}
+                {section.id === 'baseline' && (
+                  <BaselineMetricsForm ref={baselineFormRef} />
+                )}
 
-                {/* Placeholder input for Enter key testing */}
-                <input
-                  type="text"
-                  placeholder={`${section.title} placeholder input`}
-                  className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                />
+                {/* Other sections - placeholder content */}
+                {section.id !== 'baseline' && (
+                  <>
+                    <p className="text-muted-foreground">
+                      {section.title} section content will be implemented in Phase 2.
+                    </p>
+                    <input
+                      type="text"
+                      placeholder={`${section.title} placeholder input`}
+                      className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                  </>
+                )}
               </div>
 
               {/* Navigation buttons */}
               <NavigationButtons
                 onBack={() => handleBack(index)}
-                onNext={() => handleNext(index)}
+                onNext={() => void handleNext(index)}
                 showBack={index > 0}
                 canGoNext={isEnabled}
                 isLastSection={isLastSection}

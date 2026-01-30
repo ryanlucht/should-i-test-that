@@ -12,6 +12,7 @@ describe('wizardStore', () => {
         shared: {
           baselineConversionRate: null,
           annualVisitors: null,
+          visitorUnitLabel: 'visitors',
           valuePerConversion: null,
           priorType: null,
           threshold: null,
