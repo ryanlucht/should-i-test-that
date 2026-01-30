@@ -27,6 +27,14 @@ import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
  * Shared input values needed for display in export card
  */
 interface SharedInputs {
+  /** Baseline conversion rate as a decimal (e.g., 0.05 for 5%) */
+  baselineConversionRate: number | null;
+  /** Annual visitors/traffic */
+  annualVisitors: number | null;
+  /** User-editable label for visitors (visitors/sessions/leads/etc.) */
+  visitorUnitLabel: string;
+  /** Revenue or value per conversion in dollars */
+  valuePerConversion: number | null;
   priorIntervalLow: number | null;
   priorIntervalHigh: number | null;
   thresholdScenario: 'any-positive' | 'minimum-lift' | 'accept-loss' | null;
@@ -53,6 +61,8 @@ interface AdvancedModeProps {
   sharedInputs: SharedInputs;
   /** Prior distribution object for chart (includes shape for Advanced mode) */
   prior: PriorDistribution;
+  /** Test duration in days for CoD explanation */
+  testDurationDays?: number;
 }
 
 type ExportButtonProps = BasicModeProps | AdvancedModeProps;
@@ -145,14 +155,30 @@ export function ExportButton(props: ExportButtonProps) {
   // Get K from EVPI results in basic mode, or derive in advanced mode
   const actualK = mode === 'basic' ? props.evpiResults.K : chartK;
 
-  // Derive export card props based on mode
-  const verdictText = mode === 'basic'
-    ? 'If you can test for less than'
-    : 'The test is worth up to';
-
+  // Derive verdict value based on mode
   const verdictValue = mode === 'basic'
     ? props.evpiResults.evpiDollars
     : Math.max(0, props.evsiResults.netValueDollars);
+
+  // Derive prior shape description for Advanced mode
+  const priorShapeDescription = useMemo(() => {
+    if (mode !== 'advanced') return undefined;
+
+    const priorType = chartPrior.type;
+    switch (priorType) {
+      case 'normal':
+        return 'Normal';
+      case 'student-t':
+        return `Student-t (df=${(chartPrior as { df: number }).df})`;
+      case 'uniform':
+        return 'Uniform';
+      default:
+        return undefined;
+    }
+  }, [mode, chartPrior]);
+
+  // Get test duration for Advanced mode
+  const testDurationDays = mode === 'advanced' ? props.testDurationDays : undefined;
 
   // Handle export click
   const handleExport = async () => {
@@ -208,8 +234,11 @@ export function ExportButton(props: ExportButtonProps) {
           ref={exportRef}
           mode={mode}
           title={customTitle || 'Should I Test That?'}
-          verdict={verdictText}
           verdictValue={verdictValue}
+          baselineConversionRate={sharedInputs.baselineConversionRate ?? 0}
+          annualVisitors={sharedInputs.annualVisitors ?? 0}
+          visitorUnitLabel={sharedInputs.visitorUnitLabel}
+          valuePerConversion={sharedInputs.valuePerConversion ?? 0}
           prior={priorDisplay}
           threshold={{
             ...thresholdDisplay,
@@ -218,9 +247,11 @@ export function ExportButton(props: ExportButtonProps) {
           miniChartPrior={chartPrior}
           miniChartThreshold_L={threshold_L}
           miniChartK={actualK}
+          priorShapeDescription={priorShapeDescription}
           evsi={mode === 'advanced' ? props.evsiResults.evsi.evsiDollars : undefined}
           cod={mode === 'advanced' ? props.evsiResults.cod.codDollars : undefined}
           netValue={mode === 'advanced' ? props.evsiResults.netValueDollars : undefined}
+          testDurationDays={testDurationDays}
         />
       </div>
     </div>
