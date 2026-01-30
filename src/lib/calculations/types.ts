@@ -100,3 +100,63 @@ export interface EdgeCaseFlags {
    */
   priorOneSided: boolean;
 }
+
+/**
+ * Import PriorDistribution from distributions module for EVSI
+ */
+import type { PriorDistribution } from './distributions';
+export type { PriorDistribution };
+
+/**
+ * Input parameters for EVSI calculation
+ *
+ * EVSI (Expected Value of Sample Information) values the specific
+ * A/B test you can actually run, accounting for sample size and noise.
+ *
+ * Per SPEC.md Section A4-A5 (Pre-posterior analysis)
+ */
+export interface EVSIInputs {
+  /** K = N_year * CR0 * V (annual dollars per unit lift) */
+  K: number;
+
+  /** Baseline conversion rate (CR0) as decimal, e.g., 0.032 for 3.2% */
+  baselineConversionRate: number;
+
+  /** Threshold in lift units (T_L) as decimal, e.g., 0.05 for 5% */
+  threshold_L: number;
+
+  /** Prior distribution parameters */
+  prior: PriorDistribution;
+
+  /** Sample size in control group */
+  n_control: number;
+
+  /** Sample size in variant group */
+  n_variant: number;
+}
+
+/**
+ * Results from EVSI calculation
+ *
+ * Contains the primary result (evsiDollars) along with supporting
+ * metrics for display and decision analysis.
+ */
+export interface EVSIResults {
+  /** EVSI in annual dollars - the headline result */
+  evsiDollars: number;
+
+  /** Default decision based on prior mean vs threshold */
+  defaultDecision: 'ship' | 'dont-ship';
+
+  /** P(L >= T_L) - probability the true lift clears threshold (under prior) */
+  probabilityClearsThreshold: number;
+
+  /** Probability the test changes the decision from the default */
+  probabilityTestChangesDecision: number;
+
+  /** Number of Monte Carlo samples used (for diagnostics) */
+  numSamples?: number;
+
+  /** Number of samples rejected for feasibility (CR1 outside [0,1]) */
+  numRejected?: number;
+}
