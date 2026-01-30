@@ -176,3 +176,74 @@ export const priorShapeSchema = z.discriminatedUnion('shape', [
 ]);
 
 export type PriorShapeFormData = z.infer<typeof priorShapeSchema>;
+
+/**
+ * Experiment Design Schema (Advanced mode)
+ *
+ * Validates test parameters for EVSI calculation.
+ * These inputs determine sample size and test precision.
+ *
+ * Per 05-CONTEXT.md defaults:
+ * - trafficSplit: 0.5 (50/50 default)
+ * - eligibilityFraction: 1.0 (100% default)
+ * - conversionLatencyDays: 0 (default)
+ * - decisionLatencyDays: 0 (default)
+ * - testDurationDays: required (no default)
+ * - dailyTraffic: required or auto-derived from annual visitors / 365
+ */
+export const experimentDesignSchema = z.object({
+  /**
+   * Test duration in days
+   * Required - user must enter
+   */
+  testDurationDays: z
+    .number({ error: 'Test duration is required' })
+    .positive('Duration must be positive')
+    .int('Duration must be whole days'),
+
+  /**
+   * Daily eligible traffic
+   * Required - can be auto-derived from annual visitors or manually entered
+   */
+  dailyTraffic: z
+    .number({ error: 'Daily traffic is required' })
+    .positive('Traffic must be positive'),
+
+  /**
+   * Variant allocation as a decimal (e.g., 0.5 for 50%)
+   * Pre-filled with default 0.5 (50/50 split)
+   */
+  trafficSplit: z
+    .number()
+    .min(0.1, 'Variant split must be at least 10%')
+    .max(0.9, 'Variant split must be at most 90%'),
+
+  /**
+   * Fraction of all traffic eligible for experiment
+   * Pre-filled with default 1.0 (100%)
+   */
+  eligibilityFraction: z
+    .number()
+    .min(0.01, 'Eligibility must be at least 1%')
+    .max(1, 'Eligibility cannot exceed 100%'),
+
+  /**
+   * Days from exposure to expected conversion
+   * Optional with default 0 - visually de-emphasized in UI
+   */
+  conversionLatencyDays: z
+    .number()
+    .min(0, 'Latency cannot be negative')
+    .int('Latency must be whole days'),
+
+  /**
+   * Days after test ends before shipping decision
+   * Optional with default 0 - visually de-emphasized in UI
+   */
+  decisionLatencyDays: z
+    .number()
+    .min(0, 'Latency cannot be negative')
+    .int('Latency must be whole days'),
+});
+
+export type ExperimentDesignFormData = z.infer<typeof experimentDesignSchema>;

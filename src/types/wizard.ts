@@ -55,18 +55,37 @@ export interface SharedInputs {
 /**
  * Advanced-only inputs that are cleared when switching to Basic mode
  * These are only relevant for EVSI calculations
+ *
+ * Per 05-CONTEXT.md:
+ * Prior shape inputs:
+ * - priorShape: 'normal' (default when switching to Advanced), 'student-t', or 'uniform'
+ * - studentTDf: Degrees of freedom for Student-t (3=Heavy, 5=Moderate, 10=Near-normal)
+ *
+ * Experiment design inputs:
+ * - testDurationDays: required, user must enter
+ * - dailyTraffic: required, can auto-derive from annual visitors / 365
+ * - trafficSplit: 0.5 default (50/50 split)
+ * - eligibilityFraction: 1.0 default (100% eligible)
+ * - conversionLatencyDays: 0 default (days from exposure to expected conversion)
+ * - decisionLatencyDays: 0 default (days after test ends before shipping)
  */
 export interface AdvancedInputs {
-  /** Test duration in weeks */
-  testDuration: number | null;
-  /** Daily traffic allocated to the test */
-  dailyTestTraffic: number | null;
-  /** Percentage of traffic to allocate to treatment (usually 50%) */
-  trafficAllocation: number | null;
-  /** Fixed cost to run the test (engineering, design, etc.) */
-  testFixedCost: number | null;
-  /** Opportunity cost per day of delay */
-  dailyCostOfDelay: number | null;
+  /** Prior distribution shape (normal, student-t, or uniform) - defaults to 'normal' in Advanced mode */
+  priorShape: 'normal' | 'student-t' | 'uniform' | null;
+  /** Degrees of freedom for Student-t distribution (3=Heavy, 5=Moderate, 10=Near-normal) */
+  studentTDf: 3 | 5 | 10 | null;
+  /** Test duration in days */
+  testDurationDays: number | null;
+  /** Daily traffic eligible for the experiment */
+  dailyTraffic: number | null;
+  /** Fraction of traffic seeing the variant (e.g., 0.5 for 50/50 split) */
+  trafficSplit: number | null;
+  /** Fraction of all traffic eligible for the experiment (e.g., 1.0 for 100%) */
+  eligibilityFraction: number | null;
+  /** Days from exposure to expected conversion (e.g., 7 for weekly purchases) */
+  conversionLatencyDays: number | null;
+  /** Days after test ends before you can ship the decision */
+  decisionLatencyDays: number | null;
 }
 
 /**
@@ -106,13 +125,19 @@ export const initialSharedInputs: SharedInputs = {
 
 /**
  * Initial values for advanced-only inputs
+ * Per 05-CONTEXT.md defaults:
+ * - trafficSplit: 0.5 (50/50 default, pre-filled)
+ * - eligibilityFraction: 1.0 (100% default, pre-filled)
+ * - latency fields: 0 (default, pre-filled)
+ * - duration and daily traffic: null (user must enter)
  */
 export const initialAdvancedInputs: AdvancedInputs = {
-  testDuration: null,
-  dailyTestTraffic: null,
-  trafficAllocation: 50, // Default to 50/50 split
-  testFixedCost: null,
-  dailyCostOfDelay: null,
+  testDurationDays: null,
+  dailyTraffic: null,
+  trafficSplit: 0.5, // Default to 50/50 split
+  eligibilityFraction: 1.0, // Default to 100% eligible
+  conversionLatencyDays: 0, // Default to 0 days
+  decisionLatencyDays: 0, // Default to 0 days
 };
 
 /**
