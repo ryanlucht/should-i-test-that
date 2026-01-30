@@ -74,7 +74,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None.
+1. **Implement actual truncation for EVPI calculation** (calculations) — Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
 
 ### Blockers/Concerns
 
