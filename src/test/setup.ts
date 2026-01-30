@@ -30,5 +30,5 @@ class MockIntersectionObserver implements IntersectionObserver {
   }
 }
 
-// Assign mock to global
-global.IntersectionObserver = MockIntersectionObserver;
+// Assign mock to globalThis (works in both Node and browser environments)
+globalThis.IntersectionObserver = MockIntersectionObserver;

@@ -18,7 +18,7 @@
  * per user feedback that explanatory text is "cheesy".
  */
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 

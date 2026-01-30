@@ -73,7 +73,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
 
   // Update current section based on scroll spy
   useEffect(() => {
-    const sectionIndex = SECTION_IDS.indexOf(activeSection);
+    const sectionIndex = SECTION_IDS.indexOf(activeSection as typeof SECTION_IDS[number]);
     if (sectionIndex >= 0 && sectionIndex !== currentSection) {
       setCurrentSection(sectionIndex);
     }
@@ -94,7 +94,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
    */
   const handleStepClick = useCallback(
     (stepId: string) => {
-      const stepIndex = SECTION_IDS.indexOf(stepId);
+      const stepIndex = SECTION_IDS.indexOf(stepId as typeof SECTION_IDS[number]);
       if (stepIndex >= 0 && canAccessSection(stepIndex)) {
         scrollToSection(stepId);
       }

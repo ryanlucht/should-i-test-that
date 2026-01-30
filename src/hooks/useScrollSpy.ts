@@ -79,7 +79,7 @@ export function useScrollSpy(sectionIds: string[]): string {
     // IntersectionObserver config
     // rootMargin: top offset accounts for sticky header (56px) + indicator (64px) + buffer (8px) = 128px
     // bottom at 50% ensures we switch to next section when current is halfway scrolled out
-    const observerOptions: IntersectionObserverOptions = {
+    const observerOptions: IntersectionObserverInit = {
       root: null, // viewport
       rootMargin: '-128px 0px -50% 0px',
       threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
