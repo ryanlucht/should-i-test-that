@@ -113,6 +113,26 @@ export function decimalToPercent(decimal: number): number {
 }
 
 /**
+ * Format lift percentage for chart axis/tooltip display
+ *
+ * Adds sign prefix for positive values and % suffix.
+ * Rounds to nearest integer for cleaner chart labels.
+ *
+ * Examples:
+ * - formatLiftPercent(5.0) => "+5%"
+ * - formatLiftPercent(-2.5) => "-3%" (rounded)
+ * - formatLiftPercent(0) => "0%"
+ *
+ * @param value - Lift percentage value (already in percentage form)
+ * @returns Formatted string with sign and % suffix
+ */
+export function formatLiftPercent(value: number): string {
+  const rounded = Math.round(value);
+  const sign = rounded > 0 ? '+' : '';
+  return `${sign}${rounded}%`;
+}
+
+/**
  * Smart dollar formatting for EVPI/EVSI outputs
  *
  * Formats currency values for display based on magnitude:
