@@ -63,23 +63,23 @@ describe('wizardStore', () => {
 
       // Switch to advanced and set some inputs
       setMode('advanced');
-      setAdvancedInput('testDuration', 2);
-      setAdvancedInput('dailyTestTraffic', 5000);
-      setAdvancedInput('testFixedCost', 1000);
+      setAdvancedInput('testDurationDays', 14);
+      setAdvancedInput('dailyTraffic', 5000);
+      setAdvancedInput('conversionLatencyDays', 7);
 
       // Verify advanced inputs are set
-      expect(useWizardStore.getState().inputs.advanced.testDuration).toBe(2);
-      expect(useWizardStore.getState().inputs.advanced.dailyTestTraffic).toBe(5000);
-      expect(useWizardStore.getState().inputs.advanced.testFixedCost).toBe(1000);
+      expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(14);
+      expect(useWizardStore.getState().inputs.advanced.dailyTraffic).toBe(5000);
+      expect(useWizardStore.getState().inputs.advanced.conversionLatencyDays).toBe(7);
 
       // Switch to basic - should clear advanced inputs
       setMode('basic');
       const { inputs } = useWizardStore.getState();
-      expect(inputs.advanced.testDuration).toBe(null);
-      expect(inputs.advanced.dailyTestTraffic).toBe(null);
-      expect(inputs.advanced.testFixedCost).toBe(null);
-      // trafficAllocation has a default value
-      expect(inputs.advanced.trafficAllocation).toBe(50);
+      expect(inputs.advanced.testDurationDays).toBe(null);
+      expect(inputs.advanced.dailyTraffic).toBe(null);
+      expect(inputs.advanced.conversionLatencyDays).toBe(0);
+      // trafficSplit has a default value (0.5 = 50%)
+      expect(inputs.advanced.trafficSplit).toBe(0.5);
     });
 
     it('keeps advanced inputs when switching to advanced mode', () => {
@@ -87,17 +87,17 @@ describe('wizardStore', () => {
 
       // Switch to advanced and set some inputs
       setMode('advanced');
-      setAdvancedInput('testDuration', 2);
+      setAdvancedInput('testDurationDays', 14);
 
       // Switch to basic (clears advanced inputs)
       setMode('basic');
 
       // Set new advanced inputs
       setMode('advanced');
-      setAdvancedInput('testDuration', 3);
+      setAdvancedInput('testDurationDays', 21);
 
       // Verify inputs are preserved when staying in advanced
-      expect(useWizardStore.getState().inputs.advanced.testDuration).toBe(3);
+      expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(21);
     });
   });
 
@@ -153,7 +153,7 @@ describe('wizardStore', () => {
       // Set various state
       setMode('advanced');
       setSharedInput('baselineConversionRate', 5);
-      setAdvancedInput('testDuration', 2);
+      setAdvancedInput('testDurationDays', 14);
       markSectionComplete(0);
 
       // Reset
@@ -162,7 +162,7 @@ describe('wizardStore', () => {
       const state = useWizardStore.getState();
       expect(state.mode).toBe('basic');
       expect(state.inputs.shared.baselineConversionRate).toBe(null);
-      expect(state.inputs.advanced.testDuration).toBe(null);
+      expect(state.inputs.advanced.testDurationDays).toBe(null);
       expect(state.completedSections).toHaveLength(0);
       expect(state.currentSection).toBe(0);
     });
