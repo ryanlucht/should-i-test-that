@@ -87,11 +87,12 @@ skipped: 0
 ## Gaps
 
 - truth: "Probability card shows appropriate context text for all probability values including 50%"
-  status: failed
+  status: fixed
   reason: "User reported: the card shows correctly, but the context text is incorrect/misleading for 50% specifically. When the probability is exactly 50%, message should say something like 'Equal odds of the test winning or losing'"
   severity: minor
   test: 13
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Binary check (> 0.5) didn't handle exactly 50% case"
+  artifacts:
+    - path: "src/components/results/ResultsSection.tsx"
+      issue: "Lines 102-106 - binary probability check"
+  fix_commit: "396587e"
