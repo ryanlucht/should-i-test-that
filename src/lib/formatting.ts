@@ -111,3 +111,41 @@ export function percentToDecimal(percent: number): number {
 export function decimalToPercent(decimal: number): number {
   return decimal * 100;
 }
+
+/**
+ * Smart dollar formatting for EVPI/EVSI outputs
+ *
+ * Formats currency values for display based on magnitude:
+ * - Small amounts (< $1000): "$127" (no decimals, no notation)
+ * - Thousands: "$12.7K" (compact notation)
+ * - Millions: "$1.27M" (compact notation)
+ * - Billions: "$1.27B" (compact notation)
+ *
+ * Per 03-CONTEXT.md:
+ * - $127 for small amounts (< 1000)
+ * - $12.7K for thousands
+ * - $1.27M for millions
+ *
+ * Uses Intl.NumberFormat with compact notation for natural display.
+ *
+ * @param value - Dollar amount to format (can be positive, negative, or zero)
+ * @returns Formatted currency string with appropriate notation
+ */
+export function formatSmartCurrency(value: number): string {
+  // For values under $1000 (absolute value), show exact dollars rounded to nearest whole
+  if (Math.abs(value) < 1000) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  // For larger values, use compact notation with 3 significant digits
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumSignificantDigits: 3,
+  }).format(value);
+}
