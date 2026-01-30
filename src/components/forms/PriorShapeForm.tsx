@@ -242,9 +242,12 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle>(
         ? (errors as { df?: { message?: string } }).df?.message
         : undefined;
 
+    // Note: No <form> wrapper here - this component is rendered inside
+    // UncertaintyPriorForm which already has a <form> tag.
+    // Nested forms are invalid HTML and cause React hydration errors.
     return (
       <FormProvider {...methods}>
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <div className="space-y-4">
           {/* Section intro */}
           <div className="space-y-1">
             <h4 className="text-sm font-medium text-foreground">
@@ -306,7 +309,7 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle>(
               </div>
             </RadioCard>
           </RadioCardGroup>
-        </form>
+        </div>
       </FormProvider>
     );
   }

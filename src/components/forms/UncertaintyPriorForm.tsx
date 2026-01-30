@@ -40,7 +40,8 @@ import { DEFAULT_INTERVAL, computePriorFromInterval } from '@/lib/prior';
 import { useWizardStore } from '@/stores/wizardStore';
 import { useEVPICalculations } from '@/hooks/useEVPICalculations';
 import { deriveK } from '@/lib/calculations';
-import { PriorDistributionChartLegacy } from '@/components/charts';
+import { PriorDistributionChart, PriorDistributionChartLegacy } from '@/components/charts';
+import type { PriorDistribution } from '@/lib/calculations';
 import { PriorShapeForm, type PriorShapeFormHandle } from './PriorShapeForm';
 import { InfoTooltip } from './inputs/InfoTooltip';
 import { Input } from '@/components/ui/input';
@@ -85,6 +86,58 @@ function getAsymmetryMessage(impliedMeanPercent: number): string | null {
     } else {
       return "You're encoding a slight concern that this might hurt.";
     }
+  }
+}
+
+/**
+ * Build a PriorDistribution object based on the selected shape
+ *
+ * Used in Advanced mode to provide the chart with the full prior specification.
+ *
+ * @param shape - Selected prior shape ('normal', 'student-t', 'uniform')
+ * @param normalParams - Normal distribution parameters (mu_L, sigma_L)
+ * @param studentTDf - Degrees of freedom for Student-t (3, 5, or 10)
+ * @param intervalLow - Low bound of 90% interval (percentage, e.g., -8.22)
+ * @param intervalHigh - High bound of 90% interval (percentage, e.g., 8.22)
+ */
+function buildPriorDistribution(
+  shape: 'normal' | 'student-t' | 'uniform',
+  normalParams: { mu_L: number; sigma_L: number },
+  studentTDf: 3 | 5 | 10 | null,
+  intervalLow: number | null,
+  intervalHigh: number | null
+): PriorDistribution {
+  switch (shape) {
+    case 'normal':
+      return {
+        type: 'normal',
+        mu_L: normalParams.mu_L,
+        sigma_L: normalParams.sigma_L,
+      };
+
+    case 'student-t':
+      return {
+        type: 'student-t',
+        mu_L: normalParams.mu_L,
+        sigma_L: normalParams.sigma_L,
+        df: studentTDf ?? 5, // Default to moderate tails
+      };
+
+    case 'uniform':
+      // Uniform uses interval bounds directly (convert percentage to decimal)
+      return {
+        type: 'uniform',
+        low_L: (intervalLow ?? DEFAULT_INTERVAL.low) / 100,
+        high_L: (intervalHigh ?? DEFAULT_INTERVAL.high) / 100,
+      };
+
+    default:
+      // Fallback to Normal
+      return {
+        type: 'normal',
+        mu_L: normalParams.mu_L,
+        sigma_L: normalParams.sigma_L,
+      };
   }
 }
 
@@ -551,23 +604,42 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                   {/* Prior Distribution Chart */}
                   {/* Per 04-CONTEXT.md: Chart lives in Prior section because it visualizes uncertainty input */}
                   {/* Shows when priorParams are valid; uses EVPI results when available, else derives */}
+                  {/* Per 05-CONTEXT.md: In Advanced mode, chart reflects selected prior shape */}
                   {priorParams && (
                     <div className="mt-4 space-y-2">
                       <p className="text-sm font-medium text-foreground">
                         Your belief distribution:
                       </p>
-                      <PriorDistributionChartLegacy
-                        mu_L={priorParams.mu_L}
-                        sigma_L={priorParams.sigma_L}
-                        // threshold_L: derive from threshold_dollars / K when EVPI results available
-                        // Otherwise default to 0 (any positive lift threshold)
-                        threshold_L={
-                          evpiResults
-                            ? evpiResults.threshold_dollars / evpiResults.K
-                            : 0
-                        }
-                        K={evpiResults?.K ?? derivedK ?? 100000}
-                      />
+                      {mode === 'advanced' ? (
+                        // Advanced mode: build full PriorDistribution based on selected shape
+                        <PriorDistributionChart
+                          prior={buildPriorDistribution(
+                            advancedInputs.priorShape ?? 'normal',
+                            priorParams,
+                            advancedInputs.studentTDf,
+                            sharedInputs.priorIntervalLow,
+                            sharedInputs.priorIntervalHigh
+                          )}
+                          threshold_L={
+                            evpiResults
+                              ? evpiResults.threshold_dollars / evpiResults.K
+                              : 0
+                          }
+                          K={evpiResults?.K ?? derivedK ?? 100000}
+                        />
+                      ) : (
+                        // Basic mode: use legacy chart (always Normal)
+                        <PriorDistributionChartLegacy
+                          mu_L={priorParams.mu_L}
+                          sigma_L={priorParams.sigma_L}
+                          threshold_L={
+                            evpiResults
+                              ? evpiResults.threshold_dollars / evpiResults.K
+                              : 0
+                          }
+                          K={evpiResults?.K ?? derivedK ?? 100000}
+                        />
+                      )}
                     </div>
                   )}
                 </div>

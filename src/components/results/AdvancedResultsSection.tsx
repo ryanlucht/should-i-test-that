@@ -32,9 +32,9 @@ export function AdvancedResultsSection() {
   const sharedInputs = useWizardStore((state) => state.inputs.shared);
   const advancedInputs = useWizardStore((state) => state.inputs.advanced);
 
-  // Don't render anything if in wrong mode or no inputs
-  // Hook already handles mode check, but we need advancedInputs for display
-  if (!advancedInputs.testDurationDays) {
+  // Show placeholder if no results and not loading
+  // The hook returns null results when inputs are incomplete
+  if (!loading && !results) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">

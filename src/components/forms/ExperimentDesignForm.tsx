@@ -56,11 +56,12 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
         testDurationDays: advancedInputs.testDurationDays ?? undefined,
         dailyTraffic: advancedInputs.dailyTraffic ?? undefined,
         // Convert decimal to percentage for display (0.5 -> 50)
-        trafficSplit: advancedInputs.trafficSplit !== null
+        // Check for null, undefined, AND NaN to handle stale session data
+        trafficSplit: advancedInputs.trafficSplit != null && !Number.isNaN(advancedInputs.trafficSplit)
           ? decimalToPercent(advancedInputs.trafficSplit)
           : 50,
         // Convert decimal to percentage for display (1.0 -> 100)
-        eligibilityFraction: advancedInputs.eligibilityFraction !== null
+        eligibilityFraction: advancedInputs.eligibilityFraction != null && !Number.isNaN(advancedInputs.eligibilityFraction)
           ? decimalToPercent(advancedInputs.eligibilityFraction)
           : 100,
         conversionLatencyDays: advancedInputs.conversionLatencyDays ?? 0,
@@ -127,23 +128,24 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
     const canDeriveFromAnnual = sharedInputs.annualVisitors !== null && sharedInputs.annualVisitors > 0;
 
     // Sync form with store changes (e.g., if store is reset)
+    // Use != null to check for both null AND undefined (handles stale session data)
     useEffect(() => {
-      if (advancedInputs.testDurationDays !== null) {
+      if (advancedInputs.testDurationDays != null) {
         setValue('testDurationDays', advancedInputs.testDurationDays);
       }
-      if (advancedInputs.dailyTraffic !== null) {
+      if (advancedInputs.dailyTraffic != null) {
         setValue('dailyTraffic', advancedInputs.dailyTraffic);
       }
-      if (advancedInputs.trafficSplit !== null) {
+      if (advancedInputs.trafficSplit != null && !Number.isNaN(advancedInputs.trafficSplit)) {
         setValue('trafficSplit', decimalToPercent(advancedInputs.trafficSplit));
       }
-      if (advancedInputs.eligibilityFraction !== null) {
+      if (advancedInputs.eligibilityFraction != null && !Number.isNaN(advancedInputs.eligibilityFraction)) {
         setValue('eligibilityFraction', decimalToPercent(advancedInputs.eligibilityFraction));
       }
-      if (advancedInputs.conversionLatencyDays !== null) {
+      if (advancedInputs.conversionLatencyDays != null) {
         setValue('conversionLatencyDays', advancedInputs.conversionLatencyDays);
       }
-      if (advancedInputs.decisionLatencyDays !== null) {
+      if (advancedInputs.decisionLatencyDays != null) {
         setValue('decisionLatencyDays', advancedInputs.decisionLatencyDays);
       }
     }, [

@@ -177,6 +177,15 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
           high_L: highBound,
         };
         break;
+
+      default:
+        // Fallback to Normal if somehow an unknown shape is passed
+        // This shouldn't happen if types are correct, but provides safety
+        prior = {
+          type: 'normal',
+          mu_L: normalParams.mu_L,
+          sigma_L: normalParams.sigma_L,
+        };
     }
 
     // ===========================================
@@ -289,17 +298,20 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     setLoading(true);
     const currentRequestId = ++requestIdRef.current;
 
-    // Dynamic import with Comlink Worker pattern
+    // Use native Worker with Comlink for type-safe RPC
     const runWorker = async () => {
       try {
-        // Import the Worker with ComlinkWorker pattern
-        // vite-plugin-comlink wraps the Worker automatically
-        const ComlinkWorker = (await import('../lib/workers/evsi.worker?worker')).default;
-        const worker = new ComlinkWorker() as Worker;
+        // Import Comlink dynamically
+        const Comlink = await import('comlink');
 
-        // Use Comlink to wrap the worker
-        const { wrap } = await import('comlink');
-        const api = wrap<{ computeEVSI: typeof import('../lib/workers/evsi.worker').computeEVSI }>(worker);
+        // Create native Worker using Vite's ?worker import
+        const worker = new Worker(
+          new URL('../lib/workers/evsi.worker.ts', import.meta.url),
+          { type: 'module' }
+        );
+
+        // Wrap with Comlink for type-safe RPC
+        const api = Comlink.wrap<{ computeEVSI: (inputs: typeof evsiInputs, numSamples: number) => EVSIResults }>(worker);
 
         const results = await api.computeEVSI(evsiInputs, 5000);
 

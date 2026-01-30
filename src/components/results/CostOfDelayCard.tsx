@@ -66,12 +66,20 @@ export function CostOfDelayCard({
 
       {/* Expandable breakdown */}
       {isExpanded && (
-        <div className="pt-2 border-t border-border">
+        <div className="pt-2 border-t border-border space-y-2">
           {codApplies ? (
-            <p className="text-sm text-muted-foreground">
-              {testDurationDays} days x {formatSmartCurrency(dailyOpportunityCost)}/day ={' '}
-              {formatSmartCurrency(codDollars)}
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{testDurationDays} days</span> ×{' '}
+                <span className="font-medium text-foreground">{formatSmartCurrency(dailyOpportunityCost)}/day</span> ={' '}
+                <span className="font-medium text-foreground">{formatSmartCurrency(codDollars)}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                The {formatSmartCurrency(dailyOpportunityCost)}/day is your expected daily value from
+                shipping — calculated from your baseline metrics, expected lift, and threshold.
+                While testing, control users don't get the benefit, so you forego this value.
+              </p>
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">
               No Cost of Delay — your default decision is not to ship,

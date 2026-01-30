@@ -69,8 +69,18 @@ export const useWizardStore = create<WizardStore>()(
               },
             };
           }
-          // When switching to advanced, keep all inputs
-          return { mode };
+          // When switching to advanced, initialize priorShape if not set
+          // This ensures the default "Normal" selection in the UI is reflected in state
+          return {
+            mode,
+            inputs: {
+              ...state.inputs,
+              advanced: {
+                ...state.inputs.advanced,
+                priorShape: state.inputs.advanced.priorShape ?? 'normal',
+              },
+            },
+          };
         });
       },
 

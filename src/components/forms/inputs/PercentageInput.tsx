@@ -54,7 +54,7 @@ export function PercentageInput({
    */
   const formatDisplayValue = useCallback(
     (value: number | null | undefined): string => {
-      if (value === null || value === undefined || value === 0) return '';
+      if (value === null || value === undefined || value === 0 || Number.isNaN(value)) return '';
       return formatPercentage(value);
     },
     []
