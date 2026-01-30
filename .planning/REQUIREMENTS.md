@@ -172,14 +172,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BASIC-IN-06 | Phase 2 | Complete |
 | BASIC-IN-07 | Phase 2 | Complete |
 | BASIC-IN-08 | Phase 2 | Complete |
-| BASIC-CALC-01 | Phase 3 | Pending |
-| BASIC-CALC-02 | Phase 3 | Pending |
-| BASIC-CALC-03 | Phase 3 | Pending |
-| BASIC-CALC-04 | Phase 3 | Pending |
-| BASIC-CALC-05 | Phase 3 | Pending |
-| BASIC-CALC-06 | Phase 3 | Pending |
-| BASIC-CALC-07 | Phase 3 | Pending |
-| BASIC-CALC-08 | Phase 3 | Pending |
+| BASIC-CALC-01 | Phase 3 | Complete |
+| BASIC-CALC-02 | Phase 3 | Complete |
+| BASIC-CALC-03 | Phase 3 | Complete |
+| BASIC-CALC-04 | Phase 3 | Complete |
+| BASIC-CALC-05 | Phase 3 | Complete |
+| BASIC-CALC-06 | Phase 3 | Complete |
+| BASIC-CALC-07 | Phase 3 | Complete |
+| BASIC-CALC-08 | Phase 3 | Complete |
 | BASIC-OUT-01 | Phase 4 | Pending |
 | BASIC-OUT-02 | Phase 4 | Pending |
 | BASIC-OUT-03 | Phase 4 | Pending |
@@ -224,7 +224,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-03 | Phase 2 | Complete |
 | UX-04 | Phase 2 | Complete |
 | UX-05 | Phase 2 | Complete |
-| UX-06 | Phase 3 | Pending |
+| UX-06 | Phase 3 | Complete |
 | UX-07 | Phase 6 | Pending |
 | UX-08 | Phase 2 | Complete |
 | EXPORT-01 | Phase 6 | Pending |
@@ -244,4 +244,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after roadmap creation*
+*Last updated: 2026-01-30 after Phase 3 completion*
