@@ -99,6 +99,113 @@ describe('wizardStore', () => {
       // Verify inputs are preserved when staying in advanced
       expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(21);
     });
+
+    it('BUG REPRODUCTION: A->B->A mode switch - advanced inputs should be clearable and refillable', () => {
+      const { setMode, setSharedInput, setAdvancedInput } = useWizardStore.getState();
+
+      // Step 1: Start in Advanced mode and fill inputs
+      setMode('advanced');
+      setSharedInput('baselineConversionRate', 0.05);
+      setSharedInput('annualVisitors', 1000000);
+      setSharedInput('valuePerConversion', 100);
+      setSharedInput('thresholdScenario', 'any-positive');
+      setAdvancedInput('priorShape', 'normal');
+      setAdvancedInput('testDurationDays', 14);
+      setAdvancedInput('dailyTraffic', 2740);
+
+      // Verify all inputs are set
+      let state = useWizardStore.getState();
+      expect(state.inputs.advanced.priorShape).toBe('normal');
+      expect(state.inputs.advanced.testDurationDays).toBe(14);
+      expect(state.inputs.advanced.dailyTraffic).toBe(2740);
+
+      // Step 2: Switch to Basic mode
+      setMode('basic');
+      state = useWizardStore.getState();
+
+      // Advanced inputs should be cleared
+      expect(state.inputs.advanced.testDurationDays).toBe(null);
+      expect(state.inputs.advanced.dailyTraffic).toBe(null);
+      expect(state.inputs.advanced.priorShape).toBe(null);
+
+      // Shared inputs should be preserved
+      expect(state.inputs.shared.baselineConversionRate).toBe(0.05);
+      expect(state.inputs.shared.annualVisitors).toBe(1000000);
+
+      // Step 3: Switch back to Advanced mode
+      setMode('advanced');
+      state = useWizardStore.getState();
+
+      // priorShape should be initialized to 'normal'
+      expect(state.inputs.advanced.priorShape).toBe('normal');
+      // Other advanced inputs should still be null (need to be refilled)
+      expect(state.inputs.advanced.testDurationDays).toBe(null);
+      expect(state.inputs.advanced.dailyTraffic).toBe(null);
+      // Default values should be preserved
+      expect(state.inputs.advanced.trafficSplit).toBe(0.5);
+      expect(state.inputs.advanced.eligibilityFraction).toBe(1.0);
+
+      // Step 4: Fill advanced inputs again
+      setAdvancedInput('testDurationDays', 21);
+      setAdvancedInput('dailyTraffic', 5000);
+
+      // Verify they're correctly set
+      state = useWizardStore.getState();
+      expect(state.inputs.advanced.testDurationDays).toBe(21);
+      expect(state.inputs.advanced.dailyTraffic).toBe(5000);
+      expect(state.inputs.advanced.priorShape).toBe('normal');
+
+      // All inputs needed for EVSI calculation should be non-null
+      expect(state.inputs.advanced.priorShape).not.toBe(null);
+      expect(state.inputs.advanced.testDurationDays).not.toBe(null);
+      expect(state.inputs.advanced.dailyTraffic).not.toBe(null);
+      expect(state.inputs.advanced.trafficSplit).not.toBe(null);
+      expect(state.inputs.advanced.eligibilityFraction).not.toBe(null);
+    });
+
+    it('clears completedSections when switching modes', () => {
+      const { setMode, markSectionComplete } = useWizardStore.getState();
+
+      // Complete some sections in basic mode
+      setMode('basic');
+      markSectionComplete(0);
+      markSectionComplete(1);
+      markSectionComplete(2);
+      markSectionComplete(3);
+
+      // Verify sections are completed
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2, 3]);
+
+      // Switch to advanced mode
+      setMode('advanced');
+
+      // completedSections should be cleared because section indices don't align
+      // between Basic (4 sections) and Advanced (5 sections)
+      expect(useWizardStore.getState().completedSections).toEqual([]);
+      expect(useWizardStore.getState().currentSection).toBe(0);
+    });
+
+    it('does not change state when switching to same mode', () => {
+      const { setMode, markSectionComplete, setAdvancedInput } = useWizardStore.getState();
+
+      // Set up state in advanced mode
+      setMode('advanced');
+      markSectionComplete(0);
+      markSectionComplete(1);
+      setAdvancedInput('testDurationDays', 14);
+
+      const stateBeforeSwitch = useWizardStore.getState();
+
+      // Try to switch to advanced again
+      setMode('advanced');
+
+      const stateAfterSwitch = useWizardStore.getState();
+
+      // State should be unchanged
+      expect(stateAfterSwitch.completedSections).toEqual(stateBeforeSwitch.completedSections);
+      expect(stateAfterSwitch.currentSection).toBe(stateBeforeSwitch.currentSection);
+      expect(stateAfterSwitch.inputs.advanced.testDurationDays).toBe(14);
+    });
   });
 
   describe('advanced inputs for prior shape', () => {

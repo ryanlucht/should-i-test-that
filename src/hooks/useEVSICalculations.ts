@@ -162,7 +162,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         };
         break;
 
-      case 'uniform':
+      case 'uniform': {
         // Uniform uses the interval bounds directly
         // Convert from percentage to decimal
         const lowBound = sharedInputs.priorIntervalLow !== null
@@ -177,6 +177,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
           high_L: highBound,
         };
         break;
+      }
 
       default:
         // Fallback to Normal if somehow an unknown shape is passed

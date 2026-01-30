@@ -56,9 +56,20 @@ export const useWizardStore = create<WizardStore>()(
        * Set the calculator mode
        * When switching to 'basic', clears all advanced-only inputs
        * to prevent stale data from affecting calculations
+       *
+       * Also clears completedSections when switching modes, because:
+       * - Basic mode has 4 sections: baseline(0), uncertainty(1), threshold(2), results(3)
+       * - Advanced mode has 5 sections: baseline(0), uncertainty(1), threshold(2), test-design(3), results(4)
+       * - Section indices don't align between modes (index 3 is results in Basic but test-design in Advanced)
+       * - Preserving completedSections would incorrectly mark test-design as complete when switching B->A
        */
       setMode: (mode: Mode) => {
         set((state) => {
+          // Skip if already in this mode
+          if (state.mode === mode) {
+            return state;
+          }
+
           // When switching to basic mode, clear advanced inputs
           if (mode === 'basic') {
             return {
@@ -67,6 +78,10 @@ export const useWizardStore = create<WizardStore>()(
                 ...state.inputs,
                 advanced: initialAdvancedInputs,
               },
+              // Clear completedSections when switching modes
+              // Section indices don't align between Basic (4 sections) and Advanced (5 sections)
+              completedSections: [],
+              currentSection: 0,
             };
           }
           // When switching to advanced, initialize priorShape if not set
@@ -80,6 +95,10 @@ export const useWizardStore = create<WizardStore>()(
                 priorShape: state.inputs.advanced.priorShape ?? 'normal',
               },
             },
+            // Clear completedSections when switching modes
+            // Section indices don't align between Basic (4 sections) and Advanced (5 sections)
+            completedSections: [],
+            currentSection: 0,
           };
         });
       },
