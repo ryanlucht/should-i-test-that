@@ -106,7 +106,6 @@ Recent decisions affecting current work:
 
 1. **Implement actual truncation for EVPI calculation** (calculations) - Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
 2. **Add Test Costs for declarative verdict** (calculations) - Hard costs + labor inputs, Net Value = max(0, EVSI - CoD - Test Costs), verdict "Test this!" or "Don't test this!"
-3. **Fix threshold equals lift explanation copy** (ui) - When mu_L == T_L, copy says "exceeds" but should say "equals" or "meets"
 
 ### Blockers/Concerns
 
@@ -117,6 +116,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 001 | Improve EVPI intuition explanation clarity | 2026-01-30 | 4ca6c81 | [001-improve-evpi-intuition-explanation](./quick/001-improve-evpi-intuition-explanation/) |
+| 002 | Fix threshold equals lift explanation copy | 2026-01-30 | 233cacc | [002-fix-threshold-equals-lift-copy](./quick/002-fix-threshold-equals-lift-copy/) |
 
 ## Session Continuity
 
