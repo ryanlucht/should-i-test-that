@@ -137,6 +137,7 @@ None.
 | 001 | Improve EVPI intuition explanation clarity | 2026-01-30 | 4ca6c81 | [001-improve-evpi-intuition-explanation](./quick/001-improve-evpi-intuition-explanation/) |
 | 002 | Fix threshold equals lift explanation copy | 2026-01-30 | 233cacc | [002-fix-threshold-equals-lift-copy](./quick/002-fix-threshold-equals-lift-copy/) |
 | 003 | Round daily traffic placeholder to 5,000 | 2026-01-30 | 349d4ea | [003-round-daily-traffic-placeholder](./quick/003-round-daily-traffic-placeholder/) |
+| 004 | Remove Notable badge from SupportingCard | 2026-01-30 | 6b9002f | [004-remove-notable-badge](./quick/004-remove-notable-badge/) |
 
 ## Session Continuity
 
