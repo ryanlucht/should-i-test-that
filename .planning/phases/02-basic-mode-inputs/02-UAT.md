@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-basic-mode-inputs
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md]
 started: 2026-01-30T04:00:00Z
@@ -95,47 +95,72 @@ skipped: 0
   reason: "User reported: Fails. Cannot enter decimal points in the field."
   severity: major
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "onChange handlers immediately parse input with parseFloat(), which strips trailing decimal points. When user types '3.', parseFloat returns 3, losing the decimal."
+  artifacts:
+    - path: "src/components/forms/inputs/PercentageInput.tsx"
+      issue: "Line 71: parsePercentage(e.target.value) strips decimals during typing"
+    - path: "src/components/forms/inputs/CurrencyInput.tsx"
+      issue: "Line 71: parseCurrency(e.target.value) strips decimals during typing"
+    - path: "src/components/forms/inputs/NumberInput.tsx"
+      issue: "Line 82: parseNumber(e.target.value) strips decimals during typing"
+  missing:
+    - "Store raw input string in local state while focused, only parse to number on blur"
+  debug_session: ".planning/debug/resolved/decimal-input-blocked.md"
 
 - truth: "User can enter decimal dollar amount (e.g., $50.99) in value per conversion field"
   status: failed
   reason: "User reported: Fail. Field should also accept decimal points (and up to two decimal places for cents)"
   severity: major
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Same as Test 1 - onChange handlers parse on every keystroke, losing intermediate decimal states"
+  artifacts:
+    - path: "src/components/forms/inputs/CurrencyInput.tsx"
+      issue: "Line 71: parseCurrency strips trailing decimals"
+  missing:
+    - "Use local string state while focused, parse to number only on blur"
+  debug_session: ".planning/debug/resolved/decimal-input-blocked.md"
 
 - truth: "User can enter custom prior interval values after selecting default"
   status: failed
   reason: "User reported: Fail. Default values cannot be overwritten, probably because there is no way to de-select the 'use default prior' radio button. This is why I suggested making the 'use default prior' a simple button that fills the values upon click, not a radio button that stores a state."
   severity: major
   test: 6
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "UX confusion from mixed interaction pattern. Button has radio-style visual feedback suggesting mutual exclusion. Auto-detection uses 0.01% tolerance that fails for small edits. No explicit 'custom' affordance."
+  artifacts:
+    - path: "src/components/forms/UncertaintyPriorForm.tsx"
+      issue: "Lines 159-182, 222-260: Radio-style button with persistent priorType state"
+  missing:
+    - "Convert from stateful radio selector to simple action button that fills values"
+    - "Remove radio-style visual feedback (filled circle indicator)"
+    - "Let priorType be derived at validation time, not stored as UI state"
+  debug_session: ".planning/debug/cannot-override-default-prior.md"
 
 - truth: "Validation errors appear on blur only, not while typing"
   status: failed
   reason: "User reported: fail, errors appear while typing in the field"
   severity: minor
   test: 11
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Missing reValidateMode: 'onBlur' in react-hook-form config. Default reValidateMode is 'onChange', so after first validation, re-validation runs on every keystroke."
+  artifacts:
+    - path: "src/components/forms/BaselineMetricsForm.tsx"
+      issue: "Line 48: useForm missing reValidateMode"
+    - path: "src/components/forms/UncertaintyPriorForm.tsx"
+      issue: "Line 86: useForm missing reValidateMode"
+    - path: "src/components/forms/ThresholdScenarioForm.tsx"
+      issue: "Line 217: useForm missing reValidateMode"
+  missing:
+    - "Add reValidateMode: 'onBlur' to all useForm configs"
+  debug_session: ".planning/debug/validation-errors-while-typing.md"
 
 - truth: "Results input summary displays correct default prior values"
   status: failed
   reason: "User reported: fail, input summary shows Default Prior as '0% +/- 5%' when it is actually '0% +/- 8%'"
   severity: minor
   test: 13
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Hardcoded string 'Default (0% +/- 5%)' on line 350 instead of using DEFAULT_INTERVAL.high constant (8.22%)"
+  artifacts:
+    - path: "src/pages/CalculatorPage.tsx"
+      issue: "Line 350: Hardcoded wrong interval width"
+  missing:
+    - "Import DEFAULT_INTERVAL from @/lib/prior and use in template string"
+  debug_session: ".planning/debug/results-input-summary-wrong-prior.md"
