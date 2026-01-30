@@ -48,6 +48,7 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
     const methods = useForm<BaselineMetricsFormData>({
       resolver: zodResolver(baselineMetricsSchema),
       mode: 'onBlur', // Validate on blur per CONTEXT.md
+      reValidateMode: 'onBlur', // Re-validate on blur, not while typing
       defaultValues: {
         // Convert stored decimal to percentage for display
         baselineConversionRate:

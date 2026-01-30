@@ -217,6 +217,7 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
     const methods = useForm<ThresholdScenarioFormData>({
       resolver: zodResolver(thresholdScenarioSchema),
       mode: 'onBlur', // Validate on blur per CONTEXT.md
+      reValidateMode: 'onBlur', // Re-validate on blur, not while typing
       defaultValues: getDefaultValues(sharedInputs),
     });
 
