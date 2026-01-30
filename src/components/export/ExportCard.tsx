@@ -40,11 +40,20 @@ interface ExportCardProps {
   /** Custom title from user input, defaults to "Should I Test That?" */
   title?: string;
 
-  /** Formatted verdict headline text */
-  verdict: string;
-
   /** Primary value to display (EVPI for basic, Net Value for advanced) */
   verdictValue: number;
+
+  /** Baseline conversion rate as a decimal (e.g., 0.025 for 2.5%) */
+  baselineConversionRate: number;
+
+  /** Annual visitors count */
+  annualVisitors: number;
+
+  /** Label for visitor unit (e.g., "visitors", "sessions") */
+  visitorUnitLabel: string;
+
+  /** Value per conversion in dollars */
+  valuePerConversion: number;
 
   /** Prior interval summary for display */
   prior: {
@@ -69,6 +78,9 @@ interface ExportCardProps {
   /** K value (dollars per unit lift) for chart tooltip */
   miniChartK: number;
 
+  /** Prior shape name for Advanced mode (e.g., "Normal", "Student-t (df=5)", "Uniform") */
+  priorShapeDescription?: string;
+
   /** EVSI value (only for advanced mode) */
   evsi?: number;
 
@@ -77,6 +89,9 @@ interface ExportCardProps {
 
   /** Net value (only for advanced mode) */
   netValue?: number;
+
+  /** Test duration in days (only for advanced mode) */
+  testDurationDays?: number;
 }
 
 /**
@@ -92,15 +107,20 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     {
       mode,
       title = 'Should I Test That?',
-      verdict,
       verdictValue,
+      baselineConversionRate,
+      annualVisitors,
+      visitorUnitLabel,
+      valuePerConversion,
       prior,
       threshold,
       miniChartPrior,
       miniChartThreshold_L,
       miniChartK,
+      priorShapeDescription,
       evsi,
       cod,
+      testDurationDays,
     },
     ref
   ) {
@@ -110,8 +130,9 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     // Format the primary verdict value
     const formattedValue = formatSmartCurrency(verdictValue);
 
-    // Format prior display
-    const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% expected lift`;
+    // Format prior display with shape for Advanced mode
+    const priorShapeText = priorShapeDescription ? ` (${priorShapeDescription})` : '';
+    const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% expected lift${priorShapeText}`;
     const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
 
     // Format threshold display
@@ -119,6 +140,20 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
       threshold.scenario === 'any-positive'
         ? 'Any positive impact'
         : `${threshold.valuePercent !== undefined && threshold.valuePercent > 0 ? '+' : ''}${threshold.valuePercent?.toFixed(1)}% lift`;
+
+    // Format baseline metrics for display
+    // Conversion rate: decimal to percentage (e.g., 0.025 -> "2.50%")
+    const conversionRateDisplay = `${(baselineConversionRate * 100).toFixed(2)}% conversion rate`;
+
+    // Annual visitors: use compact notation for large numbers (e.g., 1000000 -> "1M")
+    const visitorsCompact = new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      maximumSignificantDigits: 3,
+    }).format(annualVisitors);
+    const annualVisitorsDisplay = `${visitorsCompact} ${visitorUnitLabel}/year`;
+
+    // Value per conversion: formatted as currency
+    const valuePerConversionDisplay = `${formatSmartCurrency(valuePerConversion)}/conversion`;
 
     return (
       <div
@@ -184,24 +219,59 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             marginBottom: '24px',
           }}
         >
+          {/* Full verdict headline with value inline */}
           <p
             style={{
-              fontSize: '18px',
-              color: '#6B7280', // text-muted-foreground
-              margin: '0 0 12px 0',
+              fontSize: '24px',
+              fontWeight: '600',
+              color: '#111827', // text-foreground
+              margin: '0 0 16px 0',
+              lineHeight: '1.4',
             }}
           >
-            {verdict}
+            {mode === 'basic' ? (
+              <>
+                If you can A/B test this idea for less than{' '}
+                <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
+                it's worth testing.
+              </>
+            ) : (
+              <>
+                If you can run this test for up to{' '}
+                <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
+                test it.
+              </>
+            )}
           </p>
+          {/* Explanation text */}
           <p
             style={{
-              fontSize: '48px',
-              fontWeight: '700',
-              color: '#7C3AED', // Purple accent
+              fontSize: '14px',
+              color: '#6B7280', // text-muted-foreground
               margin: 0,
+              lineHeight: '1.6',
             }}
           >
-            {formattedValue}
+            {mode === 'basic' ? (
+              <>
+                This is <strong>EVPI</strong> (Expected Value of Perfect Information) — the value
+                of having perfect foresight about whether this change helps. Real A/B tests are
+                imperfect, so this is an optimistic ceiling on what testing is worth.
+              </>
+            ) : (
+              <>
+                This is <strong>EVSI minus Cost of Delay</strong> — the realistic value of running
+                this specific test. EVSI (Expected Value of Sample Information) is{' '}
+                {evsi !== undefined ? formatSmartCurrency(evsi) : 'N/A'}, accounting for the test
+                being imperfect.
+                {cod !== undefined && cod > 0 && testDurationDays !== undefined && (
+                  <>
+                    {' '}Running the test for {testDurationDays} days delays rollout, costing{' '}
+                    {formatSmartCurrency(cod)} in expected opportunity cost.
+                  </>
+                )}
+              </>
+            )}
           </p>
         </div>
 
@@ -214,6 +284,54 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             marginBottom: '24px',
           }}
         >
+          {/* Baseline Metrics */}
+          <div
+            style={{
+              backgroundColor: '#F9FAFB',
+              borderRadius: '12px',
+              padding: '20px',
+            }}
+          >
+            <p
+              style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#6B7280',
+                margin: '0 0 8px 0',
+              }}
+            >
+              Baseline Metrics
+            </p>
+            <p
+              style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#111827',
+                margin: '0 0 4px 0',
+              }}
+            >
+              {conversionRateDisplay}
+            </p>
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#6B7280',
+                margin: '0 0 2px 0',
+              }}
+            >
+              {annualVisitorsDisplay}
+            </p>
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#6B7280',
+                margin: 0,
+              }}
+            >
+              {valuePerConversionDisplay}
+            </p>
+          </div>
+
           {/* Prior Summary */}
           <div
             style={{
@@ -294,7 +412,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             )}
           </div>
 
-          {/* EVSI (Advanced mode only) */}
+          {/* EVSI (Advanced mode only) - spell out full name */}
           {mode === 'advanced' && evsi !== undefined && (
             <div
               style={{
@@ -311,7 +429,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: '0 0 8px 0',
                 }}
               >
-                EVSI (test value)
+                Test value (EVSI)
               </p>
               <p
                 style={{
