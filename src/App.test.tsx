@@ -28,16 +28,21 @@ describe('App', () => {
     render(<App />);
     const button = screen.getByRole('button', { name: 'Get Started' });
     fireEvent.click(button);
-    expect(screen.getByText('Calculator')).toBeInTheDocument();
+    // Calculator page has the mode toggle and progress indicator
+    expect(screen.getByLabelText('Calculator mode')).toBeInTheDocument();
+    expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
+    // First section should be visible
+    expect(screen.getByText('Baseline Metrics')).toBeInTheDocument();
   });
 
   it('can navigate back from Calculator to Welcome', () => {
     render(<App />);
     // Go to calculator
     fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
-    expect(screen.getByText('Calculator')).toBeInTheDocument();
-    // Go back to welcome
-    fireEvent.click(screen.getByText('Back to Welcome'));
-    expect(screen.getByText('Should I Test That?')).toBeInTheDocument();
+    expect(screen.getByLabelText('Calculator mode')).toBeInTheDocument();
+    // Header title is clickable to go back
+    fireEvent.click(screen.getByRole('button', { name: 'Should I Test That?' }));
+    // Should be back on welcome page
+    expect(screen.getByRole('button', { name: 'Get Started' })).toBeInTheDocument();
   });
 });
