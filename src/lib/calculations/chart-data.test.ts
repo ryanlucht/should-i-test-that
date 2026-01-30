@@ -6,8 +6,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { generateDensityCurveData, getDensityAtLift } from './chart-data';
+import {
+  generateDensityCurveData,
+  generateDistributionData,
+  getDensityAtLift,
+  getDensityAtLiftForPrior,
+} from './chart-data';
 import { standardNormalPDF, SQRT_2_PI } from './statistics';
+import type { PriorDistribution } from './distributions';
 
 describe('generateDensityCurveData', () => {
   it('returns 100 points by default', () => {
