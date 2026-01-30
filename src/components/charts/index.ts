@@ -5,3 +5,4 @@
  */
 
 export { PriorDistributionChart } from './PriorDistributionChart';
+export { ChartTooltip } from './ChartTooltip';
