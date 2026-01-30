@@ -95,6 +95,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 1. **Implement actual truncation for EVPI calculation** (calculations) — Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
+2. **Remove regret shading from prior distribution chart** (ui) — User feedback: too confusing, creates visual clutter
 
 ### Blockers/Concerns
 
