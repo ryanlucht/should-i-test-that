@@ -50,12 +50,12 @@ Plans:
   3. User can enter value per conversion with dollar formatting
   4. User can select default prior (N(0, 0.05)) or enter custom 90% interval
   5. User can select shipping threshold scenario and enter value in dollars or lift %
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Welcome step and baseline metrics form (CR0, N_year, V)
-- [ ] 02-02: Uncertainty prior input (default vs. custom 90% interval)
-- [ ] 02-03: Threshold scenario selection and input
+- [ ] 02-01-PLAN.md — Dependencies, validation utilities, and Baseline Metrics form (CR0, N_year, V)
+- [ ] 02-02-PLAN.md — Uncertainty prior form (default vs. custom 90% interval)
+- [ ] 02-03-PLAN.md — Threshold scenario selection with radio cards and inline inputs
 
 ### Phase 3: Calculation Engine
 **Goal**: System correctly calculates EVPI and supporting metrics for Basic mode
@@ -138,7 +138,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Wizard Infrastructure | 4/4 | ✓ Complete | 2026-01-30 |
-| 2. Basic Mode Inputs | 0/3 | Not started | - |
+| 2. Basic Mode Inputs | 0/3 | Planned | - |
 | 3. Calculation Engine | 0/3 | Not started | - |
 | 4. Visualization & Results | 0/3 | Not started | - |
 | 5. Advanced Mode | 0/5 | Not started | - |
@@ -148,4 +148,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Roadmap created: 2026-01-29*
 *Phase 1 planned: 2026-01-29*
 *Phase 1 completed: 2026-01-30*
+*Phase 2 planned: 2026-01-30*
 *Total requirements mapped: 67/67*
