@@ -100,9 +100,12 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
           title="Chance of clearing threshold"
           value={formatProbabilityPercent(probabilityClearsThreshold)}
           description={
-            probabilityClearsThreshold > 0.5
-              ? 'More likely than not to clear the bar'
-              : 'Less likely than not to clear the bar'
+            // Handle ~50% case separately to avoid misleading "more/less likely" text
+            probabilityClearsThreshold >= 0.49 && probabilityClearsThreshold <= 0.51
+              ? 'Equal odds of clearing the bar'
+              : probabilityClearsThreshold > 0.5
+                ? 'More likely than not to clear the bar'
+                : 'Less likely than not to clear the bar'
           }
         />
 
