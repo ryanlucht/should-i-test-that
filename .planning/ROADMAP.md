@@ -142,12 +142,12 @@ Plans:
   2. PNG includes title, idea name, verdict line, and key inputs summary
   3. Color is never sole indicator of status (text redundancy for accessibility)
   4. Keyboard navigation works end-to-end (Tab, Enter, Escape)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: PNG export functionality (html-to-image or similar)
-- [ ] 06-02: Final accessibility audit and fixes
-- [ ] 06-03: Cross-browser testing and polish
+- [ ] 06-01-PLAN.md — PNG export with html-to-image (ExportCard, ExportButton, useExportPng hook)
+- [ ] 06-02-PLAN.md — Design consistency: purple accent across all interactive elements
+- [ ] 06-03-PLAN.md — Accessibility: vitest-axe tests, ARIA live regions, text redundancy
 
 ## Progress
 
@@ -177,4 +177,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 4.1 completed: 2026-01-30*
 *Phase 5 planned: 2026-01-30*
 *Phase 5 completed: 2026-01-30*
+*Phase 6 planned: 2026-01-30*
 *Total requirements mapped: 67/67*
