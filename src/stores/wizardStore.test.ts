@@ -101,6 +101,58 @@ describe('wizardStore', () => {
     });
   });
 
+  describe('advanced inputs for prior shape', () => {
+    it('can set priorShape to normal, student-t, or uniform', () => {
+      const { setAdvancedInput } = useWizardStore.getState();
+
+      // Normal
+      setAdvancedInput('priorShape', 'normal');
+      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('normal');
+
+      // Student-t
+      setAdvancedInput('priorShape', 'student-t');
+      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('student-t');
+
+      // Uniform
+      setAdvancedInput('priorShape', 'uniform');
+      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('uniform');
+    });
+
+    it('can set studentTDf preset values', () => {
+      const { setAdvancedInput } = useWizardStore.getState();
+
+      // df=3 (heavy tails)
+      setAdvancedInput('studentTDf', 3);
+      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(3);
+
+      // df=5 (moderate)
+      setAdvancedInput('studentTDf', 5);
+      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(5);
+
+      // df=10 (near-normal)
+      setAdvancedInput('studentTDf', 10);
+      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(10);
+    });
+
+    it('clears prior shape inputs when switching to basic mode', () => {
+      const { setMode, setAdvancedInput } = useWizardStore.getState();
+
+      // Set prior shape inputs in advanced mode
+      setMode('advanced');
+      setAdvancedInput('priorShape', 'student-t');
+      setAdvancedInput('studentTDf', 5);
+
+      // Verify they're set
+      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('student-t');
+      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(5);
+
+      // Switch to basic - should clear
+      setMode('basic');
+      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe(null);
+      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(null);
+    });
+  });
+
   describe('section navigation', () => {
     it('starts at section 0', () => {
       expect(useWizardStore.getState().currentSection).toBe(0);
