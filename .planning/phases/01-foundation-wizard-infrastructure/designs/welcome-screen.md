@@ -82,6 +82,8 @@ Hero
 - **Headline:** "Should I Test That?"
 - **Subheadline:** "Find out if your A/B test is worth running. Get a clear answer: 'If you can test this for less than $X, it's worth it.'"
 
+**Note:** The subheadline may be paragraph-length (2-4 sentences) to fully explain the tool's value proposition. The font size remains appropriate for longer text.
+
 **Specifications:**
 - Headline:
   - Font size: 48px (desktop), 36px (tablet), 28px (mobile)
@@ -96,6 +98,7 @@ Hero
   - Line height: 1.5
   - Max width: 600px (centered)
   - Margin bottom: 48px
+  - **Flexible length:** Can be a short sentence or a full paragraph (2-4 sentences)
 
 ### 3. Mode Selection Cards
 

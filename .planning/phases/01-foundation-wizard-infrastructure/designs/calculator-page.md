@@ -34,9 +34,9 @@ The Calculator page is a single scrollable page containing all wizard sections (
 |                                                           |
 |  +------------------------------------------------------+ |
 |  |  SECTION 2: Uncertainty (Prior)                      | |
-|  |  [Disabled - dramatically muted]                     | |
+|  |  [Disabled - 40% opacity, grayscale]                 | |
 |  |                                                      | |
-|  |  "Complete previous section to unlock"               | |
+|  |  (content visible but muted, no overlay text)        | |
 |  |                                                      | |
 |  +------------------------------------------------------+ |
 |                                                           |
@@ -311,60 +311,35 @@ On mobile (< 640px):
 - Border top: 1px solid `--border-default`
 - Margin top: 24px
 
-### Disabled State (DRAMATICALLY DISABLED)
+### Disabled State (PURELY VISUAL)
 
-This is a key design feature - future sections should be clearly "not yet available" without being ugly or inaccessible.
+This is a key design feature - future sections should be clearly "not yet available" through visual treatment alone, without explanatory text overlays.
 
 **Card Styling:**
-- Background: `--surface-primary` with overlay
+- Background: `--surface-primary`
 - Border: 1px solid `--border-default`
 - Box shadow: none
 - **Opacity: 0.4** (heavy reduction)
-- **Filter: grayscale(100%)** or **grayscale(60%)**
+- **Filter: grayscale(100%)**
 - **Pointer-events: none** (cannot interact)
-- Position: relative (for overlay)
 
-**Overlay Message:**
-- Position: absolute
-- Top: 50%
-- Left: 50%
-- Transform: translate(-50%, -50%)
-- Background: rgba(255, 255, 255, 0.9)
-- Padding: 16px 24px
-- Border radius: 8px
-- Box shadow: 0 2px 8px rgba(0, 0, 0, 0.1)
-- Z-index: 10
-- **Opacity: 1** (message itself is fully visible)
-- **Filter: none** (message not grayscale)
-
-**Overlay Message Content:**
-- Icon: lock icon (16px, `--text-secondary`)
-- Text: "Complete previous section to unlock"
-- Font size: 14px
-- Font weight: 500
-- Color: `--text-secondary`
-- Text align: center
+**No overlay text.** The disabled state communicates purely through:
+- Heavy opacity reduction (40%)
+- Full grayscale filter
+- No interactive affordances
 
 **Number Circle (disabled):**
 - Background: `--border-default` (#E5E7EB)
 - Color: `--text-disabled` (#9CA3AF)
-
-**Alternative Disabled Approach:**
-
-If grayscale + overlay feels too harsh, alternative:
-- Opacity: 0.5 (no grayscale)
-- Subtle pattern overlay (diagonal lines or dots)
-- Cards still visible but clearly inactive
 
 ### Comparison Table
 
 | Property | Enabled | Disabled |
 |----------|---------|----------|
 | Opacity | 1 | 0.4 |
-| Grayscale | none | 100% (or 60%) |
+| Grayscale | none | 100% |
 | Pointer events | auto | none |
 | Box shadow | subtle | none |
-| Overlay | none | "Complete previous to unlock" |
 | Interactivity | full | none |
 
 ---
