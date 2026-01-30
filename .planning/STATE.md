@@ -112,6 +112,8 @@ Recent decisions affecting current work:
 
 1. **Implement actual truncation for EVPI calculation** (calculations) - Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
 2. **Add Test Costs for declarative verdict** (calculations) - Hard costs + labor inputs, Net Value = max(0, EVSI - CoD - Test Costs), verdict "Test this!" or "Don't test this!"
+3. **Add branding to PNG export** (ui) - Deferred: add "Created with Should I Test That?" footer in future version
+4. **Design exploration via Stitch MCP** (ui) - Deferred to v2: 3 design directions, compact inputs, visual polish
 
 ### Blockers/Concerns
 
