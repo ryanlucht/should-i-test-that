@@ -89,12 +89,12 @@ Plans:
   3. Regret region is shaded based on default decision (below threshold if Ship, above if Don't)
   4. User sees primary verdict: "If you can A/B test this idea for less than $EVPI, it's worth testing"
   5. User sees supporting cards: prior summary, threshold summary, probability, regret intuition
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Distribution chart component (Recharts, responsive, accessible)
-- [ ] 04-02: Chart overlays (mean, interval, threshold, regret shading)
-- [ ] 04-03: Results page with verdict and supporting explanation cards
+- [ ] 04-01-PLAN.md — Chart data utilities and base distribution chart component (Recharts)
+- [ ] 04-02-PLAN.md — Chart overlays (mean marker, 90% interval, threshold, regret shading, tooltips)
+- [ ] 04-03-PLAN.md — Results section with verdict and supporting explanation cards
 
 ### Phase 5: Advanced Mode
 **Goal**: Users can calculate realistic test value using EVSI and Cost of Delay
