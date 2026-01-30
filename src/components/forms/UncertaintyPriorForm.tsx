@@ -27,6 +27,9 @@ import {
 } from '@/lib/validation';
 import { DEFAULT_INTERVAL, computePriorFromInterval } from '@/lib/prior';
 import { useWizardStore } from '@/stores/wizardStore';
+import { useEVPICalculations } from '@/hooks/useEVPICalculations';
+import { deriveK } from '@/lib/calculations';
+import { PriorDistributionChart } from '@/components/charts';
 import { InfoTooltip } from './inputs/InfoTooltip';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,6 +84,23 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     // Get store values and setters
     const sharedInputs = useWizardStore((state) => state.inputs.shared);
     const setSharedInput = useWizardStore((state) => state.setSharedInput);
+
+    // Get EVPI results for chart props (null if inputs incomplete)
+    // This provides threshold_L and K when user has completed all sections
+    const evpiResults = useEVPICalculations();
+
+    // Derive K from baseline inputs if available (for chart before EVPI completes)
+    // K = N_year * CR0 * V (dollars per unit lift)
+    const derivedK =
+      sharedInputs.annualVisitors !== null &&
+      sharedInputs.baselineConversionRate !== null &&
+      sharedInputs.valuePerConversion !== null
+        ? deriveK(
+            sharedInputs.annualVisitors,
+            sharedInputs.baselineConversionRate,
+            sharedInputs.valuePerConversion
+          )
+        : null;
 
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<PriorSelectionFormData>({
@@ -448,6 +468,35 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                       <p className="text-sm text-muted-foreground">
                         {asymmetryMessage}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Prior Distribution Chart */}
+                  {/* Per 04-CONTEXT.md: Chart lives in Prior section because it visualizes uncertainty input */}
+                  {/* Shows when priorParams are valid; uses EVPI results when available, else derives */}
+                  {priorParams && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm font-medium text-foreground">
+                        Your belief distribution:
+                      </p>
+                      <PriorDistributionChart
+                        mu_L={priorParams.mu_L}
+                        sigma_L={priorParams.sigma_L}
+                        // threshold_L: derive from threshold_dollars / K when EVPI results available
+                        // Otherwise default to 0 (any positive lift threshold)
+                        threshold_L={
+                          evpiResults
+                            ? evpiResults.threshold_dollars / evpiResults.K
+                            : 0
+                        }
+                        K={evpiResults?.K ?? derivedK ?? 100000}
+                        // defaultDecision: use EVPI result when available (it's computed correctly)
+                        // Otherwise derive from prior mean vs threshold (0)
+                        defaultDecision={
+                          evpiResults?.defaultDecision ??
+                          (priorParams.mu_L >= 0 ? 'ship' : 'dont-ship')
+                        }
+                      />
                     </div>
                   )}
                 </div>
