@@ -44,6 +44,7 @@ import {
   formatPercentage,
   decimalToPercent,
 } from '@/lib/formatting';
+import { DEFAULT_INTERVAL } from '@/lib/prior';
 
 /**
  * Section configuration for the wizard
@@ -347,7 +348,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                           <span className="text-muted-foreground">Prior:</span>
                           <span className="font-medium">
                             {sharedInputs.priorType === 'default'
-                              ? 'Default (0% +/- 5%)'
+                              ? `Default (0% +/- ${Math.abs(DEFAULT_INTERVAL.high).toFixed(0)}%)`
                               : sharedInputs.priorType === 'custom' &&
                                   sharedInputs.priorIntervalLow !== null &&
                                   sharedInputs.priorIntervalHigh !== null
