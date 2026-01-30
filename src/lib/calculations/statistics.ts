@@ -60,6 +60,11 @@ export function standardNormalPDF(z: number): number {
  * @returns Cumulative probability P(Z <= z)
  */
 export function standardNormalCDF(z: number): number {
+  // Handle NaN input - must propagate as NaN, not be treated as finite
+  if (Number.isNaN(z)) {
+    return NaN;
+  }
+
   // Handle special cases for +/- Infinity
   if (!isFinite(z)) {
     return z < 0 ? 0 : 1;

@@ -152,4 +152,9 @@ describe('standardNormalCDF', () => {
       expect(next).toBeGreaterThan(current);
     }
   });
+
+  it('should return NaN for NaN input', () => {
+    const result = standardNormalCDF(NaN);
+    expect(result).toBeNaN();
+  });
 });
