@@ -16,9 +16,20 @@
  * Per SPEC.md Section 6.2:
  * - mu_L = (L_low + L_high) / 2
  * - sigma_L = (L_high - L_low) / (2 * z_0.95)
+ *
+ * Advanced Mode (05-CONTEXT.md):
+ * - Shows PriorShapeForm above interval inputs for shape selection
+ * - For Uniform prior, interval inputs become distribution bounds
  */
 
-import { useEffect, useImperativeHandle, forwardRef, useCallback, useState } from 'react';
+import {
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+  useState,
+  useRef,
+} from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -30,6 +41,7 @@ import { useWizardStore } from '@/stores/wizardStore';
 import { useEVPICalculations } from '@/hooks/useEVPICalculations';
 import { deriveK } from '@/lib/calculations';
 import { PriorDistributionChart } from '@/components/charts';
+import { PriorShapeForm, type PriorShapeFormHandle } from './PriorShapeForm';
 import { InfoTooltip } from './inputs/InfoTooltip';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -82,8 +94,17 @@ function getAsymmetryMessage(impliedMeanPercent: number): string | null {
 export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
   function UncertaintyPriorForm(_props, ref) {
     // Get store values and setters
+    const mode = useWizardStore((state) => state.mode);
     const sharedInputs = useWizardStore((state) => state.inputs.shared);
+    const advancedInputs = useWizardStore((state) => state.inputs.advanced);
     const setSharedInput = useWizardStore((state) => state.setSharedInput);
+
+    // Ref for PriorShapeForm validation (Advanced mode only)
+    const priorShapeFormRef = useRef<PriorShapeFormHandle>(null);
+
+    // Check if Uniform prior is selected (Advanced mode)
+    const isUniformPrior =
+      mode === 'advanced' && advancedInputs.priorShape === 'uniform';
 
     // Get EVPI results for chart props (null if inputs incomplete)
     // This provides threshold_L and K when user has completed all sections
@@ -184,11 +205,21 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     /**
      * Expose validate method to parent via ref
      * Returns true if form is valid and data is stored
+     *
+     * In Advanced mode, also validates the PriorShapeForm
      */
     useImperativeHandle(
       ref,
       () => ({
         validate: async () => {
+          // In Advanced mode, validate shape form first
+          if (mode === 'advanced' && priorShapeFormRef.current) {
+            const shapeValid = await priorShapeFormRef.current.validate();
+            if (!shapeValid) {
+              return false;
+            }
+          }
+
           const isValid = await trigger();
           if (isValid) {
             // Manually trigger submission to store values
@@ -197,7 +228,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
           return isValid;
         },
       }),
-      [trigger, handleSubmit, onSubmit]
+      [trigger, handleSubmit, onSubmit, mode]
     );
 
     /**
@@ -248,56 +279,86 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     return (
       <FormProvider {...methods}>
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-          {/* Section intro */}
+          {/* Section intro - varies by mode */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <p className="text-foreground font-medium">
-                How uncertain are you about whether this change will help or
-                hurt?
+                {mode === 'advanced'
+                  ? 'What shape describes your uncertainty?'
+                  : 'How uncertain are you about whether this change will help or hurt?'}
               </p>
               <InfoTooltip content="A 'prior' is your belief about the effect before running a test. A wider range means more uncertainty." />
             </div>
             <p className="text-sm text-muted-foreground">
-              A normal curve is a solid, usually conservative first-pass model
-              for effect sizes. Advanced mode can use other shapes.
+              {mode === 'advanced'
+                ? 'Choose a distribution shape, then specify your 90% interval.'
+                : 'A normal curve is a solid, usually conservative first-pass model for effect sizes. Advanced mode can use other shapes.'}
             </p>
           </div>
 
-          {/* Default Prior Option (action button, no selected state) */}
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={handleUseDefault}
-              className={cn(
-                'w-full rounded-xl border-2 p-4 text-left transition-all',
-                'hover:border-primary/50 hover:shadow-sm',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                'border-border bg-card hover:bg-muted/50'
-              )}
-            >
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  Fill with Recommended Default
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  I'm 90% sure the relative lift is between -8% and +8%
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  This is a reasonable starting point if you're unsure. It
-                  assumes most changes have small effects.
+          {/* Prior Shape Form (Advanced mode only) */}
+          {mode === 'advanced' && (
+            <>
+              <PriorShapeForm ref={priorShapeFormRef} />
+              {/* Divider between shape selector and interval inputs */}
+              <div className="border-t border-border pt-6">
+                <p className="text-sm font-medium text-foreground mb-4">
+                  {isUniformPrior
+                    ? 'Define the bounds of your uniform distribution:'
+                    : 'Specify your 90% credible interval:'}
                 </p>
               </div>
-            </button>
-          </div>
+            </>
+          )}
+
+          {/* Default Prior Option (action button, no selected state) */}
+          {/* Only show in Basic mode */}
+          {mode === 'basic' && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={handleUseDefault}
+                className={cn(
+                  'w-full rounded-xl border-2 p-4 text-left transition-all',
+                  'hover:border-primary/50 hover:shadow-sm',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'border-border bg-card hover:bg-muted/50'
+                )}
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    Fill with Recommended Default
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    I&apos;m 90% sure the relative lift is between -8% and +8%
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    This is a reasonable starting point if you&apos;re unsure.
+                    It assumes most changes have small effects.
+                  </p>
+                </div>
+              </button>
+            </div>
+          )}
 
           {/* Custom Interval Section (always visible) */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium text-foreground">
-                Or specify your own 90% credible interval:
-              </Label>
-              <InfoTooltip content="This means you're 90% confident the true effect falls within this range." />
-            </div>
+            {/* Only show the header label in Basic mode (Advanced mode has its own header above) */}
+            {mode === 'basic' && (
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium text-foreground">
+                  Or specify your own 90% credible interval:
+                </Label>
+                <InfoTooltip content="This means you're 90% confident the true effect falls within this range." />
+              </div>
+            )}
+
+            {/* Helper text for Uniform prior in Advanced mode */}
+            {isUniformPrior && (
+              <p className="text-xs text-muted-foreground">
+                These bounds define the edges of your uniform distribution.
+              </p>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               {/* Lower bound input */}
@@ -306,7 +367,9 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                   htmlFor="intervalLow"
                   className="text-sm text-muted-foreground"
                 >
-                  I'm 90% sure the lift is at least
+                  {isUniformPrior
+                    ? 'Minimum possible lift'
+                    : "I'm 90% sure the lift is at least"}
                 </Label>
                 <Controller
                   name="intervalLow"
@@ -347,11 +410,17 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                           setIntervalLowFocused(false);
                           // Parse and propagate to form on blur
                           const trimmed = intervalLowDisplay.trim();
-                          if (trimmed === '' || trimmed === '-' || trimmed === '.') {
+                          if (
+                            trimmed === '' ||
+                            trimmed === '-' ||
+                            trimmed === '.'
+                          ) {
                             field.onChange(undefined);
                           } else {
                             const parsed = parseFloat(trimmed);
-                            field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                            field.onChange(
+                              Number.isNaN(parsed) ? undefined : parsed
+                            );
                           }
                           field.onBlur();
                           handleIntervalChange();
@@ -376,7 +445,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                   htmlFor="intervalHigh"
                   className="text-sm text-muted-foreground"
                 >
-                  and at most
+                  {isUniformPrior ? 'Maximum possible lift' : 'and at most'}
                 </Label>
                 <Controller
                   name="intervalHigh"
@@ -417,11 +486,17 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                           setIntervalHighFocused(false);
                           // Parse and propagate to form on blur
                           const trimmed = intervalHighDisplay.trim();
-                          if (trimmed === '' || trimmed === '-' || trimmed === '.') {
+                          if (
+                            trimmed === '' ||
+                            trimmed === '-' ||
+                            trimmed === '.'
+                          ) {
                             field.onChange(undefined);
                           } else {
                             const parsed = parseFloat(trimmed);
-                            field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                            field.onChange(
+                              Number.isNaN(parsed) ? undefined : parsed
+                            );
                           }
                           field.onBlur();
                           handleIntervalChange();
@@ -449,21 +524,23 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">
-                      Implied expected lift:
+                      {isUniformPrior
+                        ? 'Midpoint (expected value):'
+                        : 'Implied expected lift:'}
                     </span>
                     <span className="font-medium text-foreground">
                       {impliedMeanPercent > 0 ? '+' : ''}
                       {impliedMeanPercent.toFixed(1)}%
                     </span>
-                    {priorParams && (
+                    {priorParams && !isUniformPrior && (
                       <span className="text-muted-foreground">
                         (sigma: {(priorParams.sigma_L * 100).toFixed(2)}%)
                       </span>
                     )}
                   </div>
 
-                  {/* Asymmetry Explanation */}
-                  {asymmetryMessage && (
+                  {/* Asymmetry Explanation (not for Uniform) */}
+                  {asymmetryMessage && !isUniformPrior && (
                     <div className="rounded-lg bg-muted/50 border border-muted px-4 py-3">
                       <p className="text-sm text-muted-foreground">
                         {asymmetryMessage}
