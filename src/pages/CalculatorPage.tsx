@@ -44,7 +44,7 @@ import {
   ExperimentDesignForm,
   type ExperimentDesignFormHandle,
 } from '@/components/forms/ExperimentDesignForm';
-import { ResultsSection } from '@/components/results';
+import { ResultsSection, AdvancedResultsSection } from '@/components/results';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useWizardStore } from '@/stores/wizardStore';
 
@@ -338,14 +338,19 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                   <ExperimentDesignForm ref={experimentDesignFormRef} />
                 )}
 
-                {/* Results section - EVPI verdict and supporting cards */}
-                {section.id === 'results' && (
+                {/* Results section - mode-dependent display */}
+                {/* Basic mode: EVPI verdict and supporting cards */}
+                {/* Advanced mode: EVSI verdict with CoD breakdown */}
+                {section.id === 'results' && mode === 'basic' && (
                   <ResultsSection
                     onAdvancedModeClick={() => {
                       // Switch to advanced mode
                       useWizardStore.getState().setMode('advanced');
                     }}
                   />
+                )}
+                {section.id === 'results' && mode === 'advanced' && (
+                  <AdvancedResultsSection />
                 )}
               </div>
 
