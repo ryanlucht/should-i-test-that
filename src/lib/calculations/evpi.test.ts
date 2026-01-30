@@ -401,17 +401,17 @@ describe('calculateEVPI', () => {
      *   - Threshold: 1% lift
      *
      * Derivations:
-     *   - z = (T_L - mu_L) / sigma_L = (0.01 - 0.02) / 0.03 = -0.333...
-     *   - phi(-0.333) approx 0.3778
-     *   - Phi(-0.333) approx 0.3694
+     *   - z = (T_L - mu_L) / sigma_L = (0.01 - 0.02) / 0.03 = -1/3 = -0.3333...
+     *   - phi(-1/3) = 0.377099... (standard normal PDF)
+     *   - Phi(-1/3) = 0.369441... (standard normal CDF via Abramowitz-Stegun)
      *   - Default: Ship (mu_L=0.02 > T_L=0.01)
      *
      * EVPI (Ship case):
      *   EVPI = K * [ (T_L - mu_L) * Phi(z) + sigma_L * phi(z) ]
-     *        = 5,000,000 * [ (0.01 - 0.02) * 0.3694 + 0.03 * 0.3778 ]
-     *        = 5,000,000 * [ -0.003694 + 0.011334 ]
-     *        = 5,000,000 * 0.00764
-     *        = 38,200 (approximately)
+     *        = 5,000,000 * [ (0.01 - 0.02) * 0.369441 + 0.03 * 0.377099 ]
+     *        = 5,000,000 * [ -0.00369441 + 0.01131297 ]
+     *        = 5,000,000 * 0.00762708
+     *        = 38,135 (approximately)
      */
     it('matches hand-calculated EVPI for Ship scenario', () => {
       const result = calculateEVPI({
@@ -425,8 +425,8 @@ describe('calculateEVPI', () => {
       expect(result.K).toBe(5000000);
       expect(result.defaultDecision).toBe('ship');
       expect(result.zScore).toBeCloseTo(-0.333, 2);
-      // Allow $100 tolerance
-      expect(result.evpiDollars).toBeCloseTo(38200, -2);
+      // Expected EVPI: ~$38,135 (allow $100 tolerance)
+      expect(result.evpiDollars).toBeCloseTo(38135, -2);
     });
 
     /**
