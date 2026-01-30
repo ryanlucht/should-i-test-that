@@ -18,7 +18,7 @@
  * - sigma_L = (L_high - L_low) / (2 * z_0.95)
  */
 
-import { useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useCallback, useState } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -103,6 +103,24 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
       formState: { errors },
     } = methods;
 
+    // Local state for interval input display values
+    // This allows holding partial input like "-" or "." without parseFloat coercing to NaN
+    // The raw string is stored while editing; parsing to number happens on blur
+    const [intervalLowDisplay, setIntervalLowDisplay] = useState<string>(
+      sharedInputs.priorIntervalLow !== null
+        ? String(sharedInputs.priorIntervalLow)
+        : String(DEFAULT_INTERVAL.low)
+    );
+    const [intervalHighDisplay, setIntervalHighDisplay] = useState<string>(
+      sharedInputs.priorIntervalHigh !== null
+        ? String(sharedInputs.priorIntervalHigh)
+        : String(DEFAULT_INTERVAL.high)
+    );
+
+    // Track focus state for each interval input
+    const [intervalLowFocused, setIntervalLowFocused] = useState(false);
+    const [intervalHighFocused, setIntervalHighFocused] = useState(false);
+
     // Watch interval values for computed displays
     // Note: priorType is tracked in form state but not used for UI styling
     const intervalLow = watch('intervalLow');
@@ -170,6 +188,9 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
       setValue('priorType', 'default');
       setValue('intervalLow', DEFAULT_INTERVAL.low);
       setValue('intervalHigh', DEFAULT_INTERVAL.high);
+      // Update display values to match
+      setIntervalLowDisplay(String(DEFAULT_INTERVAL.low));
+      setIntervalHighDisplay(String(DEFAULT_INTERVAL.high));
       // Also store immediately
       setSharedInput('priorType', 'default');
       setSharedInput('priorIntervalLow', DEFAULT_INTERVAL.low);
@@ -186,14 +207,23 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
 
     // Sync form with store changes (e.g., if store is reset or back nav)
     // Note: priorType is derived at validation time, so we only sync interval values
+    //
+    // IMPORTANT: Do NOT include `setValue` in the dependency array!
+    // react-hook-form's setValue is not memoized and changes reference every render.
+    // Including it would cause this effect to run on every render, overwriting user input.
+    // This effect should ONLY run when the store values actually change (from external
+    // sources like "Fill with Recommended Default" button or navigation).
     useEffect(() => {
       if (sharedInputs.priorIntervalLow !== null) {
         setValue('intervalLow', sharedInputs.priorIntervalLow);
+        setIntervalLowDisplay(String(sharedInputs.priorIntervalLow));
       }
       if (sharedInputs.priorIntervalHigh !== null) {
         setValue('intervalHigh', sharedInputs.priorIntervalHigh);
+        setIntervalHighDisplay(String(sharedInputs.priorIntervalHigh));
       }
-    }, [sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh, setValue]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh]);
 
     return (
       <FormProvider {...methods}>
@@ -264,21 +294,45 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                   render={({ field }) => (
                     <div className="relative">
                       <Input
-                        {...field}
                         id="intervalLow"
-                        type="number"
-                        step="0.1"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="-5"
                         className={cn(
                           'pr-6',
                           errors.intervalLow && 'border-destructive'
                         )}
-                        value={field.value ?? ''}
+                        // When focused, show raw string to allow typing "-" or "."
+                        // When blurred, show the form value (number converted to string)
+                        value={
+                          intervalLowFocused
+                            ? intervalLowDisplay
+                            : field.value !== undefined && field.value !== null
+                              ? String(field.value)
+                              : ''
+                        }
                         onChange={(e) => {
-                          const val = e.target.value;
-                          field.onChange(val === '' ? undefined : parseFloat(val));
+                          // Store raw string in local state (allows "-", ".", etc.)
+                          setIntervalLowDisplay(e.target.value);
+                        }}
+                        onFocus={() => {
+                          setIntervalLowFocused(true);
+                          // Initialize display value from current form value
+                          const val = field.value;
+                          setIntervalLowDisplay(
+                            val !== undefined && val !== null ? String(val) : ''
+                          );
                         }}
                         onBlur={() => {
+                          setIntervalLowFocused(false);
+                          // Parse and propagate to form on blur
+                          const trimmed = intervalLowDisplay.trim();
+                          if (trimmed === '' || trimmed === '-' || trimmed === '.') {
+                            field.onChange(undefined);
+                          } else {
+                            const parsed = parseFloat(trimmed);
+                            field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                          }
                           field.onBlur();
                           handleIntervalChange();
                         }}
@@ -310,21 +364,45 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                   render={({ field }) => (
                     <div className="relative">
                       <Input
-                        {...field}
                         id="intervalHigh"
-                        type="number"
-                        step="0.1"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="10"
                         className={cn(
                           'pr-6',
                           errors.intervalHigh && 'border-destructive'
                         )}
-                        value={field.value ?? ''}
+                        // When focused, show raw string to allow typing "-" or "."
+                        // When blurred, show the form value (number converted to string)
+                        value={
+                          intervalHighFocused
+                            ? intervalHighDisplay
+                            : field.value !== undefined && field.value !== null
+                              ? String(field.value)
+                              : ''
+                        }
                         onChange={(e) => {
-                          const val = e.target.value;
-                          field.onChange(val === '' ? undefined : parseFloat(val));
+                          // Store raw string in local state (allows "-", ".", etc.)
+                          setIntervalHighDisplay(e.target.value);
+                        }}
+                        onFocus={() => {
+                          setIntervalHighFocused(true);
+                          // Initialize display value from current form value
+                          const val = field.value;
+                          setIntervalHighDisplay(
+                            val !== undefined && val !== null ? String(val) : ''
+                          );
                         }}
                         onBlur={() => {
+                          setIntervalHighFocused(false);
+                          // Parse and propagate to form on blur
+                          const trimmed = intervalHighDisplay.trim();
+                          if (trimmed === '' || trimmed === '-' || trimmed === '.') {
+                            field.onChange(undefined);
+                          } else {
+                            const parsed = parseFloat(trimmed);
+                            field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                          }
                           field.onBlur();
                           handleIntervalChange();
                         }}
