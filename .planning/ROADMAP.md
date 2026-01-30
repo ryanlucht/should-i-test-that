@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 1: Foundation & Wizard Infrastructure
 **Goal**: Users can navigate through a 5-step wizard with data persistence and session awareness
 **Depends on**: Nothing (first phase)
-**Requirements**: WIZARD-01, WIZARD-02, WIZARD-03, WIZARD-04, WIZARD-05, WIZARD-07, DESIGN-01, DESIGN-02, DESIGN-05
+**Requirements**: WIZARD-01, WIZARD-02, WIZARD-03, WIZARD-04, WIZARD-05, WIZARD-07, DESIGN-01, DESIGN-02, DESIGN-05 (WIZARD-06 — SKIPPED by user decision: no leave warning needed for a simple calculator)
 **SPEC.md Reference**: Section 11 (UX flow), Section 12 (Design requirements)
 **Success Criteria** (what must be TRUE):
   1. User sees a progress indicator with descriptive labels (Baseline, Uncertainty, Threshold, Results)
