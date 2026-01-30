@@ -38,10 +38,18 @@ export interface SharedInputs {
   visitorUnitLabel: string;
   /** Revenue or value per conversion in dollars */
   valuePerConversion: number | null;
-  /** User's prior belief about the effect (selected from predefined options) */
-  priorType: string | null;
-  /** Decision threshold - minimum detectable effect worth testing */
-  threshold: number | null;
+  /** Prior type selection: 'default' uses N(0, 0.05), 'custom' uses interval bounds */
+  priorType: 'default' | 'custom' | null;
+  /** Lower bound of 90% credible interval (percentage form, e.g., -5 for -5%) */
+  priorIntervalLow: number | null;
+  /** Upper bound of 90% credible interval (percentage form, e.g., 10 for 10%) */
+  priorIntervalHigh: number | null;
+  /** Threshold scenario: 'any-positive' | 'minimum-lift' | 'accept-loss' */
+  thresholdScenario: 'any-positive' | 'minimum-lift' | 'accept-loss' | null;
+  /** Threshold unit when applicable: 'dollars' | 'lift' */
+  thresholdUnit: 'dollars' | 'lift' | null;
+  /** Threshold value in the selected unit (can be negative for accept-loss scenario) */
+  thresholdValue: number | null;
 }
 
 /**
@@ -89,7 +97,11 @@ export const initialSharedInputs: SharedInputs = {
   visitorUnitLabel: 'visitors',
   valuePerConversion: null,
   priorType: null,
-  threshold: null,
+  priorIntervalLow: null,
+  priorIntervalHigh: null,
+  thresholdScenario: null,
+  thresholdUnit: null,
+  thresholdValue: null,
 };
 
 /**

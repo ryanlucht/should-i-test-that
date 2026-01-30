@@ -67,3 +67,85 @@ export const baselineMetricsSchema = z.object({
 });
 
 export type BaselineMetricsFormData = z.infer<typeof baselineMetricsSchema>;
+
+/**
+ * Prior Selection Schema
+ *
+ * Users can either use the default prior or specify a custom 90% interval.
+ * The interval bounds are in percentage form (e.g., -5% to 10%).
+ *
+ * Per SPEC.md Section 6.2:
+ * - Default prior: N(0, 0.05)
+ * - Custom: User specifies L_low and L_high, we derive mu_L and sigma_L
+ *
+ * Validation rules:
+ * - Low bound can be negative (expecting loss is valid)
+ * - High bound can be >100% (expecting huge gains, though unusual)
+ * - Low must be strictly less than high
+ * - Interval must not be impossibly narrow (results in near-zero sigma)
+ */
+export const priorSelectionSchema = z
+  .object({
+    /** Prior type: 'default' uses N(0, 0.05), 'custom' uses interval bounds */
+    priorType: z.enum(['default', 'custom']),
+    /**
+     * Lower bound of 90% credible interval (percentage form)
+     * e.g., -5 means "I'm 90% sure the lift is at least -5%"
+     */
+    intervalLow: z
+      .number({ error: 'Lower bound is required' })
+      .min(-100, { message: 'Cannot expect more than 100% loss' }),
+    /**
+     * Upper bound of 90% credible interval (percentage form)
+     * e.g., 10 means "I'm 90% sure the lift is at most 10%"
+     */
+    intervalHigh: z.number({ error: 'Upper bound is required' }),
+  })
+  .refine((data) => data.intervalLow < data.intervalHigh, {
+    message: 'Lower bound must be less than upper bound',
+    path: ['intervalHigh'],
+  })
+  .refine((data) => data.intervalHigh - data.intervalLow >= 0.1, {
+    message: 'Interval is too narrow (uncertainty too low)',
+    path: ['intervalHigh'],
+  });
+
+export type PriorSelectionFormData = z.infer<typeof priorSelectionSchema>;
+
+/**
+ * Threshold Scenario Schema
+ *
+ * Three scenarios per SPEC.md Section 7.3:
+ * 1. Ship any positive impact (T = 0)
+ * 2. Needs minimum lift (T > 0)
+ * 3. Worth it even with small loss (T < 0)
+ *
+ * Note: For scenario 3, user enters "acceptable loss" as positive,
+ * but we store as negative threshold internally.
+ */
+export const thresholdScenarioSchema = z.discriminatedUnion('scenario', [
+  // Scenario 1: Ship any positive
+  z.object({
+    scenario: z.literal('any-positive'),
+    // No threshold value needed - T = 0
+  }),
+  // Scenario 2: Minimum lift required
+  z.object({
+    scenario: z.literal('minimum-lift'),
+    thresholdUnit: z.enum(['dollars', 'lift']),
+    thresholdValue: z
+      .number({ error: 'Threshold value is required' })
+      .positive({ message: 'Must be a positive value' }),
+  }),
+  // Scenario 3: Accept small loss
+  z.object({
+    scenario: z.literal('accept-loss'),
+    thresholdUnit: z.enum(['dollars', 'lift']),
+    // User enters positive "acceptable loss"
+    acceptableLoss: z
+      .number({ error: 'Acceptable loss is required' })
+      .positive({ message: 'Enter as a positive value (e.g., 5 for 5% loss)' }),
+  }),
+]);
+
+export type ThresholdScenarioFormData = z.infer<typeof thresholdScenarioSchema>;
