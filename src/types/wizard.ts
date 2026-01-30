@@ -30,10 +30,12 @@ export type SectionId =
  * These values are used in both Basic and Advanced calculations
  */
 export interface SharedInputs {
-  /** Baseline conversion rate as a percentage (e.g., 5 for 5%) */
+  /** Baseline conversion rate as a decimal (e.g., 0.05 for 5%) */
   baselineConversionRate: number | null;
   /** Annual visitors/traffic */
   annualVisitors: number | null;
+  /** User-editable label for visitors (visitors/sessions/leads/etc.) */
+  visitorUnitLabel: string;
   /** Revenue or value per conversion in dollars */
   valuePerConversion: number | null;
   /** User's prior belief about the effect (selected from predefined options) */
@@ -84,6 +86,7 @@ export interface NavigationState {
 export const initialSharedInputs: SharedInputs = {
   baselineConversionRate: null,
   annualVisitors: null,
+  visitorUnitLabel: 'visitors',
   valuePerConversion: null,
   priorType: null,
   threshold: null,
