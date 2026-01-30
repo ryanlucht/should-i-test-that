@@ -142,6 +142,7 @@ export function calculateEVPI(inputs: EVPIInputs): EVPIResults {
     probabilityClearsThreshold,
     chanceOfBeingWrong,
     K,
+    threshold_L,
     threshold_dollars,
     zScore,
     phiZ,

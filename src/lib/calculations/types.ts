@@ -57,6 +57,9 @@ export interface EVPIResults {
   /** K = N_year * CR0 * V (annual dollars per unit lift) */
   K: number;
 
+  /** T_L = threshold in lift units (decimal) */
+  threshold_L: number;
+
   /** T_$ = K * T_L (threshold in dollars) */
   threshold_dollars: number;
 
