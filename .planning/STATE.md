@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 2 of 6 (Basic Mode Inputs)
-Plan: 1 of 3 in phase 2
-Status: In progress
-Last activity: 2026-01-30 - Completed 02-01-PLAN.md (Baseline Metrics Form)
+Plan: 3 of 3 in phase 2 - COMPLETE
+Status: Phase 2 complete
+Last activity: 2026-01-30 - Completed 02-03-PLAN.md (Shipping Threshold Form)
 
-Progress: [████▒░░░░░░░░░░░░░░░░] 24% (5/21 plans)
+Progress: [███████░░░░░░░░░░░░░░] 33% (7/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 9 min
-- Total execution time: 44 min
+- Total plans completed: 7
+- Average duration: 10 min
+- Total execution time: 72 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 4/4 | 34 min | 9 min |
-| 2 | 1/3 | 10 min | 10 min |
+| 2 | 3/3 | 38 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (12 min), 01-03 (6 min), 01-04 (8 min), 02-01 (10 min)
-- Trend: Stable
+- Last 5 plans: 01-03 (6 min), 01-04 (8 min), 02-01 (10 min), 02-02 (10 min), 02-03 (18 min)
+- Trend: Slightly increasing (forms are more complex)
 
 *Updated after each plan completion*
 
@@ -60,6 +60,9 @@ Recent decisions affecting current work:
 | Zod v4 API (error instead of required_error) | 02-01 | Zod v4 breaking change requires new syntax |
 | FormProvider + useFormContext pattern | 02-01 | Avoids complex generic type issues with input components |
 | Format on blur, raw during editing | 02-01 | Better UX for numeric input editing |
+| RadioCard children outside button | 02-03 | Avoids nested buttons HTML validation errors with Radix |
+| ResizeObserver mock for tests | 02-03 | Required for Radix UI components using @radix-ui/react-use-size |
+| Sign convention: accept-loss stores negative | 02-03 | Per SPEC.md Section 7.3, T_$ = -Loss_$ for scenario 3 |
 
 ### Pending Todos
 
@@ -72,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 02-01-PLAN.md (Baseline Metrics Form)
+Stopped at: Completed 02-03-PLAN.md (Shipping Threshold Form)
 Resume file: None
