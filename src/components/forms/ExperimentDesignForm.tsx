@@ -185,7 +185,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             <NumberInput
               name="dailyTraffic"
               label="Daily eligible traffic"
-              placeholder="2,740"
+              placeholder="5,000"
               helpText="Average daily visitors who can enter the experiment"
               tooltip="The number of visitors per day who are eligible to be included in the test."
               error={errors.dailyTraffic?.message}
