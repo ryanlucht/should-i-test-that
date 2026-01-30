@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Calculation Engine** - EVPI calculation, closed-form and Monte Carlo, Web Worker setup
 - [x] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
 - [x] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
-- [ ] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
+- [x] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
 - [ ] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
 
 ## Phase Details
@@ -125,12 +125,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Dependencies, distributions abstraction, store updates (Wave 1)
-- [ ] 05-02-PLAN.md — Prior shape form with radio cards and Student-t df presets (Wave 1)
-- [ ] 05-03-PLAN.md — Experiment design form with auto-derive daily traffic (Wave 1)
-- [ ] 05-04-PLAN.md — TDD: EVSI, CoD, sample size calculations (Wave 2)
-- [ ] 05-05-PLAN.md — Web Worker + useEVSICalculations hook (Wave 3)
-- [ ] 05-06-PLAN.md — Advanced results UI + chart updates for all prior shapes (Wave 3)
+- [x] 05-01-PLAN.md — Dependencies, distributions abstraction, store updates (Wave 1)
+- [x] 05-02-PLAN.md — Prior shape form with radio cards and Student-t df presets (Wave 1)
+- [x] 05-03-PLAN.md — Experiment design form with auto-derive daily traffic (Wave 1)
+- [x] 05-04-PLAN.md — TDD: EVSI, CoD, sample size calculations (Wave 2)
+- [x] 05-05-PLAN.md — Web Worker + useEVSICalculations hook (Wave 3)
+- [x] 05-06-PLAN.md — Advanced results UI + chart updates for all prior shapes (Wave 3)
 
 ### Phase 6: Export & Polish
 **Goal**: Users can export results and experience polished, accessible interface
@@ -161,7 +161,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Calculation Engine | 3/3 | Complete | 2026-01-30 |
 | 4. Visualization & Results | 3/3 | Complete | 2026-01-30 |
 | 4.1. Calculation Engine Fixes (INSERTED) | 1/1 | Complete | 2026-01-30 |
-| 5. Advanced Mode | 0/6 | Not started | - |
+| 5. Advanced Mode | 6/6 | Complete | 2026-01-30 |
 | 6. Export & Polish | 0/3 | Not started | - |
 
 ---
@@ -176,4 +176,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 4 completed: 2026-01-30*
 *Phase 4.1 completed: 2026-01-30*
 *Phase 5 planned: 2026-01-30*
+*Phase 5 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
