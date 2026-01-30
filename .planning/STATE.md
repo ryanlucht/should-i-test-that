@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 4 Complete - Ready for Phase 5
+**Current focus:** Phase 4.1 Complete - Ready for Phase 5
 
 ## Current Position
 
-Phase: 4 of 6 (Visualization & Results) - COMPLETE
-Plan: 3 of 3 in phase 4 complete
-Status: Phase 4 verified complete, ready for Phase 5 (Advanced Mode)
-Last activity: 2026-01-30 - Phase 4 execution and verification complete
+Phase: 4.1 of 6 (Calculation Engine Fixes) - COMPLETE
+Plan: 1 of 1 in phase 4.1 complete
+Status: Phase 4.1 verified complete, ready for Phase 5 (Advanced Mode)
+Last activity: 2026-01-30 - Completed 04.1-01-PLAN.md
 
-Progress: [████████████████░░░░░] 76% (16/21 plans)
+Progress: [█████████████████░░░░] 81% (17/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 8 min
-- Total execution time: 120 min
+- Total plans completed: 17
+- Average duration: 7 min
+- Total execution time: 124 min
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [████████████████░░░░░] 76% 
 | 2 | 6/6 | 54 min | 9 min |
 | 3 | 3/3 | 14 min | 5 min |
 | 4 | 3/3 | 18 min | 6 min |
+| 4.1 | 1/1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (3 min), 03-03 (6 min), 04-01 (5 min), 04-02 (5 min), 04-03 (8 min)
-- Trend: UI component plans taking slightly longer than pure calculation plans
+- Last 5 plans: 03-03 (6 min), 04-01 (5 min), 04-02 (5 min), 04-03 (8 min), 04.1-01 (4 min)
+- Trend: Bug fix plans execute faster than feature plans
 
 *Updated after each plan completion*
 
@@ -87,15 +88,17 @@ Recent decisions affecting current work:
 | 2x2 grid layout for supporting cards | 04-03 | Per 04-CONTEXT.md allowing Claude's discretion |
 | Highlight variant threshold >20% | 04-03 | Regret card highlights when chance of being wrong exceeds 20% |
 | formatProbabilityPercent edge cases | 04-03 | Shows "<1%" and ">99%" to avoid misleading precision |
+| NaN check before infinity | 04.1-01 | Number.isNaN() placed before isFinite() to propagate NaN correctly |
+| Infinity z-score for degenerate sigma | 04.1-01 | sigma=0 yields +/-Infinity z, causing EVPI=0 (no uncertainty) |
 
 ### Roadmap Evolution
 
-- Phase 4.1 inserted after Phase 4: Calculation Engine Fixes (URGENT) — Fix degenerate sigma handling, NaN propagation in CDF, add statistics test coverage
+- Phase 4.1 inserted after Phase 4: Calculation Engine Fixes (COMPLETE) - Fixed degenerate sigma handling, NaN propagation in CDF, added statistics test coverage
 
 ### Pending Todos
 
-1. **Implement actual truncation for EVPI calculation** (calculations) — Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
-2. **Remove regret shading from prior distribution chart** (ui) — User feedback: too confusing, creates visual clutter
+1. **Implement actual truncation for EVPI calculation** (calculations) - Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
+2. **Remove regret shading from prior distribution chart** (ui) - User feedback: too confusing, creates visual clutter
 
 ### Blockers/Concerns
 
@@ -104,5 +107,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 04-03-PLAN.md (Results Section)
+Stopped at: Completed 04.1-01-PLAN.md (Calculation Engine Fixes)
 Resume file: None
