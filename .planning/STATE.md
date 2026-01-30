@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 3 Complete - Ready for Phase 4
+**Current focus:** Phase 4 - Visualization & Results
 
 ## Current Position
 
-Phase: 3 of 6 (Calculation Engine) - COMPLETE
-Plan: 3 of 3 in phase 3 complete
-Status: Phase 3 complete, ready for Phase 4 (Visualization & Results)
-Last activity: 2026-01-30 - Completed 03-03-PLAN.md (useEVPICalculations hook)
+Phase: 4 of 6 (Visualization & Results)
+Plan: 1 of 3 in phase 4 complete
+Status: In progress
+Last activity: 2026-01-30 - Completed 04-01-PLAN.md (Chart Infrastructure)
 
-Progress: [██████████████░░░░░░░] 62% (13/21 plans)
+Progress: [███████████████░░░░░░] 67% (14/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 8 min
-- Total execution time: 102 min
+- Total execution time: 107 min
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [██████████████░░░░░░░] 62% 
 | 1 | 4/4 | 34 min | 9 min |
 | 2 | 6/6 | 54 min | 9 min |
 | 3 | 3/3 | 14 min | 5 min |
+| 4 | 1/3 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-05 (4 min), 02-06 (4 min), 03-01 (5 min), 03-02 (3 min), 03-03 (6 min)
+- Last 5 plans: 02-06 (4 min), 03-01 (5 min), 03-02 (3 min), 03-03 (6 min), 04-01 (5 min)
 - Trend: Pure calculation/TDD plans are quick (~5 min)
 
 *Updated after each plan completion*
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 | Hook returns null when incomplete | 03-03 | Results section hidden until all inputs valid |
 | Default prior when interval null OR matches defaults | 03-03 | Handles both initial state and "Use Recommended Default" action |
 | Explicit useMemo dependency array | 03-03 | All 8 input fields listed to avoid stale calculations |
+| 4 sigma range for density curve | 04-01 | Covers 99.99% of distribution for proper tail rendering |
+| Animation disabled for chart | 04-01 | Per 04-RESEARCH.md, animation off for live form updates |
 
 ### Pending Todos
 
@@ -90,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 03-03-PLAN.md (useEVPICalculations hook) - Phase 3 complete
+Stopped at: Completed 04-01-PLAN.md (Chart Infrastructure)
 Resume file: None
