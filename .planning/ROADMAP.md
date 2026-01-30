@@ -71,12 +71,12 @@ Plans:
   3. System calculates EVPI using closed-form Normal formula with truncation at L >= -1
   4. System calculates probability of clearing threshold P(L >= T_L)
   5. Results update live as user changes inputs (no submit button needed)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Core calculation functions (K, threshold conversion, default decision)
-- [ ] 03-02: EVPI calculation (closed-form Normal, truncated prior handling)
-- [ ] 03-03: Web Worker setup for Monte Carlo (preparation for Advanced mode)
+- [ ] 03-01-PLAN.md — TDD: Statistics primitives (phi/Phi), derived values (K, threshold), smart formatting
+- [ ] 03-02-PLAN.md — TDD: EVPI calculation (closed-form Normal formula, edge case detection)
+- [ ] 03-03-PLAN.md — React hook connecting store to EVPI calculation (useEVPICalculations)
 
 ### Phase 4: Visualization & Results
 **Goal**: Users see their inputs visualized and receive clear Basic mode results
@@ -142,7 +142,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation & Wizard Infrastructure | 4/4 | Complete | 2026-01-30 |
 | 2. Basic Mode Inputs | 6/6 | Complete | 2026-01-30 |
-| 3. Calculation Engine | 0/3 | Not started | - |
+| 3. Calculation Engine | 0/3 | Planned | - |
 | 4. Visualization & Results | 0/3 | Not started | - |
 | 5. Advanced Mode | 0/5 | Not started | - |
 | 6. Export & Polish | 0/3 | Not started | - |
@@ -154,4 +154,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 2 planned: 2026-01-30*
 *Phase 2 UAT: 5 issues found, 3 gap closure plans created: 2026-01-30*
 *Phase 2 gap closure completed: 2026-01-30*
+*Phase 3 planned: 2026-01-30*
 *Total requirements mapped: 67/67*
