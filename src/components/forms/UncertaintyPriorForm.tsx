@@ -40,7 +40,7 @@ import { DEFAULT_INTERVAL, computePriorFromInterval } from '@/lib/prior';
 import { useWizardStore } from '@/stores/wizardStore';
 import { useEVPICalculations } from '@/hooks/useEVPICalculations';
 import { deriveK } from '@/lib/calculations';
-import { PriorDistributionChart } from '@/components/charts';
+import { PriorDistributionChartLegacy } from '@/components/charts';
 import { PriorShapeForm, type PriorShapeFormHandle } from './PriorShapeForm';
 import { InfoTooltip } from './inputs/InfoTooltip';
 import { Input } from '@/components/ui/input';
@@ -556,7 +556,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                       <p className="text-sm font-medium text-foreground">
                         Your belief distribution:
                       </p>
-                      <PriorDistributionChart
+                      <PriorDistributionChartLegacy
                         mu_L={priorParams.mu_L}
                         sigma_L={priorParams.sigma_L}
                         // threshold_L: derive from threshold_dollars / K when EVPI results available

@@ -4,6 +4,11 @@
  * Renders a smooth density curve visualizing the user's prior uncertainty
  * about the expected lift from their feature/experiment.
  *
+ * Supports all prior distribution shapes:
+ * - Normal (default for Basic mode and Advanced mode default)
+ * - Student-t (Advanced mode option with heavier tails)
+ * - Uniform (Advanced mode option with bounded flat distribution)
+ *
  * Design requirements (per 04-CONTEXT.md):
  * - Datadog-style gradient fill under the curve
  * - Purple accent color (#7C3AED)
@@ -11,13 +16,8 @@
  * - X-axis shows lift percentages with sign and %
  * - Responsive sizing via ResponsiveContainer
  *
- * Overlays (per 04-02-PLAN.md):
- * - VIZ-02: Mean marker (purple dot on curve)
- * - VIZ-03: 90% interval shading (purple region between 5th/95th percentiles)
- * - VIZ-04: Threshold line (dashed vertical line with label)
- * - VIZ-06: Custom tooltip with dollar conversion
- *
- * Note: VIZ-05 (regret shading) was removed per user feedback - too confusing
+ * Per 05-CONTEXT.md: "main chart updates live on selection"
+ * Chart re-renders immediately when prior shape changes via store reactivity.
  */
 
 import { useMemo } from 'react';
@@ -32,29 +32,30 @@ import {
   ReferenceDot,
   Tooltip,
 } from 'recharts';
-import { generateDensityCurveData, getDensityAtLift } from '@/lib/calculations/chart-data';
+import {
+  generateDistributionData,
+  getDensityAtLiftForPrior,
+} from '@/lib/calculations/chart-data';
+import { getPriorMean, type PriorDistribution } from '@/lib/calculations';
 import { formatLiftPercent } from '@/lib/formatting';
 import { ChartTooltip } from './ChartTooltip';
 
 /**
  * Z-score for 95th percentile of standard normal distribution
- * Used to calculate 90% credible interval bounds (5th to 95th percentile)
+ * Used to calculate 90% credible interval bounds for Normal and Student-t
  */
 const Z_95 = 1.6448536;
 
 /**
  * Props for the PriorDistributionChart component
  *
- * @property mu_L - Prior mean lift as decimal (e.g., 0.05 for 5%)
- * @property sigma_L - Prior standard deviation as decimal (e.g., 0.05 for 5%)
- * @property threshold_L - Decision threshold in lift units (decimal)
- * @property K - Scaling constant: dollars per unit lift (N_year * CR0 * V)
+ * The chart can render any prior distribution shape by accepting a
+ * PriorDistribution object. For Basic mode, this is constructed from
+ * mu_L and sigma_L with type='normal'.
  */
 interface PriorDistributionChartProps {
-  /** Prior mean lift (decimal, e.g., 0.05 for 5%) */
-  mu_L: number;
-  /** Prior standard deviation (decimal, e.g., 0.05 for 5%) */
-  sigma_L: number;
+  /** Prior distribution parameters */
+  prior: PriorDistribution;
   /** Threshold in lift units (decimal, e.g., 0 for "any positive") */
   threshold_L: number;
   /** Dollars per unit lift: K = N_year * CR0 * V */
@@ -76,10 +77,36 @@ function getThresholdLabel(thresholdPercent: number): string {
 }
 
 /**
+ * Calculate 90% credible interval bounds for display
+ *
+ * For Normal/Student-t: mu +/- Z_95 * sigma (approximate for t)
+ * For Uniform: exact bounds [low, high] represent 100%, show full range
+ */
+function getIntervalBounds(prior: PriorDistribution): {
+  low: number;
+  high: number;
+} {
+  if (prior.type === 'uniform') {
+    // For Uniform, the entire range is the distribution bounds
+    // Don't shade 90% interval - the whole distribution IS the interval
+    return { low: prior.low_L!, high: prior.high_L! };
+  }
+
+  // Normal and Student-t: use z-score approximation
+  // (This is exact for Normal, approximate for Student-t)
+  const mu_L = prior.mu_L!;
+  const sigma_L = prior.sigma_L!;
+  return {
+    low: mu_L - Z_95 * sigma_L,
+    high: mu_L + Z_95 * sigma_L,
+  };
+}
+
+/**
  * Prior distribution chart with all overlays
  *
  * Displays:
- * - Smooth density curve with gradient fill
+ * - Smooth density curve with gradient fill (or rectangle for Uniform)
  * - 90% credible interval shading (purple)
  * - Threshold line (dashed with label)
  * - Mean marker (purple dot)
@@ -89,32 +116,34 @@ function getThresholdLabel(thresholdPercent: number): string {
  * chart data on every render. Animation disabled for live updates.
  */
 export function PriorDistributionChart({
-  mu_L,
-  sigma_L,
+  prior,
   threshold_L,
   K,
 }: PriorDistributionChartProps) {
   // Memoize chart data to prevent regeneration on every render
-  // Dependency array includes both prior parameters to update when user changes inputs
+  // Dependency includes full prior object to update when shape or params change
   const chartData = useMemo(
-    () => generateDensityCurveData(mu_L, sigma_L),
-    [mu_L, sigma_L]
+    () => generateDistributionData(prior),
+    [prior]
   );
 
-  // Calculate 90% interval bounds (5th to 95th percentile)
-  // lowBound = mu - Z_95 * sigma (5th percentile)
-  // highBound = mu + Z_95 * sigma (95th percentile)
-  const intervalLow = mu_L - Z_95 * sigma_L;
-  const intervalHigh = mu_L + Z_95 * sigma_L;
+  // Calculate interval bounds based on distribution type
+  const intervalBounds = useMemo(() => getIntervalBounds(prior), [prior]);
+
+  // Get prior mean for mean marker position
+  const priorMean = getPriorMean(prior);
 
   // Convert to percentages for chart display
-  const intervalLowPercent = intervalLow * 100;
-  const intervalHighPercent = intervalHigh * 100;
+  const intervalLowPercent = intervalBounds.low * 100;
+  const intervalHighPercent = intervalBounds.high * 100;
   const thresholdPercent = threshold_L * 100;
-  const meanPercent = mu_L * 100;
+  const meanPercent = priorMean * 100;
 
-  // Get density at mean for ReferenceDot y-position (peak of curve)
-  const densityAtMean = getDensityAtLift(mu_L, mu_L, sigma_L);
+  // Get density at mean for ReferenceDot y-position
+  const densityAtMean = getDensityAtLiftForPrior(priorMean, prior);
+
+  // Determine chart type for Area (Uniform should use step interpolation)
+  const areaType = prior.type === 'uniform' ? 'stepAfter' : 'monotone';
 
   return (
     <ResponsiveContainer width="100%" height={200}>
@@ -131,17 +160,19 @@ export function PriorDistributionChart({
           </linearGradient>
         </defs>
 
-        {/* VIZ-03: 90% Interval Shading - renders BEFORE curve for background layering */}
-        {/* Purple shading between 5th and 95th percentile bounds */}
-        <ReferenceArea
-          x1={intervalLowPercent}
-          x2={intervalHighPercent}
-          fill="#7C3AED"
-          fillOpacity={0.15}
-          ifOverflow="hidden"
-        />
+        {/* 90% Interval Shading - only show for Normal/Student-t */}
+        {/* For Uniform, the entire distribution represents the interval */}
+        {prior.type !== 'uniform' && (
+          <ReferenceArea
+            x1={intervalLowPercent}
+            x2={intervalHighPercent}
+            fill="#7C3AED"
+            fillOpacity={0.15}
+            ifOverflow="hidden"
+          />
+        )}
 
-        {/* VIZ-04: Threshold Line - dashed vertical line with decision rule label */}
+        {/* Threshold Line - dashed vertical line with decision rule label */}
         <ReferenceLine
           x={thresholdPercent}
           stroke="#6B7280"
@@ -172,10 +203,10 @@ export function PriorDistributionChart({
         <YAxis hide domain={[0, 'auto']} />
 
         {/* Density curve with gradient fill */}
-        {/* type="monotone" creates smooth Bezier curves between points */}
+        {/* type varies: "monotone" for smooth curves, "stepAfter" for Uniform rectangle */}
         {/* Animation disabled per 04-RESEARCH.md for live updates */}
         <Area
-          type="monotone"
+          type={areaType}
           dataKey="density"
           stroke="#7C3AED"
           strokeWidth={2}
@@ -183,10 +214,11 @@ export function PriorDistributionChart({
           isAnimationActive={false}
         />
 
-        {/* VIZ-06: Custom Tooltip with lift and dollar conversion */}
+        {/* Custom Tooltip with lift and dollar conversion */}
         <Tooltip content={<ChartTooltip K={K} />} />
 
-        {/* VIZ-02: Mean Marker - purple dot at the peak of the curve */}
+        {/* Mean Marker - purple dot at the mean of the distribution */}
+        {/* For Uniform, this is at the midpoint; for Normal/t, at the peak */}
         <ReferenceDot
           x={meanPercent}
           y={densityAtMean}
@@ -198,4 +230,45 @@ export function PriorDistributionChart({
       </AreaChart>
     </ResponsiveContainer>
   );
+}
+
+/**
+ * Legacy props interface for backward compatibility
+ *
+ * This allows existing callers using mu_L/sigma_L to continue working.
+ * Used by Basic mode which doesn't need to specify prior shape.
+ */
+interface LegacyPriorDistributionChartProps {
+  /** Prior mean lift (decimal, e.g., 0.05 for 5%) */
+  mu_L: number;
+  /** Prior standard deviation (decimal, e.g., 0.05 for 5%) */
+  sigma_L: number;
+  /** Threshold in lift units (decimal, e.g., 0 for "any positive") */
+  threshold_L: number;
+  /** Dollars per unit lift: K = N_year * CR0 * V */
+  K: number;
+}
+
+/**
+ * Backward-compatible wrapper for PriorDistributionChart
+ *
+ * Allows callers to pass mu_L and sigma_L directly (assumes Normal distribution).
+ * This is used by ResultsSection in Basic mode where we don't need shape selection.
+ */
+export function PriorDistributionChartLegacy({
+  mu_L,
+  sigma_L,
+  threshold_L,
+  K,
+}: LegacyPriorDistributionChartProps) {
+  const prior: PriorDistribution = useMemo(
+    () => ({
+      type: 'normal' as const,
+      mu_L,
+      sigma_L,
+    }),
+    [mu_L, sigma_L]
+  );
+
+  return <PriorDistributionChart prior={prior} threshold_L={threshold_L} K={K} />;
 }
