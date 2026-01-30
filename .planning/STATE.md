@@ -98,7 +98,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 1. **Implement actual truncation for EVPI calculation** (calculations) - Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
-2. **Add Test Costs inputs and full Net Value calculation** (advanced-mode) - Hard costs + labor inputs, Net Value = max(0, EVSI - CoD - Test Costs), potentially declarative verdict
+2. **Add Test Costs for declarative verdict** (calculations) - Hard costs + labor inputs, Net Value = max(0, EVSI - CoD - Test Costs), verdict "Test this!" or "Don't test this!"
 3. **Fix threshold equals lift explanation copy** (ui) - When mu_L == T_L, copy says "exceeds" but should say "equals" or "meets"
 
 ### Blockers/Concerns
