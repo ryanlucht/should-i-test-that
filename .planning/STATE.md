@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 2 of 6 (Basic Mode Inputs) - COMPLETE
-Plan: 3 of 3 in phase 2
-Status: Phase 2 verified, ready for Phase 3
-Last activity: 2026-01-30 - Phase 2 verified (15/15 must-haves passed)
+Plan: 6 of 6 in phase 2 (including gap closure)
+Status: Gap closure complete, ready for Phase 3
+Last activity: 2026-01-30 - Completed 02-06-PLAN.md (validation timing + prior display fixes)
 
-Progress: [███████░░░░░░░░░░░░░░] 33% (7/21 plans)
+Progress: [████████░░░░░░░░░░░░░] 38% (8/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 10 min
-- Total execution time: 72 min
+- Total execution time: 76 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 4/4 | 34 min | 9 min |
-| 2 | 3/3 | 38 min | 13 min |
+| 2 | 4/4 | 42 min | 11 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (6 min), 01-04 (8 min), 02-01 (10 min), 02-02 (10 min), 02-03 (18 min)
-- Trend: Slightly increasing (forms are more complex)
+- Last 5 plans: 01-04 (8 min), 02-01 (10 min), 02-02 (10 min), 02-03 (18 min), 02-06 (4 min)
+- Trend: Gap closure plans are quick
 
 *Updated after each plan completion*
 
@@ -66,6 +66,8 @@ Recent decisions affecting current work:
 | RadioCard children outside button | 02-03 | Avoids nested buttons HTML validation errors with Radix |
 | ResizeObserver mock for tests | 02-03 | Required for Radix UI components using @radix-ui/react-use-size |
 | Sign convention: accept-loss stores negative | 02-03 | Per SPEC.md Section 7.3, T_$ = -Loss_$ for scenario 3 |
+| reValidateMode: 'onBlur' for all forms | 02-06 | Prevents validation errors updating while typing |
+| Rounded integer for default prior display | 02-06 | Shows "8%" instead of "8.22%" for cleaner UI |
 
 ### Pending Todos
 
@@ -78,5 +80,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Phase 2 complete, verified, ready for Phase 3
+Stopped at: 02-06 gap closure complete, ready for UAT re-verification
 Resume file: None
