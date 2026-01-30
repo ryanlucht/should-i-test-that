@@ -468,7 +468,56 @@ describe('calculateEVPI', () => {
   });
 
   // ===========================================
-  // 8. Non-negativity constraint
+  // 8. Degenerate sigma (sigma_L = 0) tests
+  // ===========================================
+
+  describe('degenerate sigma (sigma_L = 0)', () => {
+    it('returns EVPI = 0 when sigma_L = 0 (no uncertainty)', () => {
+      // When sigma = 0, the prior is a point mass - no uncertainty means
+      // no value of information (we already know the true value)
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0.05, sigma_L: 0 }, // degenerate prior at 5%
+        threshold_L: 0,
+      });
+
+      // EVPI should be exactly 0 - no uncertainty means no regret
+      expect(result.evpiDollars).toBe(0);
+    });
+
+    it('returns EVPI = 0 when sigma_L = 0 and mu_L < threshold', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0, sigma_L: 0 }, // point mass at 0
+        threshold_L: 0.05, // threshold above point mass
+      });
+
+      // Default is Don't Ship, and with certainty, no regret
+      expect(result.defaultDecision).toBe('dont-ship');
+      expect(result.evpiDollars).toBe(0);
+    });
+
+    it('returns EVPI = 0 when sigma_L = 0 and mu_L = threshold', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0.05, sigma_L: 0 }, // point mass at 5%
+        threshold_L: 0.05, // threshold equals point mass
+      });
+
+      // Default is Ship (mu >= threshold), and with certainty, no regret
+      expect(result.defaultDecision).toBe('ship');
+      expect(result.evpiDollars).toBe(0);
+    });
+  });
+
+  // ===========================================
+  // 9. Non-negativity constraint
   // ===========================================
 
   describe('non-negativity', () => {

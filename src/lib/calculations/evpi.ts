@@ -66,8 +66,19 @@ export function calculateEVPI(inputs: EVPIInputs): EVPIResults {
   // ===========================================
   // z = (T_L - mu_L) / sigma_L
   // This standardizes the threshold relative to the prior distribution
-  // Handle edge case: if sigma_L is 0 or very small, z would be infinite
-  const zScore = sigma_L > 0 ? (threshold_L - mu_L) / sigma_L : 0;
+  // Handle degenerate prior (sigma = 0): z-score represents where threshold
+  // is relative to the point mass at mu_L
+  // - If threshold equals mu: z = 0 (boundary case)
+  // - If threshold > mu: z = +Infinity (threshold above point mass)
+  // - If threshold < mu: z = -Infinity (threshold below point mass)
+  let zScore: number;
+  if (sigma_L > 0) {
+    zScore = (threshold_L - mu_L) / sigma_L;
+  } else if (threshold_L === mu_L) {
+    zScore = 0;
+  } else {
+    zScore = threshold_L > mu_L ? Infinity : -Infinity;
+  }
 
   // ===========================================
   // Step 4: Calculate standard normal PDF and CDF at z
