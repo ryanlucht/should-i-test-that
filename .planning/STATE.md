@@ -98,6 +98,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 1. **Implement actual truncation for EVPI calculation** (calculations) - Explore Method B numerical integration for edge cases where prior has significant mass below L=-1
+2. **Add Test Costs inputs and full Net Value calculation** (advanced-mode) - Hard costs + labor inputs, Net Value = max(0, EVSI - CoD - Test Costs), potentially declarative verdict
 
 ### Blockers/Concerns
 
