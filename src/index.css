@@ -17,6 +17,15 @@
  * - Surface: #FFFFFF (white cards)
  * - Text primary: #1A1A2E (dark navy)
  * - Text secondary: #6B7280 (gray)
+ *
+ * Design Consistency (06-02):
+ * Purple accent (#7C3AED) is used consistently across all interactive elements:
+ * - Primary buttons (bg-primary)
+ * - Focus rings (--ring = --primary)
+ * - Selected states on RadioCards (border-primary)
+ * - Links (text-primary)
+ * - Chart accent colors (--chart-1)
+ * All colors use CSS custom properties for theme consistency.
  */
 
 @theme inline {
