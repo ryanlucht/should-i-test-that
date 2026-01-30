@@ -58,30 +58,36 @@ export function SectionWrapper({
     <section
       id={id}
       className={cn(
-        // Scroll offset: 128px = header (56px) + indicator (64px) + buffer (8px)
+        /*
+         * Design spec: scroll-margin-top 128px = header (56px) + indicator (64px) + buffer (8px)
+         * Border radius: 12px, Padding: 24px
+         */
         'scroll-mt-32',
-        // Card styling
         'rounded-xl border p-6 transition-all duration-300',
-        // Enabled vs disabled card appearance
+        // Enabled: white bg, subtle shadow
+        // Disabled: same bg but no shadow (opacity applied to content)
         isEnabled
-          ? 'border-border bg-card shadow-xs'
+          ? 'border-border bg-card shadow-sm'
           : 'border-border/50 bg-card shadow-none'
       )}
       aria-labelledby={`${id}-heading`}
     >
-      {/* Section Header */}
+      {/*
+       * Section Header
+       * Design spec: number circle 32px (h-8 w-8), gap 12px, border-bottom
+       */}
       <div
         className={cn(
           'mb-6 flex items-center gap-3 border-b pb-4',
           !isEnabled && 'opacity-40 grayscale'
         )}
       >
-        {/* Number circle or completed checkmark */}
+        {/* Number circle (32px) or completed checkmark */}
         <span
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold',
             isCompleted
-              ? 'bg-green-600 text-white'
+              ? 'bg-success text-white'
               : isEnabled
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground'
@@ -94,7 +100,7 @@ export function SectionWrapper({
           )}
         </span>
 
-        {/* Section title */}
+        {/* Section title - 18px font */}
         <h2
           id={`${id}-heading`}
           className={cn(

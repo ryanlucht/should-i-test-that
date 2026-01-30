@@ -78,7 +78,7 @@ export function ModeSelection({
     <RadioGroup
       value={selectedMode}
       onValueChange={(value) => onModeSelect(value as Mode)}
-      className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto"
+      className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-center max-w-[768px] mx-auto"
     >
       {modeOptions.map((option) => {
         const isSelected = selectedMode === option.id;
@@ -89,32 +89,40 @@ export function ModeSelection({
             htmlFor={option.id}
             className="cursor-pointer block"
           >
+            {/*
+             * Card Design Spec:
+             * - Max width: 360px each
+             * - Border radius: 12px
+             * - Padding: 24px
+             * - Selected: purple border (#7C3AED), subtle purple tint (#F9F5FF)
+             * - Hover: elevated shadow, translateY(-2px)
+             */}
             <Card
               className={cn(
-                'transition-all duration-200 h-full',
-                'hover:shadow-md hover:-translate-y-0.5',
+                'h-full max-w-[360px] mx-auto rounded-xl transition-all duration-200',
+                'shadow-sm hover:shadow-lg hover:-translate-y-0.5',
                 isSelected
-                  ? 'border-primary ring-2 ring-primary/20 bg-primary/[0.02]'
-                  : 'border-border hover:border-primary/30'
+                  ? 'border-2 border-primary bg-selected ring-2 ring-primary/15'
+                  : 'border-2 border-border hover:border-muted-foreground/30'
               )}
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="p-6 pb-3">
                 <div className="flex items-center gap-3">
                   <RadioGroupItem value={option.id} id={option.id} />
-                  <CardTitle className="text-lg">{option.title}</CardTitle>
+                  <CardTitle className="text-xl font-semibold">{option.title}</CardTitle>
                 </div>
-                <CardDescription className="ml-7">
+                <CardDescription className="ml-7 text-sm">
                   {option.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="ml-7">
+              <CardContent className="p-6 pt-0 ml-7">
                 <ul className="text-sm text-muted-foreground space-y-2">
                   {option.features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <span
                         className={cn(
                           'mt-1.5 size-1.5 rounded-full shrink-0',
-                          isSelected ? 'bg-primary' : 'bg-muted-foreground/50'
+                          isSelected ? 'bg-primary' : 'bg-muted-foreground/40'
                         )}
                         aria-hidden="true"
                       />

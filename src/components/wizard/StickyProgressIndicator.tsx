@@ -59,8 +59,8 @@ export function StickyProgressIndicator({
       aria-label="Form progress"
       className={cn(
         'sticky top-14 z-40', // top-14 = 56px (below header)
-        'bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60',
-        'border-b py-3'
+        'bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/80',
+        'border-b py-4' // py-4 = 16px padding, bringing height to ~64px with content
       )}
     >
       <ol className="flex items-center justify-center gap-2 md:gap-4">

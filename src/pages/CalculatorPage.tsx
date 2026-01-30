@@ -168,9 +168,12 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card px-4 md:px-6">
+    <div className="min-h-screen bg-surface">
+      {/*
+       * Sticky Header
+       * Design spec: height 56px, white bg, border-bottom, shadow when scrolled
+       */}
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card px-4 md:px-6 shadow-sm">
         <button
           type="button"
           onClick={onBack}
@@ -181,7 +184,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
         <ModeToggle />
       </header>
 
-      {/* Sticky Progress Indicator */}
+      {/* Sticky Progress Indicator - positioned below header */}
       <StickyProgressIndicator
         steps={SECTIONS.map((s) => ({ id: s.id, label: s.label }))}
         activeStepId={activeSection}
@@ -189,8 +192,11 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
         onStepClick={handleStepClick}
       />
 
-      {/* Sections Container */}
-      <main className="mx-auto max-w-3xl space-y-6 p-4 md:p-6">
+      {/*
+       * Sections Container
+       * Design spec: max-width 800px, 24px padding desktop
+       */}
+      <main className="mx-auto max-w-[800px] space-y-6 p-4 md:p-6">
         {SECTIONS.map((section, index) => {
           const isEnabled = canAccessSection(index);
           const isCompleted = completedSections.includes(index);

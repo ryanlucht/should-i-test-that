@@ -41,9 +41,18 @@ export function NavigationButtons({
 }: NavigationButtonsProps) {
   return (
     <div className="mt-6 flex items-center justify-between border-t pt-6">
-      {/* Back button - hidden on first section */}
+      {/*
+       * Back button
+       * Design spec: min-width 100px, height 40px, outline style
+       * Hidden on first section
+       */}
       {showBack ? (
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          className="min-w-[100px] h-10"
+        >
           Back
         </Button>
       ) : (
@@ -51,8 +60,16 @@ export function NavigationButtons({
         <div />
       )}
 
-      {/* Next button - primary action */}
-      <Button type="button" onClick={onNext} disabled={!canGoNext}>
+      {/*
+       * Next button
+       * Design spec: min-width 120px, height 40px, primary style
+       */}
+      <Button
+        type="button"
+        onClick={onNext}
+        disabled={!canGoNext}
+        className="min-w-[120px] h-10"
+      >
         {isLastSection ? 'See Results' : 'Next'}
       </Button>
     </div>

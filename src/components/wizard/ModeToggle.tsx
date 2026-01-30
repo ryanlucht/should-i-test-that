@@ -37,24 +37,30 @@ export function ModeToggle() {
   };
 
   return (
+    /*
+     * Mode Toggle Design Spec:
+     * - Container: bg-surface (#F9FAFB), border-radius 8px, padding 4px
+     * - Segment (inactive): transparent bg, secondary text, font-medium
+     * - Segment (active): white bg, primary text, shadow
+     */
     <ToggleGroup
       type="single"
       value={mode}
       onValueChange={handleValueChange}
-      className="rounded-lg bg-muted p-1"
+      className="rounded-lg bg-surface p-1"
       aria-label="Calculator mode"
     >
       <ToggleGroupItem
         value="basic"
         aria-label="Basic Mode"
-        className="rounded-md px-4 py-1.5 text-sm data-[state=on]:bg-background data-[state=on]:shadow-xs"
+        className="rounded-md px-4 py-2 text-sm font-medium data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=off]:text-muted-foreground"
       >
         Basic
       </ToggleGroupItem>
       <ToggleGroupItem
         value="advanced"
         aria-label="Advanced Mode"
-        className="rounded-md px-4 py-1.5 text-sm data-[state=on]:bg-background data-[state=on]:shadow-xs"
+        className="rounded-md px-4 py-2 text-sm font-medium data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=off]:text-muted-foreground"
       >
         Advanced
       </ToggleGroupItem>

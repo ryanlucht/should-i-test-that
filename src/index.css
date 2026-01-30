@@ -4,8 +4,19 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Datadog-inspired theme - clean, modern, high-contrast
- * Uses purple primary (oklch 260 hue) for brand identity
+ * Datadog-inspired Design System
+ *
+ * Design spec: .planning/phases/01-foundation-wizard-infrastructure/designs/
+ * - welcome-screen.md
+ * - calculator-page.md
+ *
+ * Key colors:
+ * - Primary accent: #7C3AED (purple)
+ * - Success: #10B981 (green - for completed states)
+ * - Background: #F9FAFB (subtle gray)
+ * - Surface: #FFFFFF (white cards)
+ * - Text primary: #1A1A2E (dark navy)
+ * - Text secondary: #6B7280 (gray)
  */
 
 @theme inline {
@@ -146,6 +157,53 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/*
+ * Design System Custom Classes
+ * Semantic classes matching the design spec
+ */
+
+/* Success color (for completed states) - #10B981 */
+.bg-success {
+  background-color: #10B981;
+}
+.text-success {
+  color: #10B981;
+}
+.border-success {
+  border-color: #10B981;
+}
+
+/* Selected surface tint - subtle purple */
+.bg-selected {
+  background-color: #F9F5FF;
+}
+
+/* Surface background - subtle gray */
+.bg-surface {
+  background-color: #F9FAFB;
+}
+
+/* Transitions matching design spec */
+.transition-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Card hover lift effect */
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .transition-card,
+  .hover-lift {
+    transition: none;
+  }
+  .hover-lift:hover {
+    transform: none;
   }
 }
