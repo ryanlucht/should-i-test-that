@@ -13,7 +13,7 @@ This roadmap transforms the A/B test decision-value calculator from concept to d
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Wizard Infrastructure** - Project setup, design system, and wizard flow mechanics
-- [ ] **Phase 2: Basic Mode Inputs** - Steps 1-4 input forms with validation and help text
+- [x] **Phase 2: Basic Mode Inputs** - Steps 1-4 input forms with validation and help text
 - [ ] **Phase 3: Calculation Engine** - EVPI calculation, closed-form and Monte Carlo, Web Worker setup
 - [ ] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
 - [ ] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
@@ -53,9 +53,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Dependencies, validation utilities, and Baseline Metrics form (CR0, N_year, V)
-- [ ] 02-02-PLAN.md — Uncertainty prior form (default vs. custom 90% interval)
-- [ ] 02-03-PLAN.md — Threshold scenario selection with radio cards and inline inputs
+- [x] 02-01-PLAN.md — Dependencies, validation utilities, and Baseline Metrics form (CR0, N_year, V)
+- [x] 02-02-PLAN.md — Uncertainty prior form (default vs. custom 90% interval)
+- [x] 02-03-PLAN.md — Threshold scenario selection with radio cards and inline inputs
 
 ### Phase 3: Calculation Engine
 **Goal**: System correctly calculates EVPI and supporting metrics for Basic mode
@@ -138,7 +138,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Wizard Infrastructure | 4/4 | ✓ Complete | 2026-01-30 |
-| 2. Basic Mode Inputs | 0/3 | Planned | - |
+| 2. Basic Mode Inputs | 3/3 | ✓ Complete | 2026-01-30 |
 | 3. Calculation Engine | 0/3 | Not started | - |
 | 4. Visualization & Results | 0/3 | Not started | - |
 | 5. Advanced Mode | 0/5 | Not started | - |
@@ -149,4 +149,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 1 planned: 2026-01-29*
 *Phase 1 completed: 2026-01-30*
 *Phase 2 planned: 2026-01-30*
+*Phase 2 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
