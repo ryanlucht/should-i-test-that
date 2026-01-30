@@ -103,6 +103,12 @@ Recent decisions affecting current work:
 
 None.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 001 | Improve EVPI intuition explanation clarity | 2026-01-30 | 4ca6c81 | [001-improve-evpi-intuition-explanation](./quick/001-improve-evpi-intuition-explanation/) |
+
 ## Session Continuity
 
 Last session: 2026-01-30
