@@ -1,15 +1,15 @@
 /**
  * Chart Data Generation Utilities
  *
- * Generates density curve data points for visualizing the prior distribution.
- * Uses the Normal distribution PDF to create smooth curve data for Recharts.
+ * Generates density curve data points for visualizing prior distributions.
+ * Supports Normal, Student-t, and Uniform distributions for Recharts rendering.
  *
  * Mathematical background:
- * For a Normal(mu, sigma) distribution, the PDF is:
- *   f(x) = phi((x - mu) / sigma) / sigma
+ * - Normal: f(x) = phi((x - mu) / sigma) / sigma, range: mu +/- 4*sigma
+ * - Student-t: location-scale t-distribution, range: mu +/- 4*sigma
+ * - Uniform: constant 1/(b-a) on [a,b], range: exact bounds
  *
- * where phi(z) is the standard normal PDF.
- * We generate points across +/- 4 standard deviations (covers 99.99% of distribution).
+ * Per 05-CONTEXT.md: Chart updates live when prior shape changes.
  */
 
 import { standardNormalPDF } from './statistics';
