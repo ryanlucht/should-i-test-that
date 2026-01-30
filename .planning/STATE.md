@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 3 of 6 (Calculation Engine)
-Plan: 1 of 3 in phase 3 complete
-Status: In progress - calculation primitives complete
-Last activity: 2026-01-30 - Completed 03-01-PLAN.md (calculation primitives)
+Plan: 2 of 3 in phase 3 complete
+Status: In progress - EVPI calculation complete
+Last activity: 2026-01-30 - Completed 03-02-PLAN.md (EVPI calculation)
 
-Progress: [███████████░░░░░░░░░░] 52% (11/21 plans)
+Progress: [████████████░░░░░░░░░] 57% (12/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 8 min
-- Total execution time: 93 min
+- Total execution time: 96 min
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [███████████░░░░░░░░░░] 52% 
 |-------|-------|-------|----------|
 | 1 | 4/4 | 34 min | 9 min |
 | 2 | 6/6 | 54 min | 9 min |
-| 3 | 1/3 | 5 min | 5 min |
+| 3 | 2/3 | 8 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (18 min), 02-04 (8 min), 02-05 (4 min), 02-06 (4 min), 03-01 (5 min)
-- Trend: Pure calculation/TDD plans are quick (~5 min)
+- Last 5 plans: 02-04 (8 min), 02-05 (4 min), 02-06 (4 min), 03-01 (5 min), 03-02 (3 min)
+- Trend: Pure calculation/TDD plans are quick (~4 min)
 
 *Updated after each plan completion*
 
@@ -74,6 +74,7 @@ Recent decisions affecting current work:
 | Parse-on-blur for decimal input | 02-04 | Store raw string while focused, parse only on blur to prevent decimal stripping |
 | Abramowitz-Stegun for CDF | 03-01 | Formula 7.1.26 for erfc, error < 7.5e-8, sufficient for EVPI |
 | Edge case thresholds | 03-01 | nearZeroSigma < 0.1%, oneSided Phi > 0.9999, truncation P(L<-1) > 0.1% |
+| Non-negative EVPI clamp | 03-02 | Math.max(0, evpiDollars) for floating point safety |
 
 ### Pending Todos
 
@@ -86,5 +87,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 03-01-PLAN.md (calculation primitives)
+Stopped at: Completed 03-02-PLAN.md (EVPI calculation)
 Resume file: None
