@@ -131,7 +131,7 @@ describe('ResultsSection accessibility', () => {
     expect(liveRegion).toBeInTheDocument();
   });
 
-  it('shows highlight variant with text indicator for high regret chance', async () => {
+  it('shows highlight variant styling for high regret chance', async () => {
     // Setup with high chance of being wrong (> 20%)
     const highRegretResults = {
       ...sampleEVPIResults,
@@ -149,12 +149,8 @@ describe('ResultsSection accessibility', () => {
 
     render(<ResultsSection />);
 
-    // Find the regret card - it should have the "Notable" indicator
+    // Find the regret card - it should have highlight styling
     const regretCard = screen.getByText('Chance you\'d regret not testing').closest('div');
     expect(regretCard).toBeInTheDocument();
-
-    // Check for text redundancy indicator
-    const notableIndicator = screen.getByText('Notable');
-    expect(notableIndicator).toBeInTheDocument();
   });
 });

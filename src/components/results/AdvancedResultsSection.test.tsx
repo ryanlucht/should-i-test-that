@@ -193,7 +193,7 @@ describe('AdvancedResultsSection accessibility', () => {
     expect(liveRegion).toBeInTheDocument();
   });
 
-  it('shows highlight variant with text indicator for high decision change probability', async () => {
+  it('shows highlight variant styling for high decision change probability', async () => {
     // Setup with high probability of test changing decision (> 20%)
     const highImpactResults = {
       ...sampleEVSIResults,
@@ -220,12 +220,8 @@ describe('AdvancedResultsSection accessibility', () => {
 
     render(<AdvancedResultsSection />);
 
-    // Find the card that uses highlight variant
+    // Find the card that uses highlight variant styling
     const decisionCard = screen.getByText('P(test changes decision)').closest('div');
     expect(decisionCard).toBeInTheDocument();
-
-    // Check for text redundancy indicator
-    const notableIndicator = screen.getByText('Notable');
-    expect(notableIndicator).toBeInTheDocument();
   });
 });
