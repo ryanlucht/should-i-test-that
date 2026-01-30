@@ -12,3 +12,4 @@ export * from './evpi';
 export * from './chart-data';
 export * from './distributions';
 export * from './sample-size';
+export * from './cost-of-delay';
