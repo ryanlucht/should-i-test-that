@@ -113,40 +113,52 @@ function ThresholdInlineInput({
   error?: string;
 }) {
   const [isFocused, setIsFocused] = useState(false);
+  // Local string state while focused to allow typing decimals without stripping
+  const [displayValue, setDisplayValue] = useState<string>('');
 
   /**
-   * Format value for display based on focus state and unit
+   * Format value for display when NOT focused (blurred state)
    */
   const formatDisplayValue = useCallback(
     (value: number | null | undefined): string => {
       if (value === null || value === undefined) return '';
-      if (isFocused) {
-        return String(value);
-      }
       return unit === 'dollars' ? formatCurrency(value) : formatPercentage(value);
     },
-    [isFocused, unit]
+    [unit]
   );
 
   return (
     <Controller
       name={name}
       render={({ field }) => {
+        /**
+         * On change: store raw string in local state (no parsing)
+         * This allows typing decimals without them being stripped mid-keystroke
+         */
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-          const parsed =
-            unit === 'dollars'
-              ? parseCurrency(e.target.value)
-              : parsePercentage(e.target.value);
-          field.onChange(parsed);
+          setDisplayValue(e.target.value);
         };
 
+        /**
+         * On blur: parse the local string and propagate to react-hook-form
+         */
         const handleBlur = () => {
           setIsFocused(false);
+          const parsed =
+            unit === 'dollars'
+              ? parseCurrency(displayValue)
+              : parsePercentage(displayValue);
+          field.onChange(parsed);
           field.onBlur();
         };
 
+        /**
+         * On focus: initialize local displayValue from the current field value
+         */
         const handleFocus = () => {
           setIsFocused(true);
+          const val = field.value as number | null | undefined;
+          setDisplayValue(val !== null && val !== undefined ? String(val) : '');
         };
 
         return (
@@ -161,7 +173,7 @@ function ThresholdInlineInput({
               type="text"
               inputMode="decimal"
               placeholder={unit === 'dollars' ? placeholder.dollars : placeholder.lift}
-              value={formatDisplayValue(field.value as number | null | undefined)}
+              value={isFocused ? displayValue : formatDisplayValue(field.value as number | null | undefined)}
               onChange={handleChange}
               onBlur={handleBlur}
               onFocus={handleFocus}
