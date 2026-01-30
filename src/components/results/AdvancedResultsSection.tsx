@@ -8,6 +8,7 @@
  * - ADV-OUT-04: Cost of Delay display
  * - ADV-OUT-05: Net value display
  * - ADV-OUT-07: Probability test changes decision
+ * - EXPORT-01 through EXPORT-04: PNG export functionality
  *
  * Per 05-CONTEXT.md:
  * - EVSI only: Don't show EVPI comparison in Advanced mode
@@ -15,22 +16,92 @@
  * - Supporting cards adapt from Basic mode
  */
 
+import { useMemo } from 'react';
 import { useEVSICalculations } from '@/hooks/useEVSICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { CostOfDelayCard } from './CostOfDelayCard';
 import { SupportingCard } from './SupportingCard';
+import { ExportButton } from '@/components/export/ExportButton';
 import {
   formatSmartCurrency,
   formatProbabilityPercent,
   formatPercentage,
 } from '@/lib/formatting';
-import { DEFAULT_INTERVAL } from '@/lib/prior';
+import { DEFAULT_INTERVAL, DEFAULT_PRIOR, computePriorFromInterval } from '@/lib/prior';
+import type { PriorDistribution } from '@/lib/calculations/types';
 
 export function AdvancedResultsSection() {
   const { loading, results } = useEVSICalculations();
   const sharedInputs = useWizardStore((state) => state.inputs.shared);
   const advancedInputs = useWizardStore((state) => state.inputs.advanced);
+
+  // Build prior distribution for export (mirrors useEVSICalculations logic)
+  // Must be before early return to satisfy React hooks rules
+  const prior: PriorDistribution = useMemo(() => {
+    const isDefaultPrior =
+      sharedInputs.priorIntervalLow !== null &&
+      sharedInputs.priorIntervalHigh !== null &&
+      Math.abs(sharedInputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
+      Math.abs(sharedInputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
+
+    const normalParams =
+      isDefaultPrior ||
+      sharedInputs.priorIntervalLow === null ||
+      sharedInputs.priorIntervalHigh === null
+        ? DEFAULT_PRIOR
+        : computePriorFromInterval(
+            sharedInputs.priorIntervalLow,
+            sharedInputs.priorIntervalHigh
+          );
+
+    const shape = advancedInputs.priorShape ?? 'normal';
+
+    switch (shape) {
+      case 'normal':
+        return {
+          type: 'normal' as const,
+          mu_L: normalParams.mu_L,
+          sigma_L: normalParams.sigma_L,
+        };
+
+      case 'student-t':
+        return {
+          type: 'student-t' as const,
+          mu_L: normalParams.mu_L,
+          sigma_L: normalParams.sigma_L,
+          df: advancedInputs.studentTDf ?? 5,
+        };
+
+      case 'uniform': {
+        const lowBound =
+          sharedInputs.priorIntervalLow !== null
+            ? sharedInputs.priorIntervalLow / 100
+            : DEFAULT_INTERVAL.low / 100;
+        const highBound =
+          sharedInputs.priorIntervalHigh !== null
+            ? sharedInputs.priorIntervalHigh / 100
+            : DEFAULT_INTERVAL.high / 100;
+        return {
+          type: 'uniform' as const,
+          low_L: lowBound,
+          high_L: highBound,
+        };
+      }
+
+      default:
+        return {
+          type: 'normal' as const,
+          mu_L: normalParams.mu_L,
+          sigma_L: normalParams.sigma_L,
+        };
+    }
+  }, [
+    sharedInputs.priorIntervalLow,
+    sharedInputs.priorIntervalHigh,
+    advancedInputs.priorShape,
+    advancedInputs.studentTDf,
+  ]);
 
   // Show placeholder if no results and not loading
   // The hook returns null results when inputs are incomplete
@@ -143,6 +214,19 @@ export function AdvancedResultsSection() {
               {' '}The net {formatSmartCurrency(Math.max(0, results.netValueDollars))} is
               the most you should pay to run this test.
             </p>
+          </div>
+
+          {/* PNG Export - EXPORT-01 through EXPORT-04 */}
+          <div className="rounded-xl border bg-card p-4">
+            <p className="text-sm font-medium text-foreground mb-3">
+              Share your analysis
+            </p>
+            <ExportButton
+              mode="advanced"
+              evsiResults={results}
+              sharedInputs={sharedInputs}
+              prior={prior}
+            />
           </div>
         </>
       )}

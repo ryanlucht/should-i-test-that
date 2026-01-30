@@ -9,12 +9,14 @@
  * - BASIC-OUT-05: Probability of clearing threshold
  * - BASIC-OUT-06: Chance of regret intuition
  * - BASIC-OUT-07: EVPI intuition (expected regret)
+ * - EXPORT-01 through EXPORT-04: PNG export functionality
  */
 
 import { useEVPICalculations } from '@/hooks/useEVPICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 import { VerdictCard } from './VerdictCard';
 import { SupportingCard } from './SupportingCard';
+import { ExportButton } from '@/components/export/ExportButton';
 import {
   formatSmartCurrency,
   formatProbabilityPercent,
@@ -157,6 +159,18 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
           the regret you'd avoid by having perfect foresight — it's the maximum
           you should pay for any information about whether this change helps.
         </p>
+      </div>
+
+      {/* PNG Export - EXPORT-01 through EXPORT-04 */}
+      <div className="rounded-xl border bg-card p-4">
+        <p className="text-sm font-medium text-foreground mb-3">
+          Share your analysis
+        </p>
+        <ExportButton
+          mode="basic"
+          evpiResults={evpiResults}
+          sharedInputs={sharedInputs}
+        />
       </div>
     </div>
   );
