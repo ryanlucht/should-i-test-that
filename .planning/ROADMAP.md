@@ -12,7 +12,7 @@ This roadmap transforms the A/B test decision-value calculator from concept to d
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Wizard Infrastructure** - Project setup, design system, and wizard flow mechanics
+- [x] **Phase 1: Foundation & Wizard Infrastructure** - Project setup, design system, and wizard flow mechanics
 - [ ] **Phase 2: Basic Mode Inputs** - Steps 1-4 input forms with validation and help text
 - [ ] **Phase 3: Calculation Engine** - EVPI calculation, closed-form and Monte Carlo, Web Worker setup
 - [ ] **Phase 4: Visualization & Results** - Live-updating charts and Basic mode results display
@@ -34,10 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffolding (Vite + React 19 + TypeScript + Tailwind 4 + shadcn/ui)
-- [ ] 01-02-PLAN.md — Design system via Stitch MCP (Welcome + Calculator page designs)
-- [ ] 01-03-PLAN.md — Wizard state management (Zustand) + Welcome page with mode selection
-- [ ] 01-04-PLAN.md — Calculator page with sections, sticky indicator, and navigation
+- [x] 01-01-PLAN.md — Project scaffolding (Vite + React 19 + TypeScript + Tailwind 4 + shadcn/ui)
+- [x] 01-02-PLAN.md — Design system via Stitch MCP (Welcome + Calculator page designs)
+- [x] 01-03-PLAN.md — Wizard state management (Zustand) + Welcome page with mode selection
+- [x] 01-04-PLAN.md — Calculator page with sections, sticky indicator, and navigation
 
 ### Phase 2: Basic Mode Inputs
 **Goal**: Users can enter all Basic mode inputs with clear guidance and validation
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Wizard Infrastructure | 0/4 | Planned | - |
+| 1. Foundation & Wizard Infrastructure | 4/4 | ✓ Complete | 2026-01-30 |
 | 2. Basic Mode Inputs | 0/3 | Not started | - |
 | 3. Calculation Engine | 0/3 | Not started | - |
 | 4. Visualization & Results | 0/3 | Not started | - |
@@ -147,4 +147,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 ---
 *Roadmap created: 2026-01-29*
 *Phase 1 planned: 2026-01-29*
+*Phase 1 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
