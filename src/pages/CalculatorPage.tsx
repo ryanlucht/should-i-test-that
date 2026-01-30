@@ -1,14 +1,17 @@
 /**
  * Calculator Page
  *
- * Main wizard page containing all 4 sections on a single scrollable page.
+ * Main wizard page with dynamic sections based on mode:
+ * - Basic mode: 4 sections (Baseline, Uncertainty, Threshold, Results)
+ * - Advanced mode: 5 sections (adds Test Design between Threshold and Results)
+ *
  * Implements progressive disclosure - future sections are dramatically disabled
  * until prior sections are completed.
  *
  * Page structure:
  * - Sticky header with title and mode toggle
  * - Sticky progress indicator with scroll tracking
- * - Four sections: Baseline, Uncertainty, Threshold, Results
+ * - Dynamic sections based on mode
  *
  * Navigation:
  * - Back/Next buttons within each section
@@ -37,24 +40,39 @@ import {
   ThresholdScenarioForm,
   type ThresholdScenarioFormHandle,
 } from '@/components/forms/ThresholdScenarioForm';
+import {
+  ExperimentDesignForm,
+  type ExperimentDesignFormHandle,
+} from '@/components/forms/ExperimentDesignForm';
 import { ResultsSection } from '@/components/results';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useWizardStore } from '@/stores/wizardStore';
 
 /**
  * Section configuration for the wizard
- * Basic mode: 4 sections
- * Advanced mode: would add test-design and costs sections (future implementation)
+ * Basic mode: 4 sections (Baseline, Uncertainty, Threshold, Results)
+ * Advanced mode: 5 sections (adds Test Design between Threshold and Results)
  */
-const SECTIONS = [
+interface SectionConfig {
+  id: string;
+  label: string;
+  title: string;
+}
+
+const BASIC_SECTIONS: SectionConfig[] = [
   { id: 'baseline', label: 'Baseline', title: 'Baseline Metrics' },
   { id: 'uncertainty', label: 'Uncertainty', title: 'Uncertainty (Prior)' },
   { id: 'threshold', label: 'Threshold', title: 'Shipping Threshold' },
   { id: 'results', label: 'Results', title: 'Results' },
-] as const;
+];
 
-/** Section IDs for scroll spy */
-const SECTION_IDS = SECTIONS.map((s) => s.id);
+const ADVANCED_SECTIONS: SectionConfig[] = [
+  { id: 'baseline', label: 'Baseline', title: 'Baseline Metrics' },
+  { id: 'uncertainty', label: 'Uncertainty', title: 'Uncertainty (Prior)' },
+  { id: 'threshold', label: 'Threshold', title: 'Shipping Threshold' },
+  { id: 'test-design', label: 'Test Design', title: 'Experiment Design' },
+  { id: 'results', label: 'Results', title: 'Results' },
+];
 
 interface CalculatorPageProps {
   /** Handler to navigate back to welcome page */
@@ -62,18 +80,29 @@ interface CalculatorPageProps {
 }
 
 /**
- * Calculator wizard page with 4 sections and progressive disclosure
+ * Calculator wizard page with dynamic sections based on mode
+ * Basic mode: 4 sections, Advanced mode: 5 sections
  */
 export function CalculatorPage({ onBack }: CalculatorPageProps) {
   // Store state and actions
+  const mode = useWizardStore((state) => state.mode);
   const currentSection = useWizardStore((state) => state.currentSection);
   const completedSections = useWizardStore((state) => state.completedSections);
   const setCurrentSection = useWizardStore((state) => state.setCurrentSection);
-  const markSectionComplete = useWizardStore((state) => state.markSectionComplete);
+  const markSectionComplete = useWizardStore(
+    (state) => state.markSectionComplete
+  );
   const canAccessSection = useWizardStore((state) => state.canAccessSection);
 
+  // Determine sections based on mode
+  const sections = useMemo(
+    () => (mode === 'advanced' ? ADVANCED_SECTIONS : BASIC_SECTIONS),
+    [mode]
+  );
+  const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
+
   // Scroll spy tracks which section is visible
-  const activeSection = useScrollSpy(SECTION_IDS);
+  const activeSection = useScrollSpy(sectionIds);
 
   // Refs for section elements (for keyboard navigation)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -82,20 +111,21 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
   const uncertaintyFormRef = useRef<UncertaintyPriorFormHandle>(null);
   const thresholdFormRef = useRef<ThresholdScenarioFormHandle>(null);
+  const experimentDesignFormRef = useRef<ExperimentDesignFormHandle>(null);
 
   // Memoized completed section IDs for progress indicator
   const completedStepIds = useMemo(
-    () => completedSections.map((index) => SECTIONS[index]?.id).filter(Boolean),
-    [completedSections]
+    () => completedSections.map((index) => sections[index]?.id).filter(Boolean),
+    [completedSections, sections]
   );
 
   // Update current section based on scroll spy
   useEffect(() => {
-    const sectionIndex = SECTION_IDS.indexOf(activeSection as typeof SECTION_IDS[number]);
+    const sectionIndex = sectionIds.indexOf(activeSection);
     if (sectionIndex >= 0 && sectionIndex !== currentSection) {
       setCurrentSection(sectionIndex);
     }
-  }, [activeSection, currentSection, setCurrentSection]);
+  }, [activeSection, currentSection, setCurrentSection, sectionIds]);
 
   /**
    * Scroll to a section smoothly
@@ -112,12 +142,12 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
    */
   const handleStepClick = useCallback(
     (stepId: string) => {
-      const stepIndex = SECTION_IDS.indexOf(stepId as typeof SECTION_IDS[number]);
+      const stepIndex = sectionIds.indexOf(stepId);
       if (stepIndex >= 0 && canAccessSection(stepIndex)) {
         scrollToSection(stepId);
       }
     },
-    [canAccessSection, scrollToSection]
+    [canAccessSection, scrollToSection, sectionIds]
   );
 
   /**
@@ -126,14 +156,14 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   const handleBack = useCallback(
     (sectionIndex: number) => {
       if (sectionIndex > 0) {
-        const prevSectionId = SECTIONS[sectionIndex - 1].id;
+        const prevSectionId = sections[sectionIndex - 1].id;
         scrollToSection(prevSectionId);
       } else {
         // First section - go back to welcome
         onBack();
       }
     },
-    [onBack, scrollToSection]
+    [onBack, scrollToSection, sections]
   );
 
   /**
@@ -145,8 +175,8 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
       markSectionComplete(sectionIndex);
 
       // If not last section, scroll to next
-      if (sectionIndex < SECTIONS.length - 1) {
-        const nextSectionId = SECTIONS[sectionIndex + 1].id;
+      if (sectionIndex < sections.length - 1) {
+        const nextSectionId = sections[sectionIndex + 1].id;
         scrollToSection(nextSectionId);
 
         // Focus first focusable element in next section (after scroll)
@@ -159,46 +189,59 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
         }, 500); // After scroll animation
       }
     },
-    [markSectionComplete, scrollToSection]
+    [markSectionComplete, scrollToSection, sections]
   );
 
   /**
    * Navigate to next section (with validation for form sections)
    * Per CONTEXT.md: Continue button always enabled; clicking with invalid inputs shows errors
+   *
+   * Validation is section-ID based (not index based) to handle mode switching correctly:
+   * - baseline: index 0 in both modes
+   * - uncertainty: index 1 in both modes
+   * - threshold: index 2 in both modes
+   * - test-design: index 3 in Advanced only
+   * - results: index 3 in Basic, index 4 in Advanced
    */
   const handleNext = useCallback(
     async (sectionIndex: number) => {
-      // Validate baseline section (index 0) before proceeding
-      if (sectionIndex === 0 && baselineFormRef.current) {
+      const sectionId = sections[sectionIndex]?.id;
+
+      // Validate baseline section before proceeding
+      if (sectionId === 'baseline' && baselineFormRef.current) {
         const isValid = await baselineFormRef.current.validate();
         if (!isValid) {
-          // Validation failed, errors are displayed by the form
           return;
         }
       }
 
-      // Validate uncertainty section (index 1) before proceeding
-      if (sectionIndex === 1 && uncertaintyFormRef.current) {
+      // Validate uncertainty section before proceeding
+      if (sectionId === 'uncertainty' && uncertaintyFormRef.current) {
         const isValid = await uncertaintyFormRef.current.validate();
         if (!isValid) {
-          // Validation failed, errors are displayed by the form
           return;
         }
       }
 
-      // Validate threshold section (index 2) before proceeding
-      if (sectionIndex === 2 && thresholdFormRef.current) {
+      // Validate threshold section before proceeding
+      if (sectionId === 'threshold' && thresholdFormRef.current) {
         const isValid = await thresholdFormRef.current.validate();
         if (!isValid) {
-          // Validation failed, errors are displayed by the form
           return;
         }
       }
 
-      // For other sections (placeholder), just advance
+      // Validate experiment design section before proceeding (Advanced mode only)
+      if (sectionId === 'test-design' && experimentDesignFormRef.current) {
+        const isValid = await experimentDesignFormRef.current.validate();
+        if (!isValid) {
+          return;
+        }
+      }
+
       advanceToNextSection(sectionIndex);
     },
-    [advanceToNextSection]
+    [advanceToNextSection, sections]
   );
 
   /**
@@ -242,7 +285,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
 
       {/* Sticky Progress Indicator - positioned below header */}
       <StickyProgressIndicator
-        steps={SECTIONS.map((s) => ({ id: s.id, label: s.label }))}
+        steps={sections.map((s) => ({ id: s.id, label: s.label }))}
         activeStepId={activeSection}
         completedStepIds={completedStepIds}
         onStepClick={handleStepClick}
@@ -253,10 +296,10 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
        * Design spec: max-width 800px, 24px padding desktop
        */}
       <main className="mx-auto max-w-[800px] space-y-6 p-4 md:p-6">
-        {SECTIONS.map((section, index) => {
+        {sections.map((section, index) => {
           const isEnabled = canAccessSection(index);
           const isCompleted = completedSections.includes(index);
-          const isLastSection = index === SECTIONS.length - 1;
+          const isLastSection = index === sections.length - 1;
 
           return (
             <SectionWrapper
@@ -288,6 +331,11 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                 {/* Threshold section - shipping threshold form */}
                 {section.id === 'threshold' && (
                   <ThresholdScenarioForm ref={thresholdFormRef} />
+                )}
+
+                {/* Test Design section - experiment parameters (Advanced mode only) */}
+                {section.id === 'test-design' && (
+                  <ExperimentDesignForm ref={experimentDesignFormRef} />
                 )}
 
                 {/* Results section - EVPI verdict and supporting cards */}
