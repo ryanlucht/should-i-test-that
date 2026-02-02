@@ -8,6 +8,11 @@
  * - Monte Carlo: works for all prior shapes (Normal, Student-t, Uniform)
  * - Normal fast path: O(1) closed-form for Normal priors using conjugate update
  *
+ * EVSI-01 Correctness (Phase 8):
+ * - Monte Carlo uses posterior mean E[L|L_hat] for decisions, not raw L_hat
+ * - This Bayesian decision rule correctly accounts for shrinkage toward prior
+ * - Ensures Monte Carlo and Normal fast-path produce consistent results
+ *
  * Mathematical notes (for statistician audit):
  * - EVSI = E_data[ max_a E[Value(a) | data] ] - max_a E[Value(a)]
  *        = (pre-posterior expected value) - (prior expected value)
@@ -15,6 +20,7 @@
  *   expected regret with and without the test information
  * - The test is modeled as providing a noisy observation of true lift:
  *   L_hat | L ~ N(L, SE^2) where SE depends on sample sizes and CR0
+ * - Posterior decision uses E[L|L_hat] >= T (Bayes-optimal rule)
  */
 
 import { sample, cdf, getPriorMean, pdf, PriorDistribution } from './distributions';
@@ -313,10 +319,15 @@ export function calculateEVSIMonteCarlo(
     // ===========================================
     // Make posterior decision based on test result
     // ===========================================
-    // Simple decision rule: ship if L_hat >= T_L
-    // (This is the optimal decision given the observed data and
-    // Normal-Normal conjugacy assumption)
-    const posteriorDecision = L_hat >= threshold_L ? 'ship' : 'dont-ship';
+    // EVSI-01 FIX: Compute posterior mean E[L|L_hat] for Bayesian decision rule
+    // The posterior mean incorporates prior information, shrinking L_hat toward
+    // the prior mean when the test data is noisy (large SE relative to prior sigma).
+    // This is the Bayes-optimal decision rule for the linear utility model.
+    const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+    // Decision based on POSTERIOR MEAN, not raw sample L_hat
+    // E[L|L_hat] >= T is the correct Bayesian decision rule
+    const posteriorDecision = posteriorMean >= threshold_L ? 'ship' : 'dont-ship';
 
     // Track decision changes
     if (posteriorDecision !== defaultDecision) {
