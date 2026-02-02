@@ -11,6 +11,16 @@
 **Phases:** 5 (Phases 7-11)
 **Requirements:** 18 total
 
+### Audit Reference
+
+> **Primary source:** `.planning/audit.md`
+> **Supplemental:** `.planning/research/SUPPLEMENTAL.md`
+>
+> When planning or executing, reference these documents for:
+> - Problem descriptions and root cause analysis
+> - Concrete fix code snippets
+> - File locations and line numbers
+
 ### Phases Overview
 
 - [ ] **Phase 7: Defensive Fixes** - Harden sampling, edge cases, and worker lifecycle
@@ -25,6 +35,7 @@
 **Goal**: Eliminate edge-case failures and resource leaks before touching core algorithms
 **Depends on**: Nothing (first phase of v1.1)
 **Requirements**: SAMP-01, SAMP-02, EDGE-01, EDGE-02, WORK-01
+**Audit sections**: 3.1 (Box-Muller), 3.2 (sigma=0), 5 (evsi.ts guards), Supplemental 3+5
 **Success Criteria** (what must be TRUE):
   1. Box-Muller sampling never produces NaN/Infinity even when Math.random() returns 0
   2. Student-t sampling handles non-finite intermediate values by re-sampling
@@ -40,6 +51,7 @@ Plans:
 **Goal**: Monte Carlo EVSI uses Bayesian posterior-mean decision rule, matching analytical results
 **Depends on**: Phase 7
 **Requirements**: EVSI-01, EVSI-02, EVSI-03, EVSI-04
+**Audit sections**: 2.1 (wrong decision rule + fix), 2.2 (fast-path vs MC inconsistency)
 **Success Criteria** (what must be TRUE):
   1. Each Monte Carlo iteration decides based on E[L|data] >= threshold, not sample L_hat
   2. Normal prior EVSI uses shrinkage formula: posterior_mean = w*L_hat + (1-w)*prior_mu
@@ -54,6 +66,7 @@ Plans:
 **Goal**: All calculations respect the feasibility bound (L >= -1) consistently
 **Depends on**: Phase 8
 **Requirements**: TRUNC-01, TRUNC-02, TRUNC-03
+**Audit sections**: 2.3 (truncation inconsistency + fix options)
 **Success Criteria** (what must be TRUE):
   1. EVPI calculation uses truncated prior when significant mass exists below L=-1
   2. Prior mean, variance, and probabilities are all computed on the truncated distribution
@@ -67,6 +80,7 @@ Plans:
 **Goal**: User interface clearly communicates Student-t parameter semantics and validates inputs
 **Depends on**: Nothing (independent UI work)
 **Requirements**: TDIST-01, TDIST-02, TDIST-03
+**Audit sections**: 3.3 (Student-t parameter meaning + recommended actions)
 **Success Criteria** (what must be TRUE):
   1. UI labels Student-t dispersion parameter as "scale" (not sigma or SD)
   2. Validation displays warning when df <= 2 (variance undefined)
@@ -80,6 +94,7 @@ Plans:
 **Goal**: Net value of testing computed as a single coherent simulation including CoD effects
 **Depends on**: Phase 8, Phase 9
 **Requirements**: COD-01, COD-02, COD-03
+**Audit sections**: 4.1 (CoD computed separately + integration recommendation)
 **Success Criteria** (what must be TRUE):
   1. Simulation includes foregone value during test period (split traffic)
   2. Simulation includes foregone value during latency period (implementation delay)
