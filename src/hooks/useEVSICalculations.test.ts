@@ -247,7 +247,11 @@ describe('useEVSICalculations', () => {
         expect(result.current.results!.cod.codDollars).toBeGreaterThan(0);
       });
 
-      it('calculates net value as EVSI - CoD', async () => {
+      it('calculates net value via integrated calculation (COD-03)', async () => {
+        // Per audit recommendation COD-03:
+        // Net value is computed via integrated Monte Carlo simulation,
+        // NOT as evsiDollars - codDollars (which has timing inconsistency).
+        // The integrated calculation accounts for timing effects coherently.
         act(() => {
           setupSharedInputs();
           setupAdvancedInputs();
@@ -264,7 +268,18 @@ describe('useEVSICalculations', () => {
         });
 
         const { evsi, cod, netValueDollars } = result.current.results!;
-        expect(netValueDollars).toBeCloseTo(evsi.evsiDollars - cod.codDollars, 2);
+
+        // Net value should be a reasonable positive value
+        // (or zero if CoD exceeds EVSI benefit)
+        expect(netValueDollars).toBeGreaterThanOrEqual(0);
+
+        // EVSI and CoD should still be available for UI decomposition
+        expect(evsi.evsiDollars).toBeGreaterThan(0);
+        expect(cod.codDollars).toBeGreaterThanOrEqual(0);
+
+        // Net value is NOT simply EVSI - CoD (that's the old calculation)
+        // Due to Monte Carlo variance, it will typically differ from simple subtraction
+        // The integrated calculation computes value with timing effects coherently
       });
 
       it('includes probability metrics', async () => {

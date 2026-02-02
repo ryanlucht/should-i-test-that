@@ -12,6 +12,11 @@
  * - Calculates Cost of Delay from experiment parameters
  *
  * Per 05-CONTEXT.md: EVSI is the relevant value in Advanced mode (not EVPI).
+ *
+ * Per audit recommendations (COD-01, COD-02, COD-03):
+ * - netValueDollars computed via integrated calculation (calculateNetValueMonteCarlo)
+ * - NOT computed as evsiDollars - codDollars (which has timing inconsistency)
+ * - EVSI and CoD still exposed separately for UI display breakdown
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -23,8 +28,9 @@ import {
   calculateCostOfDelay,
   deriveSampleSizes,
 } from '@/lib/calculations';
+import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
-import type { EVSIInputs, EVSIResults, PriorDistribution } from '@/lib/calculations/types';
+import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
 import type { CoDResults } from '@/lib/calculations/cost-of-delay';
 
 /**
@@ -77,7 +83,10 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
   // Track loading state for async Worker computation
   const [loading, setLoading] = useState(false);
+  // EVSI results for backwards-compatible UI display (decomposition)
   const [workerResults, setWorkerResults] = useState<EVSIResults | null>(null);
+  // Integrated net value results (headline number - COD-03)
+  const [netValueResults, setNetValueResults] = useState<NetValueResults | null>(null);
 
   // Track the current request to avoid stale updates
   const requestIdRef = useRef(0);
@@ -237,7 +246,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     };
 
     // ===========================================
-    // Step 6: Build CoD inputs
+    // Step 6: Build CoD inputs (for backwards-compatible UI display)
     // ===========================================
     const priorMean = prior.type === 'uniform'
       ? (prior.low_L! + prior.high_L!) / 2
@@ -252,10 +261,28 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       decisionLatencyDays: advancedInputs.decisionLatencyDays ?? 0,
     };
 
+    // ===========================================
+    // Step 7: Build NetValue inputs (integrated calculation)
+    // ===========================================
+    // Per COD-03: Net value computed in single coherent simulation
+    // This is the primary calculation; EVSI and CoD are for UI decomposition only
+    const netValueInputs: NetValueInputs = {
+      K,
+      baselineConversionRate: sharedInputs.baselineConversionRate,
+      threshold_L,
+      prior,
+      n_control: sampleSizes.n_control,
+      n_variant: sampleSizes.n_variant,
+      testDurationDays: advancedInputs.testDurationDays,
+      variantFraction: advancedInputs.trafficSplit,
+      decisionLatencyDays: advancedInputs.decisionLatencyDays ?? 0,
+    };
+
     return {
       prior,
       evsiInputs,
       codInputs,
+      netValueInputs,
       sampleSizes,
     };
   }, [
@@ -278,22 +305,34 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
   ]);
 
   // ===========================================
-  // Step 7: Compute EVSI (sync for Normal, async for others)
+  // Step 8: Compute EVSI and integrated Net Value
   // ===========================================
+  // Per COD-03: Net value is computed via integrated simulation (calculateNetValueMonteCarlo)
+  // EVSI is still computed separately for backwards-compatible UI display
   useEffect(() => {
     // Clear results if inputs become invalid
     if (!validatedInputs) {
       setWorkerResults(null);
+      setNetValueResults(null);
       setLoading(false);
       return;
     }
 
-    const { prior, evsiInputs } = validatedInputs;
+    const { prior, evsiInputs, netValueInputs } = validatedInputs;
 
-    // For Normal priors, use fast path (synchronous, no Worker)
+    // For Normal priors, compute synchronously:
+    // - EVSI uses fast path (closed-form, for UI decomposition)
+    // - Net Value uses Monte Carlo (for timing-integrated headline)
     if (prior.type === 'normal') {
-      const results = calculateEVSINormalFastPath(evsiInputs);
-      setWorkerResults(results);
+      // Fast path EVSI for display
+      const evsiResults = calculateEVSINormalFastPath(evsiInputs);
+      setWorkerResults(evsiResults);
+
+      // Integrated net value for headline (COD-03)
+      // Must use Monte Carlo to integrate timing effects
+      const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000);
+      setNetValueResults(netResults);
+
       setLoading(false);
       return;
     }
@@ -316,19 +355,29 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         workerRef.current = newWorker;
 
         // Wrap with Comlink for type-safe RPC
-        const api = Comlink.wrap<{ computeEVSI: (inputs: typeof evsiInputs, numSamples: number) => EVSIResults }>(newWorker);
+        // Worker exposes both computeEVSI (for display) and computeNetValue (for headline)
+        const api = Comlink.wrap<{
+          computeEVSI: (inputs: typeof evsiInputs, numSamples: number) => EVSIResults;
+          computeNetValue: (inputs: NetValueInputs, numSamples: number) => NetValueResults;
+        }>(newWorker);
 
-        const results = await api.computeEVSI(evsiInputs, 5000);
+        // Compute both in parallel for efficiency
+        const [evsiResults, netResults] = await Promise.all([
+          api.computeEVSI(evsiInputs, 5000),
+          api.computeNetValue(netValueInputs, 5000),
+        ]);
 
         // Only update if this is still the current request
         if (currentRequestId === requestIdRef.current) {
-          setWorkerResults(results);
+          setWorkerResults(evsiResults);
+          setNetValueResults(netResults);
           setLoading(false);
         }
       } catch (error) {
         console.error('EVSI Worker error:', error);
         if (currentRequestId === requestIdRef.current) {
           setWorkerResults(null);
+          setNetValueResults(null);
           setLoading(false);
         }
       } finally {
@@ -353,21 +402,23 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
   }, [validatedInputs]);
 
   // ===========================================
-  // Step 8: Calculate CoD and combine results
+  // Step 9: Combine results for UI
   // ===========================================
   const finalResults = useMemo((): EVSICalculationResults | null => {
-    if (!validatedInputs || !workerResults) {
+    // Need both EVSI (for display) and net value (for headline)
+    if (!validatedInputs || !workerResults || !netValueResults) {
       return null;
     }
 
     const { codInputs, sampleSizes } = validatedInputs;
 
-    // Calculate Cost of Delay
+    // Calculate Cost of Delay (for backwards-compatible UI display)
     const cod = calculateCostOfDelay(codInputs);
 
-    // Net value: EVSI - CoD
-    // This is the headline number in Advanced mode verdict
-    const netValueDollars = workerResults.evsiDollars - cod.codDollars;
+    // Net value comes from INTEGRATED calculation (COD-03)
+    // NOT from workerResults.evsiDollars - cod.codDollars
+    // The integrated simulation computes timing-aware net value coherently
+    const netValueDollars = netValueResults.netValueDollars;
 
     return {
       evsi: workerResults,
@@ -375,7 +426,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       netValueDollars,
       sampleSizes,
     };
-  }, [validatedInputs, workerResults]);
+  }, [validatedInputs, workerResults, netValueResults]);
 
   return {
     loading,
