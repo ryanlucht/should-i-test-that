@@ -1,13 +1,17 @@
 /**
  * EVSI Web Worker
  *
- * Offloads Monte Carlo EVSI computation to background thread.
+ * Offloads Monte Carlo EVSI and Net Value computation to background thread.
  * Uses Comlink for type-safe RPC communication.
  *
  * Per 05-RESEARCH.md:
  * - Normal priors use fast path (closed-form, no Monte Carlo)
  * - Student-t and Uniform use Monte Carlo (~5000 samples)
  * - Target performance: 500ms-2s
+ *
+ * Per audit recommendations (COD-01, COD-02, COD-03):
+ * - computeNetValue provides integrated timing-aware calculation
+ * - Net value computed in one coherent simulation (not EVSI - CoD)
  */
 
 import * as Comlink from 'comlink';
@@ -15,7 +19,8 @@ import {
   calculateEVSIMonteCarlo,
   calculateEVSINormalFastPath,
 } from '../calculations/evsi';
-import type { EVSIInputs, EVSIResults } from '../calculations/types';
+import { calculateNetValueMonteCarlo } from '../calculations/net-value';
+import type { EVSIInputs, EVSIResults, NetValueInputs, NetValueResults } from '../calculations/types';
 
 /**
  * Compute EVSI - exposed via Comlink
@@ -45,5 +50,30 @@ function computeEVSI(
   return calculateEVSIMonteCarlo(inputs, numSamples);
 }
 
+/**
+ * Compute integrated net value of testing - exposed via Comlink
+ *
+ * Uses single Monte Carlo simulation that computes:
+ * - Value during test (variant fraction gets treatment)
+ * - Value during latency (conservative: no treatment)
+ * - Value after decision (based on posterior mean)
+ * - Baseline value (default decision for full year)
+ *
+ * Net value = avgValueWithTest - avgValueWithoutTest
+ * This is the coherent "EVSI - CoD" in one simulation (COD-03).
+ *
+ * @param inputs - Net value calculation inputs (K, CR0, threshold_L, prior, timing params)
+ * @param numSamples - Monte Carlo samples (default 5000)
+ * @returns NetValueResults including netValueDollars, defaultDecision, probabilities
+ */
+function computeNetValue(
+  inputs: NetValueInputs,
+  numSamples: number = 5000
+): NetValueResults {
+  return calculateNetValueMonteCarlo(inputs, numSamples);
+}
+
 // Expose the API via Comlink
-Comlink.expose({ computeEVSI });
+// computeEVSI: backwards compatible for EVSI-only computation
+// computeNetValue: integrated timing-aware net value calculation
+Comlink.expose({ computeEVSI, computeNetValue });
