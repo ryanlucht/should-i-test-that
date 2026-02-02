@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 6 Export & Polish - COMPLETE
+**Current focus:** Phase 6.1 Calculation Bugs & Polish - IN PROGRESS
 
 ## Current Position
 
-Phase: 6 of 6 (Export & Polish) - COMPLETE
-Plan: 3 of 3 in phase 6 complete
-Status: PROJECT COMPLETE - All phases and plans executed
-Last activity: 2026-01-30 - Completed 06-03-PLAN.md (Accessibility)
+Phase: 6.1 (Calculation Bugs & Polish) - IN PROGRESS
+Plan: 3/5 in phase 6.1
+Status: Completed 06.1-03 Default prior option & sigma display
+Last activity: 2026-02-02 - Completed 06.1-03-PLAN.md
 
-Progress: [████████████████████████] 100% (26/26 plans)
+Progress: [█████████████████████████░░░] 93% (29/31 plans)
 
 ## Performance Metrics
 
@@ -114,10 +114,13 @@ Recent decisions affecting current work:
 | vitest-axe matchers require extend | 06-03 | Must import matchers and call expect.extend(), not just import extend-expect |
 | ARIA live region restructuring | 06-03 | EVSIVerdictCard refactored so live region container always exists in DOM |
 | Notable badge for text redundancy | 06-03 | Highlight variant shows visible "Notable" badge per WCAG 1.4.1 |
+| Worker finally block cleanup | 06.1-02 | Terminate in finally block covers success + error paths |
+| Worker effect cleanup | 06.1-02 | Effect cleanup terminates worker on unmount |
 
 ### Roadmap Evolution
 
 - Phase 4.1 inserted after Phase 4: Calculation Engine Fixes (COMPLETE) - Fixed degenerate sigma handling, NaN propagation in CDF, added statistics test coverage
+- Phase 6.1 inserted after Phase 6: Calculation Bugs & Polish (URGENT) - Fix EVSI threshold bug, worker cleanup, UX improvements
 
 ### Pending Todos
 
@@ -142,8 +145,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-30
-Stopped at: PROJECT COMPLETE - All 26 plans executed
+Last session: 2026-02-02
+Stopped at: Completed 06.1-02-PLAN.md
 Resume file: None
 
 ## Project Completion Summary
