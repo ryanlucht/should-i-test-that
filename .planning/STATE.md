@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 6.1 Calculation Bugs & Polish - IN PROGRESS
+**Current focus:** Phase 6.1 Calculation Bugs & Polish - COMPLETE
 
 ## Current Position
 
-Phase: 6.1 (Calculation Bugs & Polish) - IN PROGRESS
-Plan: 4/5 in phase 6.1
-Status: Completed 06.1-04 Footer attribution and PNG filename polish
-Last activity: 2026-02-02 - Completed 06.1-04-PLAN.md
+Phase: 6.1 (Calculation Bugs & Polish) - COMPLETE
+Plan: 5/5 in phase 6.1
+Status: Completed 06.1-05 Helper text and tooltips polish
+Last activity: 2026-02-02 - Completed 06.1-05-PLAN.md
 
-Progress: [██████████████████████████░░] 97% (30/31 plans)
+Progress: [████████████████████████████] 100% (31/31 plans)
 
 ## Performance Metrics
 
@@ -123,6 +123,8 @@ Recent decisions affecting current work:
 | Descriptive PNG filenames no timestamps | 06.1-04 | Cleaner file management for users |
 | Threshold-relative EVSI payoff | 06.1-01 | K * (L_true - threshold_L) aligns with EVPI formula approach |
 | Zero samples returns safe EVSI=0 | 06.1-01 | Prevents NaN from division by zero in edge cases |
+| labelSuffix prop for NumberInput | 06.1-05 | Enables inline content next to field labels |
+| Decision latency tooltip-only | 06.1-05 | Only field with tooltip icon, others use helpText only |
 
 ### Roadmap Evolution
 
@@ -153,15 +155,16 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 06.1-01-PLAN.md (EVSI calculation bug fixes)
+Stopped at: Completed 06.1-05-PLAN.md (Helper text and tooltips polish)
 Resume file: None
 
 ## Project Completion Summary
 
-**v1.0 Feature Complete**
-- 6 phases, 26 plans executed
-- Total execution time: 175 minutes (~3 hours)
-- 262 tests passing
+**v1.0 Feature Complete + Phase 6.1 Polish**
+- 6 phases + 6.1 polish, 31 plans executed
+- Total execution time: ~190 minutes
+- 264 tests passing
 - WCAG 2.1 AA accessibility testing in place
 - PNG export functional
 - Basic and Advanced calculation modes working
+- Phase 6.1 complete: EVSI bug fixes, worker cleanup, UX improvements
