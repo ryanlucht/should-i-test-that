@@ -585,10 +585,11 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                       {impliedMeanPercent > 0 ? '+' : ''}
                       {impliedMeanPercent.toFixed(1)}%
                     </span>
-                    {/* Only show std dev in Advanced mode, hidden in Basic mode */}
+                    {/* Only show dispersion in Advanced mode, hidden in Basic mode */}
+                    {/* For Normal: "std dev", for Student-t: "σ" (scale param, not SD) */}
                     {priorParams && !isUniformPrior && mode === 'advanced' && (
                       <span className="text-muted-foreground">
-                        (std dev: {(priorParams.sigma_L * 100).toFixed(2)}%)
+                        ({advancedInputs.priorShape === 'student-t' ? 'σ' : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
                       </span>
                     )}
                   </div>
