@@ -299,6 +299,9 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     setLoading(true);
     const currentRequestId = ++requestIdRef.current;
 
+    // Worker reference for cleanup - declared in outer scope so cleanup can access it
+    let worker: Worker | null = null;
+
     // Use native Worker with Comlink for type-safe RPC
     const runWorker = async () => {
       try {
@@ -306,7 +309,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         const Comlink = await import('comlink');
 
         // Create native Worker using Vite's ?worker import
-        const worker = new Worker(
+        worker = new Worker(
           new URL('../lib/workers/evsi.worker.ts', import.meta.url),
           { type: 'module' }
         );
@@ -321,23 +324,30 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
           setWorkerResults(results);
           setLoading(false);
         }
-
-        // Terminate Worker after use
-        worker.terminate();
       } catch (error) {
         console.error('EVSI Worker error:', error);
         if (currentRequestId === requestIdRef.current) {
           setWorkerResults(null);
           setLoading(false);
         }
+      } finally {
+        // Always terminate the worker when done or on error
+        if (worker) {
+          worker.terminate();
+          worker = null;
+        }
       }
     };
 
     runWorker();
 
-    // Cleanup: increment requestId to invalidate stale requests
+    // Cleanup: terminate worker if still running and invalidate request
     return () => {
       requestIdRef.current++;
+      if (worker) {
+        worker.terminate();
+        worker = null;
+      }
     };
   }, [validatedInputs]);
 
