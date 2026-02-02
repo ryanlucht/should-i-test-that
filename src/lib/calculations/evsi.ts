@@ -17,9 +17,161 @@
  *   L_hat | L ~ N(L, SE^2) where SE depends on sample sizes and CR0
  */
 
-import { sample, cdf, getPriorMean } from './distributions';
+import { sample, cdf, getPriorMean, pdf, PriorDistribution } from './distributions';
+import jStat from 'jstat';
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import type { EVSIInputs, EVSIResults } from './types';
+
+/**
+ * Compute posterior mean E[L|L_hat] via grid integration for non-conjugate priors.
+ *
+ * This function numerically integrates to compute the expected value of true lift
+ * given an observed sample estimate, for priors where conjugate updates don't apply.
+ *
+ * Mathematical basis (Bayes' theorem):
+ * - Posterior: p(L|L_hat) ∝ p(L_hat|L) * p(L)
+ * - E[L|L_hat] = ∫ L * p(L|L_hat) dL = Σ(L_i * w_i) / Σ(w_i)
+ * - where w_i = prior_pdf(L_i) * likelihood_pdf(L_hat; L_i, SE)
+ *
+ * @param L_hat - Observed sample estimate from simulated test
+ * @param SE - Standard error of the estimate
+ * @param prior - Prior distribution (Student-t or Uniform)
+ * @param gridSize - Number of grid points (default 200)
+ * @returns E[L|L_hat] - posterior mean of true lift given data
+ */
+function computePosteriorMeanGrid(
+  L_hat: number,
+  SE: number,
+  prior: PriorDistribution,
+  gridSize: number = 200
+): number {
+  // ===========================================
+  // Step 1: Determine grid bounds from prior type
+  // ===========================================
+  // Grid must cover feasible L values: L >= -1 (CR1 >= 0)
+  // Upper bound depends on prior support
+  let L_min: number;
+  let L_max: number;
+
+  if (prior.type === 'uniform') {
+    // Uniform has explicit bounds - use them directly
+    L_min = Math.max(-1, prior.low_L!);
+    L_max = prior.high_L!;
+  } else if (prior.type === 'student-t') {
+    // Student-t is unbounded but we use practical bounds
+    // Center around prior mean, extend by 6 scale parameters
+    // This captures >99.9% of probability mass even for df=3
+    const mu = prior.mu_L!;
+    const sigma = prior.sigma_L!;
+    L_min = Math.max(-1, mu - 6 * sigma);
+    L_max = mu + 6 * sigma;
+  } else {
+    // Fallback for any other type (shouldn't reach here)
+    L_min = -1;
+    L_max = 2;
+  }
+
+  const gridStep = (L_max - L_min) / gridSize;
+
+  // ===========================================
+  // Step 2: Compute unnormalized posterior weights at each grid point
+  // ===========================================
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (let i = 0; i <= gridSize; i++) {
+    const L = L_min + i * gridStep;
+
+    // Prior PDF at this L value (from distributions.ts)
+    const priorPDF = pdf(L, prior);
+    if (priorPDF <= 0) continue; // Skip zero-probability regions
+
+    // Likelihood: L_hat | L ~ N(L, SE^2)
+    // This is the probability of observing L_hat given true lift L
+    // Use jStat.normal.pdf(x, mean, sd) for P(L_hat|L)
+    const likelihoodPDF = jStat.normal.pdf(L_hat, L, SE);
+
+    // Unnormalized posterior weight: p(L|L_hat) ∝ p(L_hat|L) * p(L)
+    const weight = priorPDF * likelihoodPDF;
+
+    // Accumulate for weighted mean calculation
+    weightedSum += L * weight;
+    totalWeight += weight;
+  }
+
+  // ===========================================
+  // Step 3: Return posterior mean = weighted average
+  // ===========================================
+  // E[L|L_hat] = Σ(L * weight) / Σ(weight)
+  if (totalWeight === 0) {
+    // Edge case: no probability mass found - fall back to prior mean
+    // This can happen if likelihood is extremely narrow and misses all grid points
+    return getPriorMean(prior);
+  }
+
+  return weightedSum / totalWeight;
+}
+
+/**
+ * Compute E[L|L_hat] - the posterior mean given observed sample estimate.
+ *
+ * This is the key function for fixing EVSI-01/02/03. Instead of deciding based
+ * on the raw sample estimate L_hat, the Bayesian decision rule uses the
+ * posterior mean E[L|L_hat], which incorporates prior information.
+ *
+ * Mathematical basis:
+ * - For Normal prior with Normal likelihood (conjugate case):
+ *   Posterior mean = w * L_hat + (1-w) * mu_prior
+ *   where w = sigma_prior^2 / (sigma_prior^2 + SE^2) is the shrinkage weight
+ *
+ * - For non-Normal priors (Student-t, Uniform):
+ *   Posterior mean computed via grid-based numerical integration
+ *
+ * Interpretation of shrinkage weight w:
+ * - When SE is small (precise test), w → 1, posterior mean → L_hat
+ * - When SE is large (noisy test), w → 0, posterior mean → mu_prior
+ *
+ * @param L_hat - Observed sample estimate from simulated test
+ * @param SE - Standard error of the estimate
+ * @param prior - Prior distribution
+ * @returns E[L|L_hat] - posterior mean of true lift given data
+ */
+export function computePosteriorMean(
+  L_hat: number,
+  SE: number,
+  prior: PriorDistribution
+): number {
+  if (prior.type === 'normal') {
+    // ===========================================
+    // Closed-form for Normal-Normal conjugacy
+    // ===========================================
+    // Source: https://stephens999.github.io/fiveMinuteStats/bayes_conjugate_normal_mean.html
+    const sigma_prior = prior.sigma_L!;
+    const mu_prior = prior.mu_L!;
+
+    // Shrinkage weight: w = prior_variance / (prior_variance + data_variance)
+    // This determines how much to trust the data (L_hat) vs the prior
+    const prior_variance = sigma_prior * sigma_prior;
+    const data_variance = SE * SE;
+
+    // Handle edge case: sigma_prior = 0 (point mass prior)
+    // w = 0 / (0 + SE^2) = 0, so posterior mean = mu_prior
+    if (prior_variance === 0) {
+      return mu_prior;
+    }
+
+    const w = prior_variance / (prior_variance + data_variance);
+
+    // Posterior mean: weighted average of data and prior mean
+    // E[L|L_hat] = w * L_hat + (1-w) * mu_prior
+    return w * L_hat + (1 - w) * mu_prior;
+  }
+
+  // ===========================================
+  // Grid integration for non-conjugate priors (Student-t, Uniform)
+  // ===========================================
+  return computePosteriorMeanGrid(L_hat, SE, prior);
+}
 
 /**
  * Calculate EVSI using Monte Carlo simulation
