@@ -19,6 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
 - [x] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
 - [x] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
+- [ ] **Phase 6.1: Calculation Bugs & Polish** - Fix EVSI threshold bug, worker cleanup, UX improvements (INSERTED)
 
 ## Phase Details
 
@@ -149,6 +150,26 @@ Plans:
 - [x] 06-02-PLAN.md — Design consistency: purple accent across all interactive elements, placeholder visibility
 - [x] 06-03-PLAN.md — Accessibility: vitest-axe tests, ARIA live regions, text redundancy
 
+### Phase 6.1: Calculation Bugs & Polish (INSERTED)
+**Goal**: Fix critical EVSI calculation bugs and improve UX polish across the application
+**Depends on**: Phase 6
+**Requirements**: Correctness fixes + UX improvements discovered post-v1
+**Success Criteria** (what must be TRUE):
+  1. Monte Carlo EVSI correctly uses threshold in payoff calculation (K * (L_true - T_L))
+  2. Zero valid samples edge case returns safe "no information" result (EVSI=0)
+  3. Worker lifecycle properly cleaned up on unmount and errors
+  4. Advanced mode has default prior option matching Basic mode
+  5. Footer displays credits and attribution on all pages
+  6. Helper text and tooltips updated per specification
+  7. PNG export filenames are descriptive (no timestamps)
+**Plans**: 4 plans
+
+Plans:
+- [ ] 06.1-01-PLAN.md — Fix Monte Carlo EVSI threshold payoff calculation and zero samples edge case
+- [ ] 06.1-02-PLAN.md — Fix Worker lifecycle cleanup on unmount and errors
+- [ ] 06.1-03-PLAN.md — Advanced mode default prior + helper text/tooltip updates
+- [ ] 06.1-04-PLAN.md — Footer credits on all pages + descriptive PNG export filenames
+
 ## Progress
 
 **Execution Order:**
@@ -163,6 +184,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 4.1. Calculation Engine Fixes (INSERTED) | 1/1 | Complete | 2026-01-30 |
 | 5. Advanced Mode | 6/6 | Complete | 2026-01-30 |
 | 6. Export & Polish | 3/3 | Complete | 2026-01-30 |
+| 6.1. Calculation Bugs & Polish (INSERTED) | 0/4 | Not Started | — |
 
 ---
 *Roadmap created: 2026-01-29*
@@ -181,3 +203,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Phase 6 completed: 2026-01-30*
 *Total requirements mapped: 67/67*
 *MILESTONE v1.0 COMPLETE: 2026-01-30*
+*Phase 6.1 planned: 2026-02-02*
