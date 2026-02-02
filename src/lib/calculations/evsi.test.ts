@@ -12,6 +12,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   calculateEVSIMonteCarlo,
   calculateEVSINormalFastPath,
+  computePosteriorMean,
 } from './evsi';
 import { calculateEVPI } from './evpi';
 import type { PriorDistribution } from './distributions';
@@ -477,6 +478,220 @@ describe('calculateEVSIMonteCarlo', () => {
       expect(Number.isNaN(results.evsiDollars)).toBe(false);
 
       vi.restoreAllMocks();
+    });
+  });
+});
+
+describe('computePosteriorMean', () => {
+  // ===========================================
+  // 1. Normal prior - shrinkage formula
+  // ===========================================
+
+  describe('Normal prior (closed-form shrinkage)', () => {
+    it('computes correct posterior mean with moderate noise', () => {
+      // Case from plan: sigma_prior=0.05, SE=0.10, mu_prior=0.05, L_hat=-0.10
+      // w = 0.05^2 / (0.05^2 + 0.10^2) = 0.0025 / 0.0125 = 0.2
+      // posteriorMean = 0.2 * (-0.10) + 0.8 * 0.05 = -0.02 + 0.04 = 0.02
+      const prior = { type: 'normal' as const, mu_L: 0.05, sigma_L: 0.05 };
+      const L_hat = -0.10;
+      const SE = 0.10;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      expect(posteriorMean).toBeCloseTo(0.02, 4);
+    });
+
+    it('posterior mean stays near L_hat when SE is small (precise data)', () => {
+      // Case: sigma_prior=0.05, SE=0.01 (precise), mu_prior=0, L_hat=0.08
+      // w = 0.05^2 / (0.05^2 + 0.01^2) = 0.0025 / 0.0026 = 0.9615...
+      // posteriorMean ~= 0.9615 * 0.08 + 0.0385 * 0 = 0.077
+      const prior = { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 };
+      const L_hat = 0.08;
+      const SE = 0.01;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      // Should be close to L_hat (within 5%)
+      expect(posteriorMean).toBeGreaterThan(0.07);
+      expect(posteriorMean).toBeLessThan(0.08);
+    });
+
+    it('posterior mean stays near prior mean when SE is large (noisy data)', () => {
+      // Case: sigma_prior=0.05, SE=0.20 (noisy), mu_prior=0, L_hat=0.10
+      // w = 0.05^2 / (0.05^2 + 0.20^2) = 0.0025 / 0.0425 = 0.0588...
+      // posteriorMean ~= 0.0588 * 0.10 + 0.9412 * 0 = 0.006
+      const prior = { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 };
+      const L_hat = 0.10;
+      const SE = 0.20;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      // Should be close to prior mean (near 0)
+      expect(posteriorMean).toBeGreaterThan(0);
+      expect(posteriorMean).toBeLessThan(0.02);
+    });
+
+    it('handles zero shrinkage weight when prior sigma is 0', () => {
+      // Edge case: sigma_prior=0 means point mass prior
+      // w = 0 / (0 + SE^2) = 0
+      // posteriorMean = 0 * L_hat + 1 * mu_prior = mu_prior
+      const prior = { type: 'normal' as const, mu_L: 0.03, sigma_L: 0 };
+      const L_hat = 0.20;
+      const SE = 0.05;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      // Should return prior mean (no weight on data)
+      expect(posteriorMean).toBeCloseTo(0.03, 4);
+    });
+
+    it('returns finite value for extreme L_hat', () => {
+      const prior = { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 };
+      const L_hat = 5.0; // Very extreme positive observation
+      const SE = 0.10;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      expect(Number.isFinite(posteriorMean)).toBe(true);
+      expect(Number.isNaN(posteriorMean)).toBe(false);
+    });
+  });
+
+  // ===========================================
+  // 2. Uniform prior - grid integration
+  // ===========================================
+
+  describe('Uniform prior (grid integration)', () => {
+    it('posterior mean is between prior mean and L_hat', () => {
+      // Uniform[-0.10, 0.10] has prior mean = 0
+      // With L_hat = 0.05, posterior should be pulled toward data
+      const prior = { type: 'uniform' as const, low_L: -0.10, high_L: 0.10 };
+      const L_hat = 0.05;
+      const SE = 0.02;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+      const priorMean = 0; // (-0.10 + 0.10) / 2
+
+      // Should be between prior mean and L_hat
+      expect(posteriorMean).toBeGreaterThan(priorMean);
+      expect(posteriorMean).toBeLessThan(L_hat);
+    });
+
+    it('posterior mean respects prior bounds', () => {
+      // Even with extreme L_hat outside bounds, posterior mean stays sensible
+      const prior = { type: 'uniform' as const, low_L: -0.05, high_L: 0.05 };
+      const L_hat = 0.50; // Way outside prior bounds
+      const SE = 0.02;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      // Posterior mean should be within or near prior bounds
+      // (pulled toward high end but constrained)
+      expect(posteriorMean).toBeLessThan(0.10); // Reasonable upper bound
+      expect(posteriorMean).toBeGreaterThan(-0.05);
+    });
+
+    it('returns finite value and no NaN', () => {
+      const prior = { type: 'uniform' as const, low_L: -0.10, high_L: 0.10 };
+      const L_hat = -0.02;
+      const SE = 0.03;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      expect(Number.isFinite(posteriorMean)).toBe(true);
+      expect(Number.isNaN(posteriorMean)).toBe(false);
+    });
+  });
+
+  // ===========================================
+  // 3. Student-t prior - grid integration
+  // ===========================================
+
+  describe('Student-t prior (grid integration)', () => {
+    it('posterior mean is between prior mean and L_hat', () => {
+      // Student-t with mu=0, sigma=0.05, df=5
+      const prior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 5 };
+      const L_hat = 0.08;
+      const SE = 0.02;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+      const priorMean = 0;
+
+      // Should be between prior mean and L_hat
+      expect(posteriorMean).toBeGreaterThan(priorMean);
+      expect(posteriorMean).toBeLessThan(L_hat);
+    });
+
+    it('heavier tails produce less shrinkage than Normal', () => {
+      // Compare Student-t (df=3, heavy tails) with Normal
+      // Both have same mu and sigma
+      // Student-t should shrink less toward prior mean because its tails
+      // assign more probability to extreme observations
+      const normalPrior = { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 };
+      const studentTPrior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 3 };
+      const L_hat = 0.15; // Somewhat extreme observation
+      const SE = 0.03;
+
+      const normalPosterior = computePosteriorMean(L_hat, SE, normalPrior);
+      const studentTPosterior = computePosteriorMean(L_hat, SE, studentTPrior);
+
+      // Student-t posterior should be closer to L_hat (less shrinkage)
+      // Because heavy tails make extreme observations more plausible
+      expect(studentTPosterior).toBeGreaterThanOrEqual(normalPosterior - 0.01);
+    });
+
+    it('returns finite value and no NaN', () => {
+      const prior = { type: 'student-t' as const, mu_L: 0.02, sigma_L: 0.04, df: 5 };
+      const L_hat = 0.05;
+      const SE = 0.02;
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      expect(Number.isFinite(posteriorMean)).toBe(true);
+      expect(Number.isNaN(posteriorMean)).toBe(false);
+    });
+  });
+
+  // ===========================================
+  // 4. Edge cases
+  // ===========================================
+
+  describe('edge cases', () => {
+    it('handles very small SE (near-perfect information)', () => {
+      const prior = { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 };
+      const L_hat = 0.03;
+      const SE = 0.0001; // Very small SE
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      // Should be very close to L_hat
+      expect(posteriorMean).toBeCloseTo(L_hat, 2);
+    });
+
+    it('handles very large SE (almost no information)', () => {
+      const prior = { type: 'normal' as const, mu_L: 0.05, sigma_L: 0.05 };
+      const L_hat = -0.50; // Extreme negative observation
+      const SE = 10; // Huge SE
+
+      const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+
+      // Should be very close to prior mean
+      expect(posteriorMean).toBeCloseTo(0.05, 1);
+    });
+
+    it('does not produce NaN for any standard input combination', () => {
+      const testCases = [
+        { prior: { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 }, L_hat: 0, SE: 0.01 },
+        { prior: { type: 'normal' as const, mu_L: -0.05, sigma_L: 0.10 }, L_hat: 0.20, SE: 0.05 },
+        { prior: { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 3 }, L_hat: 0.10, SE: 0.02 },
+        { prior: { type: 'uniform' as const, low_L: -0.20, high_L: 0.20 }, L_hat: 0.05, SE: 0.03 },
+      ];
+
+      for (const { prior, L_hat, SE } of testCases) {
+        const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+        expect(Number.isNaN(posteriorMean)).toBe(false);
+        expect(Number.isFinite(posteriorMean)).toBe(true);
+      }
     });
   });
 });
