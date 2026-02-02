@@ -14,3 +14,4 @@ export * from './distributions';
 export * from './sample-size';
 export * from './cost-of-delay';
 export * from './evsi';
+export * from './net-value';

@@ -160,3 +160,73 @@ export interface EVSIResults {
   /** Number of samples rejected for feasibility (CR1 outside [0,1]) */
   numRejected?: number;
 }
+
+/**
+ * Input parameters for integrated Net Value calculation
+ *
+ * Net Value computes the value of testing in one coherent simulation,
+ * accounting for value during test period (split traffic) and latency period.
+ *
+ * Per audit recommendation (COD-01, COD-02, COD-03):
+ * Instead of computing EVSI and CoD separately, this integrates timing
+ * into a single Monte Carlo simulation.
+ *
+ * Mathematical basis:
+ * - Net Value = E[ValueWithTest] - E[ValueWithoutTest]
+ * - ValueWithTest accounts for: test period, latency period, post-decision period
+ * - ValueWithoutTest uses default decision for full year
+ */
+export interface NetValueInputs {
+  /** K = N_year * CR0 * V (annual dollars per unit lift) */
+  K: number;
+
+  /** Baseline conversion rate (CR0) as decimal, e.g., 0.032 for 3.2% */
+  baselineConversionRate: number;
+
+  /** Threshold in lift units (T_L) as decimal, e.g., 0.05 for 5% */
+  threshold_L: number;
+
+  /** Prior distribution parameters */
+  prior: PriorDistribution;
+
+  /** Sample size in control group */
+  n_control: number;
+
+  /** Sample size in variant group */
+  n_variant: number;
+
+  /** Test duration in days */
+  testDurationDays: number;
+
+  /** Fraction of traffic assigned to variant (decimal, e.g., 0.5 for 50%) */
+  variantFraction: number;
+
+  /** Days between test completion and shipping decision */
+  decisionLatencyDays: number;
+}
+
+/**
+ * Results from integrated Net Value calculation
+ *
+ * Contains the primary result (netValueDollars) along with supporting
+ * metrics for display and decision analysis.
+ */
+export interface NetValueResults {
+  /** Net value of testing in dollars - the headline result */
+  netValueDollars: number;
+
+  /** Default decision based on prior mean vs threshold */
+  defaultDecision: 'ship' | 'dont-ship';
+
+  /** P(L >= T_L) - probability the true lift clears threshold (under prior) */
+  probabilityClearsThreshold: number;
+
+  /** Probability the test changes the decision from the default */
+  probabilityTestChangesDecision: number;
+
+  /** Number of Monte Carlo samples used (for diagnostics) */
+  numSamples?: number;
+
+  /** Number of samples rejected for feasibility (CR1 outside [0,1]) */
+  numRejected?: number;
+}
