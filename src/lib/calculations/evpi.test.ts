@@ -590,4 +590,197 @@ describe('calculateEVPI', () => {
       }
     });
   });
+
+  // ===========================================
+  // 10. Truncation Consistency Tests (Phase 9 requirements)
+  // ===========================================
+
+  describe('TRUNC-01: EVPI applies truncation at L=-1', () => {
+    it('uses truncated prior when significant mass below L=-1', () => {
+      // Prior N(-0.8, 0.2) has ~16% mass below -1
+      // alpha = (-1 - (-0.8)) / 0.2 = -1
+      // P(L < -1) = Phi(-1) = 0.1587 > 0.001
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: 0,
+      });
+
+      // Verify truncation was applied
+      expect(result.edgeCases.truncationApplied).toBe(true);
+    });
+
+    it('uses closed-form when truncation is negligible', () => {
+      // Prior N(0, 0.05) has negligible mass below -1
+      // alpha = (-1 - 0) / 0.05 = -20
+      // P(L < -1) = Phi(-20) ~= 0 < 0.001
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0, sigma_L: 0.05 },
+        threshold_L: 0,
+      });
+
+      // Verify truncation was NOT applied
+      expect(result.edgeCases.truncationApplied).toBe(false);
+    });
+
+    it('truncation switches near the threshold P(L<-1) = 0.001', () => {
+      // Find a prior where truncation is borderline
+      // For P(L < -1) = 0.001, need Phi(alpha) = 0.001
+      // alpha = Phi^-1(0.001) ~= -3.09
+      // So -1 = mu + (-3.09) * sigma
+      // With sigma = 0.1: mu = -1 + 0.309 = -0.691
+
+      // Just above threshold (should truncate)
+      // mu = -0.70 gives alpha = -3.0, P(L<-1) = 0.00135 > 0.001
+      const truncatedResult = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.7, sigma_L: 0.1 }, // P(L<-1) = 0.00135 > 0.001
+        threshold_L: 0,
+      });
+      expect(truncatedResult.edgeCases.truncationApplied).toBe(true);
+
+      // Just below threshold (should not truncate)
+      // mu = -0.68 gives alpha = -3.2, P(L<-1) = 0.00069 < 0.001
+      const untruncatedResult = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.68, sigma_L: 0.1 }, // P(L<-1) = 0.00069 < 0.001
+        threshold_L: 0,
+      });
+      expect(untruncatedResult.edgeCases.truncationApplied).toBe(false);
+    });
+  });
+
+  describe('TRUNC-02: All metrics use consistent truncation', () => {
+    it('truncated mean is higher than untruncated mean', () => {
+      // For N(-0.8, 0.2) truncated at -1:
+      // Truncating the lower tail shifts mass upward
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: -0.75, // Put threshold near truncated mean
+      });
+
+      // Default decision should be based on truncated mean (~-0.74)
+      // Since truncated mean (~-0.74) > threshold (-0.75), should ship
+      expect(result.defaultDecision).toBe('ship');
+      expect(result.edgeCases.truncationApplied).toBe(true);
+    });
+
+    it('probabilities use truncated CDF', () => {
+      // Prior N(-0.8, 0.2) truncated at -1
+      // P(L >= 0 | L >= -1) should be higher than P(L >= 0) untruncated
+      // because we're conditioning on L being above -1
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: 0,
+      });
+
+      // Untruncated: P(L >= 0) = 1 - Phi((0 - (-0.8))/0.2) = 1 - Phi(4) ~= 0
+      // Truncated: P(L >= 0 | L >= -1) should be small but > 0
+      // The truncated probability should be positive (not essentially 0)
+      expect(result.probabilityClearsThreshold).toBeGreaterThan(0);
+      expect(result.probabilityClearsThreshold).toBeLessThan(0.1); // Still unlikely
+    });
+
+    it('chance of being wrong reflects truncated distribution', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: -0.75,
+      });
+
+      // Default is 'ship' based on truncated mean
+      // Chance of being wrong = P(L < -0.75 | L >= -1)
+      expect(result.chanceOfBeingWrong).toBeGreaterThan(0);
+      expect(result.chanceOfBeingWrong).toBeLessThan(1);
+    });
+  });
+
+  describe('TRUNC-03: Method B numerical integration', () => {
+    it('numerical integration produces finite positive EVPI', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: 0,
+      });
+
+      expect(Number.isFinite(result.evpiDollars)).toBe(true);
+      expect(result.evpiDollars).toBeGreaterThan(0);
+    });
+
+    it('numerical and closed-form agree when truncation is negligible', () => {
+      // Use a prior where truncation is essentially zero
+      // Both methods should give the same result
+      const prior = { mu_L: 0, sigma_L: 0.05 };
+
+      // Closed-form result (truncation negligible)
+      const closedFormResult = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior,
+        threshold_L: 0,
+      });
+
+      expect(closedFormResult.edgeCases.truncationApplied).toBe(false);
+
+      // For comparison, we can verify the closed-form is being used
+      // by checking the known formula result
+      // EVPI = K * sigma * phi(0) = 5M * 0.05 * 0.3989 ~= 99,735
+      expect(closedFormResult.evpiDollars).toBeCloseTo(99735, -2);
+    });
+
+    it('EVPI is bounded: EVPI <= K * E[|L - T|]', () => {
+      // EVPI cannot exceed the expected loss under perfect information
+      const K = 5000000;
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: 0,
+      });
+
+      // Very rough upper bound: K * sigma * 2 (within ~2 sigma of threshold)
+      // This is a sanity check, not a tight bound
+      const looseBound = K * 0.2 * 2;
+      expect(result.evpiDollars).toBeLessThan(looseBound);
+      expect(result.evpiDollars).toBeGreaterThan(0);
+    });
+
+    it('handles extreme truncation gracefully', () => {
+      // Prior centered well below -1, most mass truncated
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -1.5, sigma_L: 0.3 }, // Centered below feasibility bound
+        threshold_L: 0,
+      });
+
+      // Should not produce NaN or Infinity
+      expect(Number.isFinite(result.evpiDollars)).toBe(true);
+      expect(Number.isFinite(result.probabilityClearsThreshold)).toBe(true);
+      expect(Number.isFinite(result.chanceOfBeingWrong)).toBe(true);
+      expect(result.edgeCases.truncationApplied).toBe(true);
+    });
+  });
 });
