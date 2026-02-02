@@ -5,7 +5,7 @@
  * across Normal, Student-t, and Uniform distributions.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { pdf, cdf, sample, getPriorMean, type PriorDistribution } from './distributions';
 
 describe('distributions', () => {
@@ -276,6 +276,37 @@ describe('distributions', () => {
 
       expect(tailProb5).toBeLessThan(tailProb3);
       expect(tailProb5).toBeGreaterThan(tailProb10);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles Math.random() returning 0 in Normal sampling', () => {
+      // Mock Math.random to return 0 then normal values
+      let callCount = 0;
+      vi.spyOn(Math, 'random').mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return 0; // u1 = 0 (would cause NaN without guard)
+        return 0.5; // u2 = 0.5
+      });
+
+      const prior: PriorDistribution = { type: 'normal', mu_L: 0.05, sigma_L: 0.02 };
+      const result = sample(prior);
+
+      expect(Number.isFinite(result)).toBe(true);
+      expect(Number.isNaN(result)).toBe(false);
+
+      vi.restoreAllMocks();
+    });
+
+    it('handles non-finite Student-t inverse CDF by re-sampling', () => {
+      // This is harder to test deterministically, but we can verify
+      // that many samples are all finite
+      const prior: PriorDistribution = { type: 'student-t', mu_L: 0, sigma_L: 0.1, df: 3 };
+
+      for (let i = 0; i < 1000; i++) {
+        const result = sample(prior);
+        expect(Number.isFinite(result)).toBe(true);
+      }
     });
   });
 });

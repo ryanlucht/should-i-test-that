@@ -152,7 +152,8 @@ export function calculateEVSIMonteCarlo(
     // ===========================================
     // L_hat = L_true + noise, noise ~ N(0, SE)
     // Use Box-Muller for normal sampling
-    const u1 = Math.random();
+    // Guard against u1 = 0 which causes Math.log(0) = -Infinity -> NaN
+    const u1 = Math.max(Math.random(), 1e-16);
     const u2 = Math.random();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     const L_hat = L_true + SE * z;

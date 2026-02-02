@@ -177,7 +177,8 @@ export function sample(prior: PriorDistribution): number {
     case 'normal': {
       // Box-Muller transform for normal sampling
       // This generates standard normal, then transform to location-scale
-      const u1 = Math.random();
+      // Guard against u1 = 0 which causes Math.log(0) = -Infinity -> NaN
+      const u1 = Math.max(Math.random(), 1e-16);
       const u2 = Math.random();
       const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
       return prior.mu_L! + prior.sigma_L! * z;
@@ -189,6 +190,10 @@ export function sample(prior: PriorDistribution): number {
       // Then transform to location-scale
       const u = Math.random();
       const z = jStat.studentt.inv(u, prior.df!);
+      // Guard: re-sample if inverse CDF returned non-finite value (extreme tails)
+      if (!isFinite(z)) {
+        return sample(prior); // Recursive re-sample
+      }
       return prior.mu_L! + prior.sigma_L! * z;
     }
 

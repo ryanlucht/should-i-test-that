@@ -446,6 +446,39 @@ describe('calculateEVSIMonteCarlo', () => {
       expect(Number.isNaN(result.evsiDollars)).toBe(false);
     });
   });
+
+  // ===========================================
+  // 10. Box-Muller edge case
+  // ===========================================
+
+  describe('edge cases', () => {
+    it('handles Math.random() returning 0 in Monte Carlo simulation', () => {
+      // Mock to return 0 periodically
+      let callCount = 0;
+      vi.spyOn(Math, 'random').mockImplementation(() => {
+        callCount++;
+        // Return 0 every 10th call to test guard
+        if (callCount % 10 === 0) return 0;
+        return Math.abs(Math.sin(callCount * 0.1)) * 0.999 + 0.0005;
+      });
+
+      const inputs = {
+        K: 100000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0.02,
+        prior: { type: 'normal' as const, mu_L: 0.03, sigma_L: 0.02 },
+        n_control: 5000,
+        n_variant: 5000,
+      };
+
+      const results = calculateEVSIMonteCarlo(inputs, 100);
+
+      expect(Number.isFinite(results.evsiDollars)).toBe(true);
+      expect(Number.isNaN(results.evsiDollars)).toBe(false);
+
+      vi.restoreAllMocks();
+    });
+  });
 });
 
 describe('calculateEVSINormalFastPath', () => {
