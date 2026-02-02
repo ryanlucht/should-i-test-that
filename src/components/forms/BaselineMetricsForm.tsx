@@ -149,13 +149,17 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
     return (
       <FormProvider {...methods}>
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          {/* Section helper text */}
+          <p className="text-sm text-muted-foreground">
+            This will help us calculate the range of potential outcomes from the test in dollars.
+          </p>
+
           {/* Baseline Conversion Rate */}
           <PercentageInput
             name="baselineConversionRate"
             label="Baseline conversion rate"
             placeholder="3.2%"
             helpText="This is your current conversion rate for the metric and audience/targeting you'd be testing. Ideally, choose a metric that is a revenue-generating event (e.g., visitors to signups)."
-            tooltip="The percentage of visitors who complete the desired action before any changes."
             error={errors.baselineConversionRate?.message}
           />
 
@@ -164,8 +168,7 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
             name="annualVisitors"
             label={`Annual ${unitLabel || 'visitors'}`}
             placeholder="1,000,000"
-            helpText={`Enter the number of ${unitLabel || 'visitors'} you expect in a year. If you only know monthly traffic, multiply by 12.`}
-            tooltip="Your annualized traffic volume. This determines how much revenue impact a lift percentage translates to."
+            helpText="Enter the number of visitors you expect in a year, based on the audience and triggering conditions of the test."
             error={errors.annualVisitors?.message}
             unitLabelValue={unitLabel}
             onUnitLabelChange={handleUnitLabelChange}
@@ -177,7 +180,6 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
             label="Value per conversion"
             placeholder="$50"
             helpText="Put the business value of one conversion in dollars. Examples: average order value, gross margin per purchase, first-year LTV, or a blended estimate. Pick one that matches how you evaluate impact."
-            tooltip="The dollar value your business gains from each conversion event."
             error={errors.valuePerConversion?.message}
           />
         </form>
