@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 6.1 (Calculation Bugs & Polish) - IN PROGRESS
-Plan: 3/5 in phase 6.1
-Status: Completed 06.1-03 Default prior option & sigma display
-Last activity: 2026-02-02 - Completed 06.1-03-PLAN.md
+Plan: 4/5 in phase 6.1
+Status: Completed 06.1-04 Footer attribution and PNG filename polish
+Last activity: 2026-02-02 - Completed 06.1-04-PLAN.md
 
-Progress: [█████████████████████████░░░] 93% (29/31 plans)
+Progress: [██████████████████████████░░] 97% (30/31 plans)
 
 ## Performance Metrics
 
@@ -119,6 +119,8 @@ Recent decisions affecting current work:
 | Eppo attribution in default button | 06.1-03 | Credit Eppo for using their prior in Bayesian analysis |
 | Sigma hidden in Basic mode | 06.1-03 | Reduces cognitive load for most users |
 | Sigma renamed to std dev | 06.1-03 | More familiar term for Advanced mode users |
+| Hubbard attribution Basic mode only | 06.1-04 | EVPI is Hubbard-based; EVSI uses additional methods |
+| Descriptive PNG filenames no timestamps | 06.1-04 | Cleaner file management for users |
 
 ### Roadmap Evolution
 
@@ -149,7 +151,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 06.1-03-PLAN.md
+Stopped at: Completed 06.1-04-PLAN.md
 Resume file: None
 
 ## Project Completion Summary
