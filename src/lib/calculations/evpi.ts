@@ -9,11 +9,177 @@
  *
  * Per SPEC.md Section 8.3:
  *   EVPI = E[ Loss(L) ] (under the prior, using the default decision)
+ *
+ * Truncation Support (Phase 9 TRUNC-01/02/03):
+ * When the prior has significant mass below L=-1 (feasibility bound),
+ * we use Method B numerical integration over the truncated distribution
+ * to ensure consistency with EVSI Monte Carlo rejection sampling.
  */
 
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { deriveK, determineDefaultDecision, detectEdgeCases } from './derived';
+import {
+  truncatedNormalMean,
+  truncatedNormalVariance,
+  truncatedNormalCDF,
+  truncatedNormalPDF,
+} from './truncated-normal';
 import type { EVPIInputs, EVPIResults } from './types';
+
+/**
+ * Calculate EVPI using Method B (numerical integration) for truncated prior
+ *
+ * Per SPEC.md Section 8.4 Method B and Audit Section 2.3:
+ * When the prior has significant mass below L=-1 (the feasibility bound),
+ * we use numerical integration over the truncated distribution.
+ *
+ * Mathematical approach:
+ * 1. Compute truncated prior metrics (mean, variance)
+ * 2. Determine default decision using truncated mean
+ * 3. Integrate loss function over truncated prior using grid method
+ *
+ * Grid integration formula:
+ *   EVPI = sum over bins of [loss(midpoint) * probability_mass(bin)]
+ *
+ * @param inputs - Business inputs, prior parameters, and threshold
+ * @param gridSize - Number of integration points (default 200, per POST-01)
+ * @returns EVPI results computed on truncated prior
+ */
+function calculateEVPITruncated(
+  inputs: EVPIInputs,
+  gridSize: number = 200
+): EVPIResults {
+  const {
+    baselineConversionRate,
+    annualVisitors,
+    valuePerConversion,
+    prior,
+    threshold_L,
+  } = inputs;
+
+  const { mu_L, sigma_L } = prior;
+
+  // K = annual dollars per unit lift (same as closed-form)
+  const K = deriveK(annualVisitors, baselineConversionRate, valuePerConversion);
+
+  // Lower bound for truncation (feasibility constraint: L >= -1)
+  const lower = -1;
+
+  // ===========================================
+  // Step 1: Compute truncated prior metrics
+  // ===========================================
+  // These replace the untruncated mu_L and sigma_L for all subsequent calculations
+  const truncatedMean = truncatedNormalMean(mu_L, sigma_L, lower);
+  const truncatedVar = truncatedNormalVariance(mu_L, sigma_L, lower);
+  const truncatedSigma = Math.sqrt(truncatedVar);
+
+  // ===========================================
+  // Step 2: Determine default decision using truncated mean
+  // ===========================================
+  // Per TRUNC-02: Decision must use truncated mean, not untruncated
+  const defaultDecision = truncatedMean >= threshold_L ? 'ship' : 'dont-ship';
+
+  // ===========================================
+  // Step 3: Numerical integration for EVPI (Method B)
+  // ===========================================
+  // Per SPEC.md Section 8.4 Method B:
+  // EVPI = integral[L_min to L_max] Loss(L) * f_truncated(L) dL
+  //
+  // We approximate this using a grid of bins
+
+  // Integration bounds: from truncation point to conservative upper bound
+  const L_min = lower; // Start at feasibility bound
+  const L_max = mu_L + 6 * sigma_L; // Conservative upper bound (~6 sigma)
+  const step = (L_max - L_min) / gridSize;
+
+  let evpiDollars = 0;
+
+  for (let i = 0; i < gridSize; i++) {
+    // Bin edges and midpoint
+    const binLow = L_min + i * step;
+    const binHigh = binLow + step;
+    const midpoint = (binLow + binHigh) / 2;
+
+    // Probability mass in this bin under truncated prior
+    // P(binLow <= L <= binHigh | L >= lower)
+    const probLow = truncatedNormalCDF(binLow, mu_L, sigma_L, lower);
+    const probHigh = truncatedNormalCDF(binHigh, mu_L, sigma_L, lower);
+    const probMass = probHigh - probLow;
+
+    // Loss function (regret from wrong decision)
+    // Per SPEC.md Section 8.3:
+    // - If default is Ship: regret = K * max(0, T_L - L) when L < T_L
+    // - If default is Don't Ship: regret = K * max(0, L - T_L) when L > T_L
+    let loss: number;
+    if (defaultDecision === 'ship') {
+      // We ship, but true L might be below threshold
+      loss = K * Math.max(0, threshold_L - midpoint);
+    } else {
+      // We don't ship, but true L might be above threshold
+      loss = K * Math.max(0, midpoint - threshold_L);
+    }
+
+    evpiDollars += loss * probMass;
+  }
+
+  // Clamp to non-negative (floating point safety)
+  evpiDollars = Math.max(0, evpiDollars);
+
+  // ===========================================
+  // Step 4: Calculate probability metrics using truncated CDF
+  // ===========================================
+  // Per TRUNC-02: All probabilities must use truncated distribution
+
+  // P(L >= T_L | L >= lower) = 1 - P(L < T_L | L >= lower)
+  const probabilityClearsThreshold =
+    1 - truncatedNormalCDF(threshold_L, mu_L, sigma_L, lower);
+
+  // Chance of being wrong under truncated prior
+  const chanceOfBeingWrong =
+    defaultDecision === 'ship'
+      ? truncatedNormalCDF(threshold_L, mu_L, sigma_L, lower) // P(L < T | ship)
+      : probabilityClearsThreshold; // P(L >= T | don't ship)
+
+  // ===========================================
+  // Step 5: Calculate z-score relative to truncated distribution
+  // ===========================================
+  // z = (T_L - truncated_mu) / truncated_sigma
+  const zScore =
+    truncatedSigma > 0
+      ? (threshold_L - truncatedMean) / truncatedSigma
+      : truncatedMean >= threshold_L
+        ? -Infinity
+        : Infinity;
+
+  // phi and Phi at threshold (using truncated PDF/CDF for consistency)
+  const phiZ = truncatedNormalPDF(threshold_L, mu_L, sigma_L, lower);
+  const PhiZ = truncatedNormalCDF(threshold_L, mu_L, sigma_L, lower);
+
+  // ===========================================
+  // Step 6: Return results with truncation flag
+  // ===========================================
+  const threshold_dollars = K * threshold_L;
+
+  return {
+    evpiDollars,
+    defaultDecision,
+    probabilityClearsThreshold,
+    chanceOfBeingWrong,
+    K,
+    threshold_L,
+    threshold_dollars,
+    zScore,
+    phiZ,
+    PhiZ,
+    edgeCases: {
+      truncationApplied: true, // Always true when this function is called
+      nearZeroSigma: truncatedSigma < 0.001,
+      priorOneSided:
+        probabilityClearsThreshold > 0.9999 ||
+        probabilityClearsThreshold < 0.0001,
+    },
+  };
+}
 
 /**
  * Calculate EVPI and supporting metrics for Basic mode
@@ -45,6 +211,26 @@ export function calculateEVPI(inputs: EVPIInputs): EVPIResults {
   } = inputs;
 
   const { mu_L, sigma_L } = prior;
+
+  // ===========================================
+  // Step 0: Check if truncation is significant
+  // ===========================================
+  // Per TRUNC-01: Apply truncation when P(L < -1) > 0.001 (0.1%)
+  // This ensures consistency with EVSI Monte Carlo which uses rejection sampling
+  //
+  // Calculate: alpha = (-1 - mu_L) / sigma_L
+  // Then: P(L < -1) = Phi(alpha)
+  if (sigma_L > 0) {
+    const alpha = (-1 - mu_L) / sigma_L;
+    const probBelowMinus1 = standardNormalCDF(alpha);
+
+    if (probBelowMinus1 > 0.001) {
+      // Truncation is significant - use Method B numerical integration
+      return calculateEVPITruncated(inputs);
+    }
+  }
+
+  // Continue with closed-form calculation for non-truncated case...
 
   // ===========================================
   // Step 1: Derive K (annual dollars per unit lift)
