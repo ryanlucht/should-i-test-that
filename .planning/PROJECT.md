@@ -16,6 +16,19 @@ Help users make better testing decisions by quantifying the value of information
 **Codebase:** ~13,800 lines TypeScript/React, 264 tests
 **Tech stack:** Vite + React 19 + TypeScript + Tailwind 4 + shadcn/ui + Zustand + Recharts + jStat
 
+## Current Milestone: v1.1 Refine Stats Engine
+
+**Goal:** Fix correctness and robustness issues in the statistics engine identified by external audit.
+
+**Target features:**
+- Correct EVSI Monte Carlo to use posterior-mean decision rule (Bayesian EVSI)
+- Align Normal fast-path and Monte Carlo EVSI to produce consistent results
+- Apply truncation at feasibility bounds consistently across all calculations
+- Harden sampling against edge cases (Box-Muller, sigma=0, Student-t parameters)
+- Integrate Cost of Delay into EVSI simulation for coherent "net value of testing"
+
+**Audit reference:** `/Users/ryan.lucht/Downloads/statistics-engine-audit-llm.md`
+
 ## Requirements
 
 ### Validated
@@ -30,7 +43,23 @@ Help users make better testing decisions by quantifying the value of information
 - Desktop-first responsive layout — v1.0
 - WCAG 2.1 AA accessibility (keyboard nav, ARIA, text redundancy) — v1.0
 
-### Active
+### Active (v1.1 — Stats Engine Audit Fixes)
+
+**HIGH severity:**
+- [ ] EVSI Monte Carlo uses posterior-mean decision rule (E[L|data] >= T)
+- [ ] Normal fast-path and Monte Carlo EVSI produce consistent results
+- [ ] Truncation at feasibility bounds (L >= -1) applied consistently everywhere
+
+**MEDIUM severity:**
+- [ ] Box-Muller sampling guards against Math.random()=0
+- [ ] EVPI handles sigma=0 (degenerate/point-mass prior) correctly
+- [ ] Student-t parameter clarity (scale vs SD, df validation/warnings)
+- [ ] SE model robustness documented or improved
+
+**Architecture:**
+- [ ] Cost of Delay integrated into EVSI simulation (coherent net value)
+
+### Backlog (v1.2+)
 
 - [ ] Test Costs inputs (hard costs + labor) for declarative "Test!" verdict
 - [ ] EVPI ceiling comparison display ("EVSI ≤ EVPI" teaching point)
@@ -74,9 +103,10 @@ Help users make better testing decisions by quantifying the value of information
 | Zod v4 for validation | Modern API, good TypeScript support | ✓ Good |
 | Action buttons for presets | Better UX than radio-style selectors for form defaults | ✓ Good |
 | Abramowitz-Stegun CDF | Error < 7.5e-8, sufficient for EVPI precision | ✓ Good |
-| Rejection sampling for EVSI | Handles feasibility constraints cleanly | ✓ Good |
+| Rejection sampling for EVSI | Handles feasibility constraints cleanly | ⚠️ Revisit — truncation inconsistent |
 | Worker for non-Normal EVSI | Keeps UI responsive during Monte Carlo | ✓ Good |
-| Defer Test Costs to v1.1 | Core value proven without it, reduces v1 scope | — Pending |
+| Defer Test Costs to v1.2 | Stats engine fixes take priority in v1.1 | — Pending |
+| EVSI MC decision rule | v1.0 used L_hat >= T, audit shows need E[L｜data] >= T | ⚠️ Fix in v1.1 |
 
 ---
-*Last updated: 2026-02-02 after v1.0 milestone*
+*Last updated: 2026-02-02 after v1.1 milestone start*

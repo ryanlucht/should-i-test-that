@@ -11,7 +11,7 @@ Requirements derived from external statistics engine audit + supplemental resear
 ### EVSI Correctness
 
 - [ ] **EVSI-01**: Monte Carlo EVSI uses posterior-mean decision rule (E[L|data] >= T), not L_hat >= T
-- [ ] **EVSI-02**: For Normal prior, implement shrinkage: w*L_hat + (1-w)*mu where w = σ²/(σ²+SE²)
+- [ ] **EVSI-02**: For Normal prior, implement shrinkage: w*L_hat + (1-w)*mu where w = sigma^2/(sigma^2+SE^2)
 - [ ] **EVSI-03**: For non-Normal priors, implement grid-based posterior mean approximation
 - [ ] **EVSI-04**: Normal fast-path and Monte Carlo EVSI produce matching results (within MC error)
 
@@ -59,34 +59,32 @@ Requirements derived from external statistics engine audit + supplemental resear
 
 ## Traceability
 
-To be populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EVSI-01 | TBD | Pending |
-| EVSI-02 | TBD | Pending |
-| EVSI-03 | TBD | Pending |
-| EVSI-04 | TBD | Pending |
-| TRUNC-01 | TBD | Pending |
-| TRUNC-02 | TBD | Pending |
-| TRUNC-03 | TBD | Pending |
-| SAMP-01 | TBD | Pending |
-| SAMP-02 | TBD | Pending |
-| EDGE-01 | TBD | Pending |
-| EDGE-02 | TBD | Pending |
-| TDIST-01 | TBD | Pending |
-| TDIST-02 | TBD | Pending |
-| TDIST-03 | TBD | Pending |
-| COD-01 | TBD | Pending |
-| COD-02 | TBD | Pending |
-| COD-03 | TBD | Pending |
-| WORK-01 | TBD | Pending |
+| EVSI-01 | Phase 8 | Pending |
+| EVSI-02 | Phase 8 | Pending |
+| EVSI-03 | Phase 8 | Pending |
+| EVSI-04 | Phase 8 | Pending |
+| TRUNC-01 | Phase 9 | Pending |
+| TRUNC-02 | Phase 9 | Pending |
+| TRUNC-03 | Phase 9 | Pending |
+| SAMP-01 | Phase 7 | Pending |
+| SAMP-02 | Phase 7 | Pending |
+| EDGE-01 | Phase 7 | Pending |
+| EDGE-02 | Phase 7 | Pending |
+| TDIST-01 | Phase 10 | Pending |
+| TDIST-02 | Phase 10 | Pending |
+| TDIST-03 | Phase 10 | Pending |
+| COD-01 | Phase 11 | Pending |
+| COD-02 | Phase 11 | Pending |
+| COD-03 | Phase 11 | Pending |
+| WORK-01 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after initial definition*
+*Last updated: 2026-02-02 — traceability updated with phase mappings*
