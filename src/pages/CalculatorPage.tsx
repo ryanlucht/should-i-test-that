@@ -104,8 +104,6 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   // Scroll spy tracks which section is visible
   const activeSection = useScrollSpy(sectionIds);
 
-  // Refs for section elements (for keyboard navigation)
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Refs for form validation
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
@@ -312,9 +310,6 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
             >
               {/* Section content */}
               <div
-                ref={(el) => {
-                  sectionRefs.current[section.id] = el;
-                }}
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 className="min-h-32"
               >
@@ -366,6 +361,29 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
           );
         })}
       </main>
+
+      {/* Footer */}
+      <footer className="py-6 text-center text-sm text-muted-foreground space-y-2 max-w-[800px] mx-auto px-4 md:px-6">
+        <p>
+          Created by{' '}
+          <a
+            href="https://ryanlucht.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Ryan Lucht
+          </a>
+          {' '}and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
+        </p>
+        {mode === 'basic' && (
+          <p>
+            EVPI calculation based on{' '}
+            <span className="font-medium">&ldquo;How to Measure Anything&rdquo;</span>{' '}
+            by Douglas Hubbard
+          </p>
+        )}
+      </footer>
     </div>
   );
 }

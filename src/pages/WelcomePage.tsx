@@ -62,9 +62,21 @@ export function WelcomePage({ onGetStarted }: WelcomePageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground">
+      <footer className="py-6 text-center text-sm text-muted-foreground space-y-2">
         <p>
-          Based on decision theory from{' '}
+          Created by{' '}
+          <a
+            href="https://ryanlucht.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Ryan Lucht
+          </a>
+          {' '}and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
+        </p>
+        <p>
+          EVPI calculation based on{' '}
           <span className="font-medium">&ldquo;How to Measure Anything&rdquo;</span>{' '}
           by Douglas Hubbard
         </p>
