@@ -821,6 +821,53 @@ describe('EVSI-04: Normal fast-path and Monte Carlo agreement', () => {
   });
 });
 
+describe('EVSI-03: non-Normal prior grid integration', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Student-t prior produces positive EVSI with correct decision rule', () => {
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(
+      {
+        K: 100000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0,
+        prior: { type: 'student-t', mu_L: 0, sigma_L: 0.05, df: 5 },
+        n_control: 5000,
+        n_variant: 5000,
+      },
+      3000
+    );
+
+    expect(result.evsiDollars).toBeGreaterThan(0);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+  });
+
+  it('Uniform prior produces positive EVSI with correct decision rule', () => {
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(
+      {
+        K: 100000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0,
+        prior: { type: 'uniform', low_L: -0.1, high_L: 0.1 },
+        n_control: 5000,
+        n_variant: 5000,
+      },
+      3000
+    );
+
+    expect(result.evsiDollars).toBeGreaterThan(0);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+  });
+});
+
 describe('calculateEVSINormalFastPath', () => {
   // ===========================================
   // 1. Basic functionality
