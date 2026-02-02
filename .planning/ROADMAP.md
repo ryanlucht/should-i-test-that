@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4.1: Calculation Engine Fixes** - Fix degenerate sigma handling, NaN propagation, add statistics tests (INSERTED)
 - [x] **Phase 5: Advanced Mode** - EVSI calculation, Cost of Delay, advanced inputs and results
 - [x] **Phase 6: Export & Polish** - PNG export, final UX polish, accessibility audit
-- [ ] **Phase 6.1: Calculation Bugs & Polish** - Fix EVSI threshold bug, worker cleanup, UX improvements (INSERTED)
+- [x] **Phase 6.1: Calculation Bugs & Polish** - Fix EVSI threshold bug, worker cleanup, UX improvements (INSERTED)
 
 ## Phase Details
 
@@ -165,11 +165,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 06.1-01-PLAN.md — Fix Monte Carlo EVSI threshold payoff calculation and zero samples edge case
-- [ ] 06.1-02-PLAN.md — Fix Worker lifecycle cleanup on unmount and errors
-- [ ] 06.1-03-PLAN.md — Advanced mode default prior button + sigma display updates
-- [ ] 06.1-04-PLAN.md — Footer credits + PNG export filenames + remove unused sectionRefs
-- [ ] 06.1-05-PLAN.md — Helper text/tooltip updates across forms + results interpretation
+- [x] 06.1-01-PLAN.md — Fix Monte Carlo EVSI threshold payoff calculation and zero samples edge case
+- [x] 06.1-02-PLAN.md — Fix Worker lifecycle cleanup on unmount and errors
+- [x] 06.1-03-PLAN.md — Advanced mode default prior button + sigma display updates
+- [x] 06.1-04-PLAN.md — Footer credits + PNG export filenames + remove unused sectionRefs
+- [x] 06.1-05-PLAN.md — Helper text/tooltip updates across forms + results interpretation
 
 ## Progress
 
@@ -185,7 +185,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 4.1. Calculation Engine Fixes (INSERTED) | 1/1 | Complete | 2026-01-30 |
 | 5. Advanced Mode | 6/6 | Complete | 2026-01-30 |
 | 6. Export & Polish | 3/3 | Complete | 2026-01-30 |
-| 6.1. Calculation Bugs & Polish (INSERTED) | 0/5 | Not Started | — |
+| 6.1. Calculation Bugs & Polish (INSERTED) | 5/5 | Complete | 2026-02-02 |
 
 ---
 *Roadmap created: 2026-01-29*
@@ -206,3 +206,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *MILESTONE v1.0 COMPLETE: 2026-01-30*
 *Phase 6.1 planned: 2026-02-02*
 *Phase 6.1 revised: 2026-02-02 (5 plans after checker feedback)*
+*Phase 6.1 completed: 2026-02-02*
