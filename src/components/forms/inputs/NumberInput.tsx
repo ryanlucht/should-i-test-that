@@ -36,6 +36,8 @@ export interface NumberInputProps {
   onUnitLabelChange?: (value: string) => void;
   /** Static suffix text shown after the input (e.g., "days") */
   suffix?: string;
+  /** Extra content rendered inline with the label (e.g., action buttons) */
+  labelSuffix?: React.ReactNode;
 }
 
 /**
@@ -52,6 +54,7 @@ export function NumberInput({
   unitLabelValue,
   onUnitLabelChange,
   suffix,
+  labelSuffix,
 }: NumberInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
@@ -111,6 +114,7 @@ export function NumberInput({
             <div className="flex items-center gap-1.5">
               <Label htmlFor={name}>{label}</Label>
               {tooltip && <InfoTooltip content={tooltip} />}
+              {labelSuffix}
             </div>
 
             <div className="flex gap-2 items-center">

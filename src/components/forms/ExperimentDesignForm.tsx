@@ -26,7 +26,6 @@ import {
 import { useWizardStore } from '@/stores/wizardStore';
 import { NumberInput } from './inputs/NumberInput';
 import { PercentageInput } from './inputs/PercentageInput';
-import { Button } from '@/components/ui/button';
 import { decimalToPercent, percentToDecimal } from '@/lib/formatting';
 
 /**
@@ -175,33 +174,29 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             label="How long will you run the test?"
             placeholder="14"
             helpText="Enter duration in days. Longer tests = more data = less noise."
-            tooltip="The number of days you plan to run the experiment. Affects sample size and statistical power."
             error={errors.testDurationDays?.message}
             suffix="days"
           />
 
-          {/* Daily Traffic (required, with auto-derive option) */}
-          <div className="space-y-2">
-            <NumberInput
-              name="dailyTraffic"
-              label="Daily eligible traffic"
-              placeholder="5,000"
-              helpText="Average daily visitors who can enter the experiment"
-              tooltip="The number of visitors per day who are eligible to be included in the test."
-              error={errors.dailyTraffic?.message}
-            />
-            {canDeriveFromAnnual && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleDeriveFromAnnual}
-                className="text-primary hover:text-primary/80"
-              >
-                Derive from annual ({Math.round(sharedInputs.annualVisitors! / 365).toLocaleString()}/day)
-              </Button>
-            )}
-          </div>
+          {/* Daily Traffic (required, with inline derive option) */}
+          <NumberInput
+            name="dailyTraffic"
+            label="Daily eligible traffic"
+            placeholder="5,000"
+            helpText="Average daily visitors who can enter the experiment"
+            error={errors.dailyTraffic?.message}
+            labelSuffix={
+              canDeriveFromAnnual ? (
+                <button
+                  type="button"
+                  onClick={handleDeriveFromAnnual}
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  (derive: {Math.round(sharedInputs.annualVisitors! / 365).toLocaleString()}/day)
+                </button>
+              ) : undefined
+            }
+          />
 
           {/* Traffic Split (pre-filled 50%) */}
           <PercentageInput
@@ -209,7 +204,6 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             label="Variant allocation"
             placeholder="50%"
             helpText="Percentage of traffic seeing the variant (50% = standard A/B)"
-            tooltip="The fraction of test traffic assigned to the treatment/variant group."
             error={errors.trafficSplit?.message}
           />
 
@@ -219,7 +213,6 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             label="Eligible traffic"
             placeholder="100%"
             helpText="What fraction of all traffic is eligible for this experiment?"
-            tooltip="Not all visitors may be eligible for every test (e.g., new users only, mobile only)."
             error={errors.eligibilityFraction?.message}
           />
 
@@ -236,19 +229,17 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
                 label="Conversion latency"
                 placeholder="0"
                 helpText="Days from exposure to expected conversion (e.g., 7 for weekly purchases)"
-                tooltip="If conversions typically happen days after first visit, enter that delay here."
                 error={errors.conversionLatencyDays?.message}
                 suffix="days"
               />
             </div>
 
-            {/* Decision Latency (default 0, de-emphasized) */}
+            {/* Decision Latency (default 0, de-emphasized, tooltip only) */}
             <div className="opacity-75">
               <NumberInput
                 name="decisionLatencyDays"
                 label="Decision latency"
                 placeholder="0"
-                helpText="Days after test ends before you can ship the decision"
                 tooltip="Time needed for analysis, review, and deployment after the test concludes."
                 error={errors.decisionLatencyDays?.message}
                 suffix="days"
