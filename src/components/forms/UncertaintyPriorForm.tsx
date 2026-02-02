@@ -345,7 +345,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
             <p className="text-sm text-muted-foreground">
               {mode === 'advanced'
                 ? 'Choose a distribution shape, then specify your 90% interval.'
-                : 'A normal curve is a solid, usually conservative first-pass model for effect sizes. Advanced mode can use other shapes.'}
+                : 'A normal distribution is a solid first-pass model for effect sizes. Advanced mode can use other shapes.'}
             </p>
           </div>
 
