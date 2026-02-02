@@ -183,7 +183,7 @@ export function ExportButton(props: ExportButtonProps) {
   // Handle export click
   const handleExport = async () => {
     try {
-      await exportPng(customTitle || undefined);
+      await exportPng(mode, customTitle || undefined);
     } catch (error) {
       console.error('Export failed:', error);
     }

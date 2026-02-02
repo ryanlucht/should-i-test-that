@@ -24,7 +24,7 @@ interface UseExportPngReturn {
   /** Ref to attach to the export target element */
   exportRef: React.RefObject<HTMLDivElement | null>;
   /** Async function to trigger PNG export */
-  exportPng: (customTitle?: string) => Promise<void>;
+  exportPng: (mode: 'basic' | 'advanced', customTitle?: string) => Promise<void>;
   /** Whether export is currently in progress */
   isExporting: boolean;
 }
@@ -45,43 +45,27 @@ function sanitizeFilename(title: string): string {
 }
 
 /**
- * Generate timestamp in YYYYMMDD-HHmmss format
+ * Generate export filename based on mode and custom title
  *
- * @returns Timestamp string for filename uniqueness
- */
-function generateTimestamp(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-
-  return `${year}${month}${day}-${hours}${minutes}${seconds}`;
-}
-
-/**
- * Generate export filename based on custom title
+ * Filename patterns (no timestamps per requirements):
+ * - Basic mode: "Expected Value of Perfect Information for {title}.png"
+ * - Advanced mode: "Expected Value of Test - {title}.png"
+ * - If no title provided, use default "My Test"
  *
- * Per 06-RESEARCH.md filename convention:
- * - If custom title provided: {sanitized-title}-{timestamp}.png
- * - Default: should-i-test-{timestamp}.png
- *
+ * @param mode - 'basic' or 'advanced'
  * @param customTitle - Optional user-provided title
  * @returns Complete filename with .png extension
  */
-function generateFilename(customTitle?: string): string {
-  const timestamp = generateTimestamp();
+function generateFilename(mode: 'basic' | 'advanced', customTitle?: string): string {
+  const title = customTitle?.trim() || 'My Test';
+  const sanitized = sanitizeFilename(title);
+  const safeTitle = sanitized || 'my-test';
 
-  if (customTitle && customTitle.trim()) {
-    const sanitized = sanitizeFilename(customTitle.trim());
-    if (sanitized) {
-      return `${sanitized}-${timestamp}.png`;
-    }
+  if (mode === 'basic') {
+    return `Expected Value of Perfect Information for ${safeTitle}.png`;
+  } else {
+    return `Expected Value of Test - ${safeTitle}.png`;
   }
-
-  return `should-i-test-${timestamp}.png`;
 }
 
 /**
@@ -118,9 +102,10 @@ export function useExportPng(): UseExportPngReturn {
    * Triggers download using native <a download> pattern
    * (no file-saver dependency needed per 06-RESEARCH.md)
    *
+   * @param mode - 'basic' or 'advanced' for filename pattern
    * @param customTitle - Optional custom title for filename
    */
-  const exportPng = useCallback(async (customTitle?: string) => {
+  const exportPng = useCallback(async (mode: 'basic' | 'advanced', customTitle?: string) => {
     if (!exportRef.current) {
       console.warn('Export ref not attached to any element');
       return;
@@ -138,8 +123,8 @@ export function useExportPng(): UseExportPngReturn {
         height: 1080,
       });
 
-      // Generate filename based on custom title
-      const filename = generateFilename(customTitle);
+      // Generate filename based on mode and custom title
+      const filename = generateFilename(mode, customTitle);
 
       // Trigger download using native <a download> pattern
       // Per 06-RESEARCH.md: This works for data URLs without file-saver
