@@ -202,8 +202,9 @@ export function AdvancedResultsSection() {
               How to interpret {formatSmartCurrency(Math.max(0, results.netValueDollars))}
             </p>
             <p className="text-sm text-muted-foreground">
-              This test would give you imperfect information about whether your change
-              helps. The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI represents
+              A/B tests infer the actual treatment effect of an idea based on sample information.
+              In other words — they are imperfect information.
+              The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI represents
               the expected improvement in your decision from running this test.
               {results.cod.codApplies && (
                 <>
