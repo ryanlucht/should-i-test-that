@@ -121,6 +121,8 @@ Recent decisions affecting current work:
 | Sigma renamed to std dev | 06.1-03 | More familiar term for Advanced mode users |
 | Hubbard attribution Basic mode only | 06.1-04 | EVPI is Hubbard-based; EVSI uses additional methods |
 | Descriptive PNG filenames no timestamps | 06.1-04 | Cleaner file management for users |
+| Threshold-relative EVSI payoff | 06.1-01 | K * (L_true - threshold_L) aligns with EVPI formula approach |
+| Zero samples returns safe EVSI=0 | 06.1-01 | Prevents NaN from division by zero in edge cases |
 
 ### Roadmap Evolution
 
@@ -151,7 +153,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 06.1-04-PLAN.md
+Stopped at: Completed 06.1-01-PLAN.md (EVSI calculation bug fixes)
 Resume file: None
 
 ## Project Completion Summary
