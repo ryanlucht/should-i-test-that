@@ -40,6 +40,14 @@ export interface PriorShapeFormHandle {
 }
 
 /**
+ * Props for PriorShapeForm component
+ */
+interface PriorShapeFormProps {
+  /** Callback to fill recommended default values (triggers parent's handleUseDefault) */
+  onUseDefaultPrior?: () => void;
+}
+
+/**
  * Student-t degrees of freedom preset selector
  * Shows when Student-t shape is selected
  */
@@ -119,8 +127,8 @@ function DfPresetSelector({
  * Prior shape form with three radio cards for shape selection
  * Only renders in Advanced mode
  */
-export const PriorShapeForm = forwardRef<PriorShapeFormHandle>(
-  function PriorShapeForm(_props, ref) {
+export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormProps>(
+  function PriorShapeForm({ onUseDefaultPrior }, ref) {
     // Get store values and setters
     const mode = useWizardStore((state) => state.mode);
     const advancedInputs = useWizardStore((state) => state.inputs.advanced);
@@ -248,6 +256,39 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle>(
     return (
       <FormProvider {...methods}>
         <div className="space-y-4">
+          {/* Default Prior Option - mirror of Basic mode */}
+          <div className="space-y-4 pb-4 border-b border-border/50">
+            <button
+              type="button"
+              onClick={() => {
+                // Reset to Normal shape
+                handleShapeChange('normal');
+                // Trigger parent's default prior fill
+                onUseDefaultPrior?.();
+              }}
+              className={cn(
+                'w-full rounded-xl border-2 p-4 text-left transition-all',
+                'hover:border-primary/50 hover:shadow-sm',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'border-border bg-card hover:bg-muted/50'
+              )}
+            >
+              <div className="flex-1">
+                <p className="font-medium text-foreground">
+                  Fill with Recommended Default
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  I&apos;m 90% sure the relative lift is between -8% and +8%
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This is a reasonable starting point if you&apos;re unsure.
+                  It assumes most changes have small effects.
+                  This is also the prior used in Eppo for Bayesian experiment analysis.
+                </p>
+              </div>
+            </button>
+          </div>
+
           {/* Section intro */}
           <div className="space-y-1">
             <h4 className="text-sm font-medium text-foreground">
