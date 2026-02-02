@@ -514,6 +514,51 @@ describe('calculateEVPI', () => {
       expect(result.defaultDecision).toBe('ship');
       expect(result.evpiDollars).toBe(0);
     });
+
+    it('returns correct metrics when sigma_L = 0 and mu_L > threshold', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0.05, sigma_L: 0 }, // Point mass at 5%
+        threshold_L: 0.02, // Threshold at 2%
+      });
+
+      expect(result.evpiDollars).toBe(0);
+      expect(result.defaultDecision).toBe('ship');
+      expect(result.probabilityClearsThreshold).toBe(1); // Point mass is above threshold
+      expect(result.chanceOfBeingWrong).toBe(0); // No uncertainty
+    });
+
+    it('returns correct metrics when sigma_L = 0 and mu_L < threshold', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0.01, sigma_L: 0 }, // Point mass at 1%
+        threshold_L: 0.02, // Threshold at 2%
+      });
+
+      expect(result.evpiDollars).toBe(0);
+      expect(result.defaultDecision).toBe('dont-ship');
+      expect(result.probabilityClearsThreshold).toBe(0); // Point mass is below threshold
+      expect(result.chanceOfBeingWrong).toBe(0); // No uncertainty
+    });
+
+    it('returns correct metrics when sigma_L = 0 and mu_L = threshold exactly', () => {
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0.02, sigma_L: 0 }, // Point mass exactly at threshold
+        threshold_L: 0.02,
+      });
+
+      expect(result.evpiDollars).toBe(0);
+      expect(result.defaultDecision).toBe('ship'); // mu_L >= threshold_L
+      expect(result.probabilityClearsThreshold).toBe(1); // Point mass is at threshold (>= counts)
+      expect(result.chanceOfBeingWrong).toBe(0); // No uncertainty
+    });
   });
 
   // ===========================================

@@ -62,23 +62,43 @@ export function calculateEVPI(inputs: EVPIInputs): EVPIResults {
   const defaultDecision = determineDefaultDecision(mu_L, threshold_L);
 
   // ===========================================
+  // Step 2.5: Handle degenerate prior (sigma = 0)
+  // ===========================================
+  // When sigma_L = 0, the prior is a point mass at mu_L.
+  // There is no uncertainty, so EVPI = 0 (information has no value).
+  // All derived metrics must reflect the deterministic case.
+  if (sigma_L === 0) {
+    const threshold_dollars = K * threshold_L;
+
+    return {
+      evpiDollars: 0, // No uncertainty = no value of information
+      defaultDecision,
+      // Point mass: either entirely above or entirely below threshold
+      // Use >= for threshold comparison (shipping at exactly threshold is acceptable)
+      probabilityClearsThreshold: mu_L >= threshold_L ? 1 : 0,
+      chanceOfBeingWrong: 0, // No uncertainty = no chance of being wrong
+      K,
+      threshold_L,
+      threshold_dollars,
+      // z-score: represent where threshold is relative to point mass
+      zScore: mu_L === threshold_L ? 0 : (threshold_L > mu_L ? Infinity : -Infinity),
+      phiZ: 0, // PDF is 0 at any finite point for a point mass
+      PhiZ: mu_L >= threshold_L ? 0 : 1, // CDF: 0 if point mass is above threshold, 1 if below
+      edgeCases: {
+        truncationApplied: false,
+        nearZeroSigma: true,
+        priorOneSided: mu_L !== threshold_L,
+      },
+    };
+  }
+
+  // ===========================================
   // Step 3: Calculate z-score (standardized threshold)
   // ===========================================
   // z = (T_L - mu_L) / sigma_L
   // This standardizes the threshold relative to the prior distribution
-  // Handle degenerate prior (sigma = 0): z-score represents where threshold
-  // is relative to the point mass at mu_L
-  // - If threshold equals mu: z = 0 (boundary case)
-  // - If threshold > mu: z = +Infinity (threshold above point mass)
-  // - If threshold < mu: z = -Infinity (threshold below point mass)
-  let zScore: number;
-  if (sigma_L > 0) {
-    zScore = (threshold_L - mu_L) / sigma_L;
-  } else if (threshold_L === mu_L) {
-    zScore = 0;
-  } else {
-    zScore = threshold_L > mu_L ? Infinity : -Infinity;
-  }
+  // Note: sigma_L > 0 guaranteed by early return above
+  const zScore = (threshold_L - mu_L) / sigma_L;
 
   // ===========================================
   // Step 4: Calculate standard normal PDF and CDF at z
