@@ -69,6 +69,7 @@ Key decisions logged in PROJECT.md Key Decisions table.
 2. **Add Test Costs for declarative verdict** (calculations) - Hard costs + labor inputs, Net Value = max(0, EVSI - CoD - Test Costs), verdict "Test this!" or "Don't test this!"
 3. **Add branding to PNG export** (ui) - Deferred: add "Created with Should I Test That?" footer in future version
 4. **Design exploration via Stitch MCP** (ui) - Deferred to v2: 3 design directions, compact inputs, visual polish
+5. **Improve EVPI intuition explanation clarity** (ui) - Explain WHY default decision is Ship/Don't ship based on prior mean vs threshold comparison
 
 ### Blockers/Concerns
 
