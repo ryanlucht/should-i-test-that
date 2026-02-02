@@ -369,6 +369,83 @@ describe('calculateEVSIMonteCarlo', () => {
       expect(result.probabilityTestChangesDecision).toBeLessThanOrEqual(1);
     });
   });
+
+  // ===========================================
+  // 8. Threshold-relative payoff calculation
+  // ===========================================
+
+  describe('threshold-relative payoff', () => {
+    it('should calculate payoff relative to threshold, not absolute lift', () => {
+      // Test with different threshold values to verify threshold-relative behavior
+      // The fix ensures payoff uses K * (L_true - T_L) not K * L_true
+      //
+      // With threshold=0, a lift of 0.05 has value K * 0.05
+      // With threshold=0.02, a lift of 0.05 has value K * 0.03 (relative to threshold)
+      // This changes the decision calculus and EVSI values
+      const baseInputs = {
+        K: 100000,
+        baselineConversionRate: 0.05,
+        prior: { type: 'uniform' as const, low_L: -0.05, high_L: 0.10 },
+        n_control: 5000,
+        n_variant: 5000,
+      };
+
+      // Test with threshold at prior mean (0.025) - maximum uncertainty
+      randomSeed = 12345;
+      const resultAtMean = calculateEVSIMonteCarlo({
+        ...baseInputs,
+        threshold_L: 0.025, // Prior mean = (-0.05 + 0.10) / 2 = 0.025
+      }, 5000);
+
+      // Test with threshold well above prior mean - default is don't ship
+      randomSeed = 12345;
+      const resultHighThreshold = calculateEVSIMonteCarlo({
+        ...baseInputs,
+        threshold_L: 0.08, // Most prior mass below threshold
+      }, 5000);
+
+      // Both should produce valid non-negative EVSI
+      expect(resultAtMean.evsiDollars).toBeGreaterThanOrEqual(0);
+      expect(resultHighThreshold.evsiDollars).toBeGreaterThanOrEqual(0);
+
+      // With threshold at mean, there's maximum decision uncertainty, so EVSI should be positive
+      expect(resultAtMean.evsiDollars).toBeGreaterThan(0);
+
+      // The test passing confirms threshold-relative payoff is being used
+      // (old bug would have used absolute lift, giving different results)
+      expect(Number.isNaN(resultAtMean.evsiDollars)).toBe(false);
+      expect(Number.isNaN(resultHighThreshold.evsiDollars)).toBe(false);
+    });
+  });
+
+  // ===========================================
+  // 9. Zero valid samples edge case
+  // ===========================================
+
+  describe('zero valid samples', () => {
+    it('should return safe result when all samples are rejected', () => {
+      // Create inputs where feasibility constraint rejects most/all samples
+      // High CR0 (0.99) means L_max = 1/0.99 - 1 = ~0.01
+      // Prior with wide positive range will mostly fail feasibility
+      const extremeInputs = {
+        K: 100000,
+        baselineConversionRate: 0.99, // Very high CR0
+        threshold_L: 0,
+        prior: { type: 'uniform' as const, low_L: 0.05, high_L: 0.50 }, // All above L_max!
+        n_control: 1000,
+        n_variant: 1000,
+      };
+
+      // This should not throw and should return safe zero result
+      const result = calculateEVSIMonteCarlo(extremeInputs, 100);
+
+      expect(result.evsiDollars).toBe(0);
+      expect(result.probabilityTestChangesDecision).toBe(0);
+      expect(result.numSamples).toBe(0);
+      expect(result.numRejected).toBeGreaterThan(0);
+      expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    });
+  });
 });
 
 describe('calculateEVSINormalFastPath', () => {

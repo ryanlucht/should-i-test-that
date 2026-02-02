@@ -132,21 +132,18 @@ export function calculateEVSIMonteCarlo(
     // ===========================================
     // Value WITHOUT test (use default decision)
     // ===========================================
-    // If default is Ship:
-    //   Value = K * (L_true - T_L) if L_true >= T_L, else K * (L_true - T_L)
-    //   Actually: ship gets value K*L_true, correct decision is based on T_L
-    //   Regret = K * max(0, T_L - L_true) if we ship
-    //          = K * max(0, L_true - T_L) if we don't ship
-    //
-    // Simpler: Value = K * (L_true - T_L) if ship, 0 if don't ship
-    // We want expected value under each decision
+    // Value is measured relative to the threshold because:
+    // - Shipping when L_true > T_L gives positive value (correct decision)
+    // - Shipping when L_true < T_L gives negative value (regret)
+    // - Not shipping always gives 0 (threshold is our baseline)
+    // This aligns with the EVPI formula which uses threshold-relative calculations.
     let valueWithoutTest: number;
     if (defaultDecision === 'ship') {
-      // We ship, get K * (L_true - T_L) relative to threshold
-      // But actually just tracking K * L_true for shipping
-      valueWithoutTest = K * L_true;
+      // We ship, get value relative to threshold baseline
+      // Value = K * (L_true - T_L) represents excess value above threshold
+      valueWithoutTest = K * (L_true - threshold_L);
     } else {
-      // We don't ship, get 0
+      // We don't ship, get 0 (threshold defines our baseline)
       valueWithoutTest = 0;
     }
 
@@ -176,15 +173,34 @@ export function calculateEVSIMonteCarlo(
     // ===========================================
     // Value WITH test (use posterior decision)
     // ===========================================
+    // Same threshold-relative calculation as valueWithoutTest
     let valueWithTest: number;
     if (posteriorDecision === 'ship') {
-      valueWithTest = K * L_true;
+      // Ship based on test result, get threshold-relative value
+      valueWithTest = K * (L_true - threshold_L);
     } else {
+      // Don't ship based on test result
       valueWithTest = 0;
     }
 
     sumValueWithoutTest += valueWithoutTest;
     sumValueWithTest += valueWithTest;
+  }
+
+  // ===========================================
+  // Guard: Handle zero valid samples edge case
+  // ===========================================
+  // If feasibility filter rejected all draws (e.g., very tight CR0 constraints
+  // with wide prior), validSamples can be 0. Return safe "no information" result.
+  if (validSamples === 0) {
+    return {
+      evsiDollars: 0,
+      defaultDecision,
+      probabilityClearsThreshold: probClearsThreshold,
+      probabilityTestChangesDecision: 0,
+      numSamples: 0,
+      numRejected: rejectedSamples,
+    };
   }
 
   // ===========================================
