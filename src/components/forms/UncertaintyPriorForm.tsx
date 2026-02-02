@@ -352,7 +352,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
           {/* Prior Shape Form (Advanced mode only) */}
           {mode === 'advanced' && (
             <>
-              <PriorShapeForm ref={priorShapeFormRef} />
+              <PriorShapeForm ref={priorShapeFormRef} onUseDefaultPrior={handleUseDefault} />
               {/* Divider between shape selector and interval inputs */}
               <div className="border-t border-border pt-6">
                 <p className="text-sm font-medium text-foreground mb-4">
@@ -585,9 +585,10 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                       {impliedMeanPercent > 0 ? '+' : ''}
                       {impliedMeanPercent.toFixed(1)}%
                     </span>
-                    {priorParams && !isUniformPrior && (
+                    {/* Only show std dev in Advanced mode, hidden in Basic mode */}
+                    {priorParams && !isUniformPrior && mode === 'advanced' && (
                       <span className="text-muted-foreground">
-                        (sigma: {(priorParams.sigma_L * 100).toFixed(2)}%)
+                        (std dev: {(priorParams.sigma_L * 100).toFixed(2)}%)
                       </span>
                     )}
                   </div>
