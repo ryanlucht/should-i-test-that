@@ -696,6 +696,131 @@ describe('computePosteriorMean', () => {
   });
 });
 
+// ===========================================
+// EVSI Correctness Tests (Phase 8 requirements)
+// ===========================================
+
+describe('EVSI-01: posterior-mean decision rule', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('high noise (large SE) shows shrinkage - fewer decision changes than naive rule', () => {
+    // With SE >> sigma_prior, posterior decisions should mostly match prior default
+    // because E[L|L_hat] is pulled heavily toward prior mean
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 0.05, sigma_L: 0.02 },
+      n_control: 10, // Very small sample = large SE
+      n_variant: 10,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // Prior mean (0.05) > threshold (0), so default is 'ship'
+    expect(result.defaultDecision).toBe('ship');
+
+    // With correct shrinkage, very few decisions should flip to "don't ship"
+    // because posterior mean stays close to prior mean when SE is large
+    expect(result.probabilityTestChangesDecision).toBeLessThan(0.15);
+  });
+
+  it('low noise (small SE) allows L_hat to dominate', () => {
+    // With SE << sigma_prior, posterior mean stays close to L_hat
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 0.05, sigma_L: 0.10 }, // Wide prior
+      n_control: 100000, // Huge sample = tiny SE
+      n_variant: 100000,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // With precise data, decisions should change more often
+    // because posterior mean tracks L_hat closely
+    // (Using 0.25 threshold to account for Monte Carlo variance)
+    expect(result.probabilityTestChangesDecision).toBeGreaterThan(0.25);
+  });
+});
+
+describe('EVSI-04: Normal fast-path and Monte Carlo agreement', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Normal prior: fast-path and MC match within 10%', () => {
+    const normalPrior: PriorDistribution = {
+      type: 'normal',
+      mu_L: 0.02,
+      sigma_L: 0.04,
+    };
+
+    const inputs = {
+      K: 5000000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: normalPrior,
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    const fastPathResult = calculateEVSINormalFastPath(inputs);
+
+    randomSeed = 12345;
+    const monteCarloResult = calculateEVSIMonteCarlo(inputs, 10000);
+
+    // Both should be positive
+    expect(fastPathResult.evsiDollars).toBeGreaterThan(0);
+    expect(monteCarloResult.evsiDollars).toBeGreaterThan(0);
+
+    // Should match within 10%
+    const ratio = fastPathResult.evsiDollars / monteCarloResult.evsiDollars;
+    expect(ratio).toBeGreaterThan(0.9);
+    expect(ratio).toBeLessThan(1.1);
+  });
+
+  it('threshold at prior mean: maximum information value scenario', () => {
+    // When threshold = prior mean, uncertainty about decision is maximal
+    const inputs = {
+      K: 5000000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0.03, // = prior mean
+      prior: { type: 'normal' as const, mu_L: 0.03, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    const fastPath = calculateEVSINormalFastPath(inputs);
+    randomSeed = 54321;
+    const monteCarlo = calculateEVSIMonteCarlo(inputs, 10000);
+
+    // Both should have substantial EVSI
+    expect(fastPath.evsiDollars).toBeGreaterThan(10000);
+    expect(monteCarlo.evsiDollars).toBeGreaterThan(10000);
+
+    // Should match within 15% (threshold at mean can have more variance)
+    const ratio = fastPath.evsiDollars / monteCarlo.evsiDollars;
+    expect(ratio).toBeGreaterThan(0.85);
+    expect(ratio).toBeLessThan(1.15);
+  });
+});
+
 describe('calculateEVSINormalFastPath', () => {
   // ===========================================
   // 1. Basic functionality
