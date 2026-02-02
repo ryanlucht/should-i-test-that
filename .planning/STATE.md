@@ -116,6 +116,9 @@ Recent decisions affecting current work:
 | Notable badge for text redundancy | 06-03 | Highlight variant shows visible "Notable" badge per WCAG 1.4.1 |
 | Worker finally block cleanup | 06.1-02 | Terminate in finally block covers success + error paths |
 | Worker effect cleanup | 06.1-02 | Effect cleanup terminates worker on unmount |
+| Eppo attribution in default button | 06.1-03 | Credit Eppo for using their prior in Bayesian analysis |
+| Sigma hidden in Basic mode | 06.1-03 | Reduces cognitive load for most users |
+| Sigma renamed to std dev | 06.1-03 | More familiar term for Advanced mode users |
 
 ### Roadmap Evolution
 
@@ -146,7 +149,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 06.1-02-PLAN.md
+Stopped at: Completed 06.1-03-PLAN.md
 Resume file: None
 
 ## Project Completion Summary
