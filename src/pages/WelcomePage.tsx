@@ -62,7 +62,7 @@ export function WelcomePage({ onGetStarted }: WelcomePageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground space-y-2">
+      <footer className="py-6 text-center text-sm text-muted-foreground">
         <p>
           Created by{' '}
           <a
@@ -74,11 +74,6 @@ export function WelcomePage({ onGetStarted }: WelcomePageProps) {
             Ryan Lucht
           </a>
           {' '}and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
-        </p>
-        <p>
-          EVPI calculation based on{' '}
-          <span className="font-medium">&ldquo;How to Measure Anything&rdquo;</span>{' '}
-          by Douglas Hubbard
         </p>
       </footer>
     </div>
