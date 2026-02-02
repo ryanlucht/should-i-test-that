@@ -82,6 +82,9 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
   // Track the current request to avoid stale updates
   const requestIdRef = useRef(0);
 
+  // Track worker for immediate cleanup on unmount
+  const workerRef = useRef<Worker | null>(null);
+
   // ===========================================
   // Step 1: Validate inputs and derive parameters
   // ===========================================
@@ -299,9 +302,6 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     setLoading(true);
     const currentRequestId = ++requestIdRef.current;
 
-    // Worker reference for cleanup - declared in outer scope so cleanup can access it
-    let worker: Worker | null = null;
-
     // Use native Worker with Comlink for type-safe RPC
     const runWorker = async () => {
       try {
@@ -309,13 +309,14 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         const Comlink = await import('comlink');
 
         // Create native Worker using Vite's ?worker import
-        worker = new Worker(
+        const newWorker = new Worker(
           new URL('../lib/workers/evsi.worker.ts', import.meta.url),
           { type: 'module' }
         );
+        workerRef.current = newWorker;
 
         // Wrap with Comlink for type-safe RPC
-        const api = Comlink.wrap<{ computeEVSI: (inputs: typeof evsiInputs, numSamples: number) => EVSIResults }>(worker);
+        const api = Comlink.wrap<{ computeEVSI: (inputs: typeof evsiInputs, numSamples: number) => EVSIResults }>(newWorker);
 
         const results = await api.computeEVSI(evsiInputs, 5000);
 
@@ -332,21 +333,21 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         }
       } finally {
         // Always terminate the worker when done or on error
-        if (worker) {
-          worker.terminate();
-          worker = null;
+        if (workerRef.current) {
+          workerRef.current.terminate();
+          workerRef.current = null;
         }
       }
     };
 
     runWorker();
 
-    // Cleanup: terminate worker if still running and invalidate request
+    // Cleanup: terminate worker immediately on unmount, invalidate request
     return () => {
       requestIdRef.current++;
-      if (worker) {
-        worker.terminate();
-        worker = null;
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
       }
     };
   }, [validatedInputs]);
