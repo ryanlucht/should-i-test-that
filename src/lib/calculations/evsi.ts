@@ -27,7 +27,7 @@ import { sample, cdf, getPriorMean, pdf, PriorDistribution } from './distributio
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal } from './abtest-math';
 import { determineDefaultDecision } from './derived';
-import type { EVSIInputs, EVSIResults } from './types';
+import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
 /**
  * Compute posterior mean E[L|L_hat] via grid integration for non-conjugate priors.
@@ -40,9 +40,12 @@ import type { EVSIInputs, EVSIResults } from './types';
  * - E[L|L_hat] = ∫ L * p(L|L_hat) dL = Σ(L_i * w_i) / Σ(w_i)
  * - where w_i = prior_pdf(L_i) * likelihood_pdf(L_hat; L_i, SE)
  *
+ * Per Accuracy-07: Grid upper bound is clamped to feasibility bound L <= 1/CR0 - 1
+ *
  * @param L_hat - Observed sample estimate from simulated test
  * @param SE - Standard error of the estimate
  * @param prior - Prior distribution (Student-t or Uniform)
+ * @param CR0 - Baseline conversion rate (for feasibility upper bound)
  * @param gridSize - Number of grid points (default 200)
  * @returns E[L|L_hat] - posterior mean of true lift given data
  */
@@ -50,33 +53,38 @@ function computePosteriorMeanGrid(
   L_hat: number,
   SE: number,
   prior: PriorDistribution,
+  CR0: number,
   gridSize: number = 200
 ): number {
   // ===========================================
   // Step 1: Determine grid bounds from prior type
   // ===========================================
   // Grid must cover feasible L values: L >= -1 (CR1 >= 0)
-  // Upper bound depends on prior support
+  // Upper bound depends on prior support and feasibility constraint
   let L_min: number;
   let L_max: number;
 
+  // Feasibility upper bound: CR1 = CR0 * (1 + L) <= 1, so L <= 1/CR0 - 1
+  const feasibleMax = 1 / CR0 - 1;
+
   if (prior.type === 'uniform') {
-    // Uniform has explicit bounds - use them directly
+    // Uniform has explicit bounds - use them directly, clamped to feasibility
     L_min = Math.max(-1, prior.low_L!);
-    L_max = prior.high_L!;
+    L_max = Math.min(prior.high_L!, feasibleMax);
   } else if (prior.type === 'student-t') {
     // Student-t is unbounded but we use practical bounds
     // Center around prior mean, extend by 6 scale parameters
     // This provides practical coverage for numerical integration
     // (exact coverage depends on df; heavier tails = less coverage)
+    // Per Accuracy-07: Clamp upper bound to feasibility constraint
     const mu = prior.mu_L!;
     const sigma = prior.sigma_L!;
     L_min = Math.max(-1, mu - 6 * sigma);
-    L_max = mu + 6 * sigma;
+    L_max = Math.min(mu + 6 * sigma, feasibleMax);
   } else {
     // Fallback for any other type (shouldn't reach here)
     L_min = -1;
-    L_max = 2;
+    L_max = Math.min(2, feasibleMax);
   }
 
   const gridStep = (L_max - L_min) / gridSize;
@@ -142,12 +150,14 @@ function computePosteriorMeanGrid(
  * @param L_hat - Observed sample estimate from simulated test
  * @param SE - Standard error of the estimate
  * @param prior - Prior distribution
+ * @param CR0 - Baseline conversion rate (optional, for grid feasibility bound)
  * @returns E[L|L_hat] - posterior mean of true lift given data
  */
 export function computePosteriorMean(
   L_hat: number,
   SE: number,
-  prior: PriorDistribution
+  prior: PriorDistribution,
+  CR0: number = 0.5
 ): number {
   if (prior.type === 'normal') {
     // ===========================================
@@ -178,7 +188,7 @@ export function computePosteriorMean(
   // ===========================================
   // Grid integration for non-conjugate priors (Student-t, Uniform)
   // ===========================================
-  return computePosteriorMeanGrid(L_hat, SE, prior);
+  return computePosteriorMeanGrid(L_hat, SE, prior, CR0);
 }
 
 /**
@@ -212,19 +222,13 @@ export function calculateEVSIMonteCarlo(
     inputs;
 
   // ===========================================
-  // Step 1: Calculate measurement noise (standard error)
+  // Step 1: Input validation guards (Accuracy-01, Accuracy-02)
   // ===========================================
-  // SE of lift estimate from A/B test
-  // For relative lift L = (CR1 - CR0) / CR0:
-  //   SE(L) = sqrt(CR0*(1-CR0) * (1/n_control + 1/n_variant)) / CR0
-  //
-  // This is derived from the delta method applied to the ratio of binomials
   const CR0 = baselineConversionRate;
 
-  // Handle zero sample size edge case
-  const totalSamples = n_control + n_variant;
-  if (totalSamples === 0) {
-    // No data = no information = EVSI = 0
+  // Guard: One-arm-zero produces Infinity in SE formula (1/0)
+  // This can happen when Math.floor() in sample-size derivation produces 0
+  if (n_control <= 0 || n_variant <= 0) {
     const priorMean = getPriorMean(prior);
     const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
     const probClearsThreshold = 1 - cdf(threshold_L, prior);
@@ -239,12 +243,57 @@ export function calculateEVSIMonteCarlo(
     };
   }
 
-  // Calculate SE for non-zero samples using shared seOfRelativeLift
+  // Guard: CR0 must be strictly in (0, 1)
+  // CR0=0 causes division by zero in SE formula
+  // CR0=1 collapses feasibility bounds (L_max = 0)
+  if (!(CR0 > 0 && CR0 < 1)) {
+    const priorMean = getPriorMean(prior);
+    const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
+
+    return {
+      evsiDollars: 0,
+      defaultDecision,
+      probabilityClearsThreshold: 0.5, // Indeterminate
+      probabilityTestChangesDecision: 0,
+      numSamples: 0,
+      numRejected: 0,
+    };
+  }
+
+  // ===========================================
+  // Step 2: Calculate measurement noise (standard error)
+  // ===========================================
+  // SE of lift estimate from A/B test
+  // For relative lift L = (CR1 - CR0) / CR0:
+  //   SE(L) = sqrt(CR0*(1-CR0) * (1/n_control + 1/n_variant)) / CR0
+  //
+  // This is derived from the delta method applied to the ratio of binomials
+
+  // Calculate SE using shared seOfRelativeLift
   // SE = sqrt((1-CR0)/CR0 * (1/n_control + 1/n_variant))
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
-  // Step 2: Determine prior mean and default decision
+  // Step 2.5: Check for rare events warning (Accuracy-08)
+  // ===========================================
+  // The Normal approximation for lift becomes unreliable when expected
+  // conversions per arm are low (<20). Warn user to consider alternatives.
+  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
+  const warnings: CalculationWarning[] = [];
+  const expectedConvControl = n_control * CR0;
+  const expectedConvVariant = n_variant * CR0;
+  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
+
+  if (minExpectedConversions < 20) {
+    warnings.push({
+      code: 'rare_events',
+      message:
+        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    });
+  }
+
+  // ===========================================
+  // Step 3: Determine prior mean and default decision
   // ===========================================
   const priorMean = getPriorMean(prior);
   const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
@@ -253,7 +302,7 @@ export function calculateEVSIMonteCarlo(
   const probClearsThreshold = 1 - cdf(threshold_L, prior);
 
   // ===========================================
-  // Step 3: Feasibility bounds for lift
+  // Step 4: Feasibility bounds for lift
   // ===========================================
   // CR1 = CR0 * (1 + L) must be in [0, 1]
   // L_min = -1 (CR1 = 0)
@@ -262,7 +311,7 @@ export function calculateEVSIMonteCarlo(
   const L_max = 1 / CR0 - 1;
 
   // ===========================================
-  // Step 4: Monte Carlo simulation
+  // Step 5: Monte Carlo simulation
   // ===========================================
   let sumValueWithoutTest = 0;
   let sumValueWithTest = 0;
@@ -320,7 +369,8 @@ export function calculateEVSIMonteCarlo(
     // The posterior mean incorporates prior information, shrinking L_hat toward
     // the prior mean when the test data is noisy (large SE relative to prior sigma).
     // This is the Bayes-optimal decision rule for the linear utility model.
-    const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+    // CR0 is passed to enforce feasibility upper bound in grid integration (Accuracy-07)
+    const posteriorMean = computePosteriorMean(L_hat, SE, prior, CR0);
 
     // Decision based on POSTERIOR MEAN, not raw sample L_hat
     // E[L|L_hat] >= T is the correct Bayesian decision rule
@@ -349,7 +399,7 @@ export function calculateEVSIMonteCarlo(
   }
 
   // ===========================================
-  // Guard: Handle zero valid samples edge case
+  // Step 6: Handle zero valid samples edge case
   // ===========================================
   // If feasibility filter rejected all draws (e.g., very tight CR0 constraints
   // with wide prior), validSamples can be 0. Return safe "no information" result.
@@ -361,11 +411,12 @@ export function calculateEVSIMonteCarlo(
       probabilityTestChangesDecision: 0,
       numSamples: 0,
       numRejected: rejectedSamples,
+      ...(warnings.length > 0 && { warnings }),
     };
   }
 
   // ===========================================
-  // Step 5: Calculate EVSI
+  // Step 7: Calculate EVSI
   // ===========================================
   const avgValueWithoutTest = sumValueWithoutTest / validSamples;
   const avgValueWithTest = sumValueWithTest / validSamples;
@@ -386,6 +437,7 @@ export function calculateEVSIMonteCarlo(
     probabilityTestChangesDecision,
     numSamples: validSamples,
     numRejected: rejectedSamples,
+    ...(warnings.length > 0 && { warnings }),
   };
 }
 
@@ -426,12 +478,19 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
 
   const mu_prior = prior.mu_L!;
   const sigma_prior = prior.sigma_L!;
+  const CR0 = baselineConversionRate;
 
-  // Handle zero sample size
-  const totalSamples = n_control + n_variant;
-  if (totalSamples === 0) {
+  // ===========================================
+  // Input validation guards (Accuracy-01, Accuracy-02)
+  // ===========================================
+
+  // Guard: One-arm-zero produces Infinity in SE formula (1/0)
+  if (n_control <= 0 || n_variant <= 0) {
     const defaultDecision = determineDefaultDecision(mu_prior, threshold_L);
-    const probClearsThreshold = 1 - standardNormalCDF((threshold_L - mu_prior) / sigma_prior);
+    // Handle sigma_prior = 0 edge case for probClearsThreshold
+    const probClearsThreshold = sigma_prior === 0
+      ? (mu_prior >= threshold_L ? 1 : 0)
+      : 1 - standardNormalCDF((threshold_L - mu_prior) / sigma_prior);
 
     return {
       evsiDollars: 0,
@@ -441,14 +500,46 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
     };
   }
 
+  // Guard: CR0 must be strictly in (0, 1)
+  // CR0=0 causes division by zero in SE formula
+  // CR0=1 collapses feasibility bounds
+  if (!(CR0 > 0 && CR0 < 1)) {
+    const defaultDecision = determineDefaultDecision(mu_prior, threshold_L);
+
+    return {
+      evsiDollars: 0,
+      defaultDecision,
+      probabilityClearsThreshold: 0.5, // Indeterminate
+      probabilityTestChangesDecision: 0,
+    };
+  }
+
   // ===========================================
   // Step 1: Calculate measurement precision (1/SE^2)
   // ===========================================
-  const CR0 = baselineConversionRate;
   const varianceFactor = (1 - CR0) / CR0;
   const sampleFactor = 1 / n_control + 1 / n_variant;
   const SE_squared = varianceFactor * sampleFactor;
   const data_precision = 1 / SE_squared; // 1/SE^2
+
+  // ===========================================
+  // Step 1.5: Check for rare events warning (Accuracy-08)
+  // ===========================================
+  // The Normal approximation for lift becomes unreliable when expected
+  // conversions per arm are low (<20). Warn user to consider alternatives.
+  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
+  const warnings: CalculationWarning[] = [];
+  const expectedConvControl = n_control * CR0;
+  const expectedConvVariant = n_variant * CR0;
+  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
+
+  if (minExpectedConversions < 20) {
+    warnings.push({
+      code: 'rare_events',
+      message:
+        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    });
+  }
 
   // ===========================================
   // Step 2: Calculate prior precision
@@ -517,5 +608,6 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
     defaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
+    ...(warnings.length > 0 && { warnings }),
   };
 }

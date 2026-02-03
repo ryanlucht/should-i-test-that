@@ -28,7 +28,7 @@ import { sample, cdf, getPriorMean } from './distributions';
 import { computePosteriorMean } from './evsi';
 import { seOfRelativeLift, sampleStandardNormal } from './abtest-math';
 import { determineDefaultDecision } from './derived';
-import type { NetValueInputs, NetValueResults } from './types';
+import type { NetValueInputs, NetValueResults, CalculationWarning } from './types';
 
 /**
  * Calculate baseline value (what happens without testing)
@@ -248,6 +248,25 @@ export function calculateNetValueMonteCarlo(
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
+  // Step 1.5: Check for rare events warning (Accuracy-08)
+  // ===========================================
+  // The Normal approximation for lift becomes unreliable when expected
+  // conversions per arm are low (<20). Warn user to consider alternatives.
+  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
+  const warnings: CalculationWarning[] = [];
+  const expectedConvControl = n_control * CR0;
+  const expectedConvVariant = n_variant * CR0;
+  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
+
+  if (minExpectedConversions < 20) {
+    warnings.push({
+      code: 'rare_events',
+      message:
+        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    });
+  }
+
+  // ===========================================
   // Step 2: Determine prior mean and default decision
   // ===========================================
   const priorMean = getPriorMean(prior);
@@ -317,7 +336,7 @@ export function calculateNetValueMonteCarlo(
     // Compute posterior mean E[L|L_hat] for Bayesian decision rule
     // The posterior mean incorporates prior information, shrinking L_hat
     // toward the prior mean when the test data is noisy.
-    const posteriorMean = computePosteriorMean(L_hat, SE, prior);
+    const posteriorMean = computePosteriorMean(L_hat, SE, prior, CR0);
 
     // Decision based on POSTERIOR MEAN, not raw sample L_hat
     // E[L|L_hat] >= T is the correct Bayesian decision rule
@@ -355,6 +374,7 @@ export function calculateNetValueMonteCarlo(
       probabilityTestChangesDecision: 0,
       numSamples: 0,
       numRejected: rejectedSamples,
+      ...(warnings.length > 0 && { warnings }),
     };
   }
 
@@ -381,5 +401,6 @@ export function calculateNetValueMonteCarlo(
     probabilityTestChangesDecision,
     numSamples: validSamples,
     numRejected: rejectedSamples,
+    ...(warnings.length > 0 && { warnings }),
   };
 }
