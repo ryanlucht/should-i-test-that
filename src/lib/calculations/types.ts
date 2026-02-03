@@ -136,6 +136,19 @@ export interface EVSIInputs {
 }
 
 /**
+ * Warning about calculation reliability or approximation limits
+ *
+ * Per Accuracy-08: Users should be informed when statistical approximations
+ * may be unreliable, so they can adjust their expectations or use alternative methods.
+ */
+export interface CalculationWarning {
+  /** Machine-readable warning code */
+  code: 'rare_events' | 'high_feasibility_rejection' | 'invalid_cr0';
+  /** Human-readable warning message */
+  message: string;
+}
+
+/**
  * Results from EVSI calculation
  *
  * Contains the primary result (evsiDollars) along with supporting
@@ -159,6 +172,9 @@ export interface EVSIResults {
 
   /** Number of samples rejected for feasibility (CR1 outside [0,1]) */
   numRejected?: number;
+
+  /** Warnings about calculation reliability */
+  warnings?: CalculationWarning[];
 }
 
 /**
@@ -229,4 +245,7 @@ export interface NetValueResults {
 
   /** Number of samples rejected for feasibility (CR1 outside [0,1]) */
   numRejected?: number;
+
+  /** Warnings about calculation reliability */
+  warnings?: CalculationWarning[];
 }
