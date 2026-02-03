@@ -20,7 +20,7 @@ import { useMemo } from 'react';
 import { useEVSICalculations } from '@/hooks/useEVSICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 import { EVSIVerdictCard } from './EVSIVerdictCard';
-import { CostOfDelayCard } from './CostOfDelayCard';
+import { ValueBreakdownCard } from './ValueBreakdownCard';
 import { SupportingCard } from './SupportingCard';
 import { ExportButton } from '@/components/export/ExportButton';
 import { AlertTriangle } from 'lucide-react';
@@ -151,31 +151,20 @@ export function AdvancedResultsSection() {
         </div>
       )}
 
-      {/* Supporting Metrics Grid - ADV-OUT-03 through ADV-OUT-07 */}
+      {/* Supporting Metrics - ADV-OUT-03 through ADV-OUT-07 */}
       {results && (
         <>
+          {/* Value Breakdown Card - replaces separate EVSI/CoD/NetValue cards */}
+          <ValueBreakdownCard
+            evsiDollars={results.evsi.evsiDollars}
+            netValueDollars={results.netValueDollars}
+            testDurationDays={advancedInputs.testDurationDays ?? 14}
+            variantFraction={advancedInputs.trafficSplit ?? 0.5}
+            decisionLatencyDays={advancedInputs.decisionLatencyDays ?? 0}
+          />
+
+          {/* Probability test changes decision - ADV-OUT-07 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* EVSI (gross value) - ADV-OUT-03 */}
-            <SupportingCard
-              title="EVSI (test value)"
-              value={formatSmartCurrency(results.evsi.evsiDollars)}
-              description="Value of information from this specific test"
-            />
-
-            {/* Cost of Delay - ADV-OUT-04 */}
-            <CostOfDelayCard
-              codResults={results.cod}
-              testDurationDays={advancedInputs.testDurationDays ?? 0}
-            />
-
-            {/* Net Value - ADV-OUT-05 */}
-            <SupportingCard
-              title="Net value"
-              value={formatSmartCurrency(Math.max(0, results.netValueDollars))}
-              description="EVSI minus Cost of Delay — your headline number"
-            />
-
-            {/* Probability test changes decision - ADV-OUT-07 */}
             <SupportingCard
               title="P(test changes decision)"
               value={formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)}
@@ -219,18 +208,12 @@ export function AdvancedResultsSection() {
               How to interpret {formatSmartCurrency(Math.max(0, results.netValueDollars))}
             </p>
             <p className="text-sm text-muted-foreground">
-              A/B tests infer the actual treatment effect of an idea based on sample information.
-              In other words — they are imperfect information.
               The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI represents
               the expected improvement in your decision from running this test.
-              {results.cod.codApplies && (
-                <>
-                  {' '}However, running the test delays the rollout, costing you{' '}
-                  {formatSmartCurrency(results.cod.codDollars)} in expected value.
-                </>
-              )}
-              {' '}The net {formatSmartCurrency(Math.max(0, results.netValueDollars))} is
-              the most you should pay to run this test.
+              However, running a test has timing costs: during the test period,
+              only the variant group receives treatment, and during decision latency,
+              nobody does. The net {formatSmartCurrency(Math.max(0, results.netValueDollars))} accounts
+              for these timing effects and is the most you should pay to run this test.
             </p>
           </div>
 
