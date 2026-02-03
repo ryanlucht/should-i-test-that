@@ -88,8 +88,15 @@ function calculateEVPITruncated(
   // We approximate this using a grid of bins
 
   // Integration bounds: from truncation point to conservative upper bound
-  const L_min = lower; // Start at feasibility bound
-  const L_max = mu_L + 6 * sigma_L; // Conservative upper bound (~6 sigma)
+  const L_min = lower; // Start at feasibility bound = -1
+
+  // Accuracy-05: Guard against bound inversion when mu + 6*sigma < -1
+  // This can happen if prior mean is far below feasibility bound
+  // When this occurs, the prior has almost all mass below L=-1
+  // Ensure L_max > L_min for valid integration
+  const rawUpperBound = mu_L + 6 * sigma_L;
+  const L_max = Math.max(L_min + 1e-6, rawUpperBound);
+
   const step = (L_max - L_min) / gridSize;
 
   let evpiDollars = 0;

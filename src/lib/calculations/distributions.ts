@@ -75,11 +75,21 @@ export interface PriorDistribution {
 export function pdf(lift_L: number, prior: PriorDistribution): number {
   switch (prior.type) {
     case 'normal': {
+      const mu = prior.mu_L!;
+      const sigma = prior.sigma_L!;
+
+      // Accuracy-03: Point mass behavior when sigma = 0
+      // PDF is undefined (Dirac delta) but return 0 for practical use
+      // This prevents division by zero and NaN in calculations
+      if (sigma === 0) {
+        return 0;
+      }
+
       // Transform to z-score: z = (L - mu) / sigma
       // Then scale the standard normal PDF by 1/sigma
       // f(L) = phi(z) / sigma = phi((L - mu) / sigma) / sigma
-      const z = (lift_L - prior.mu_L!) / prior.sigma_L!;
-      return standardNormalPDF(z) / prior.sigma_L!;
+      const z = (lift_L - mu) / sigma;
+      return standardNormalPDF(z) / sigma;
     }
 
     case 'student-t': {
@@ -127,9 +137,19 @@ export function pdf(lift_L: number, prior: PriorDistribution): number {
 export function cdf(lift_L: number, prior: PriorDistribution): number {
   switch (prior.type) {
     case 'normal': {
+      const mu = prior.mu_L!;
+      const sigma = prior.sigma_L!;
+
+      // Accuracy-03: Point mass behavior when sigma = 0
+      // CDF is step function: 0 below mu, 1 at or above mu
+      // This prevents division by zero and NaN in calculations
+      if (sigma === 0) {
+        return lift_L < mu ? 0 : 1;
+      }
+
       // Transform to z-score and use standard normal CDF
       // F(L) = Phi((L - mu) / sigma)
-      const z = (lift_L - prior.mu_L!) / prior.sigma_L!;
+      const z = (lift_L - mu) / sigma;
       return standardNormalCDF(z);
     }
 
