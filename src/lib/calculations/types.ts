@@ -179,10 +179,16 @@ export interface EVSIInputs {
  *
  * Per Accuracy-08: Users should be informed when statistical approximations
  * may be unreliable, so they can adjust their expectations or use alternative methods.
+ *
+ * Warning codes:
+ * - rare_events: Expected conversions per arm are low (<20), normal approximation unreliable
+ * - high_rejection: High rejection rate (>10%) due to prior mass outside feasible bounds
+ * - high_feasibility_rejection: Legacy alias for high_rejection
+ * - invalid_cr0: CR0 is invalid (outside (0,1))
  */
 export interface CalculationWarning {
   /** Machine-readable warning code */
-  code: 'rare_events' | 'high_feasibility_rejection' | 'invalid_cr0';
+  code: 'rare_events' | 'high_rejection' | 'high_feasibility_rejection' | 'invalid_cr0';
   /** Human-readable warning message */
   message: string;
 }

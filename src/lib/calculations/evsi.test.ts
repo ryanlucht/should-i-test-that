@@ -1532,6 +1532,150 @@ describe('Accuracy-02: CR0 validation', () => {
 });
 
 // ===========================================
+// High rejection warning tests (Phase 14-03)
+// ===========================================
+
+describe('EVSI high rejection warning', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('produces high_rejection warning when rejection rate > 10%', () => {
+    // Wide prior with substantial mass outside feasibility bounds
+    // Student-t with heavy tails centered at 0, CR0=0.5 gives L_max=1
+    // But with sigma=0.5 and df=3, significant mass extends beyond [-1, 1]
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.5,
+      threshold_L: 0,
+      prior: { type: 'student-t' as const, mu_L: 0, sigma_L: 0.5, df: 3 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // Should have rejected some samples
+    expect(result.numRejected).toBeGreaterThan(0);
+    // Should have high_rejection warning if rejection rate > 10%
+    const rejectionRate = result.numRejected! / (result.numSamples! + result.numRejected!);
+    if (rejectionRate > 0.10) {
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings!.some(w => w.code === 'high_rejection')).toBe(true);
+    }
+  });
+
+  it('does not produce high_rejection warning for narrow priors', () => {
+    // Narrow prior with almost no mass outside feasibility bounds
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.5,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 0.02, sigma_L: 0.02 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // Should have rejected very few samples (if any)
+    // Should NOT have high_rejection warning
+    if (result.warnings) {
+      expect(result.warnings.some(w => w.code === 'high_rejection')).toBe(false);
+    }
+  });
+
+  it('warning message includes rejection rate percentage', () => {
+    // Use uniform prior that extends below -1 to ensure high rejection
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.5,
+      threshold_L: 0,
+      prior: { type: 'uniform' as const, low_L: -2, high_L: 0.5 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // Prior extends from -2 to 0.5, but L_min=-1
+    // So 1/2.5 = 40% of prior mass is below -1, expect high rejection
+    const rejectionRate = result.numRejected! / (result.numSamples! + result.numRejected!);
+    expect(rejectionRate).toBeGreaterThan(0.10);
+
+    expect(result.warnings).toBeDefined();
+    const highRejectionWarning = result.warnings!.find(w => w.code === 'high_rejection');
+    expect(highRejectionWarning).toBeDefined();
+    expect(highRejectionWarning!.message).toMatch(/\d+%/); // Contains percentage
+  });
+});
+
+// ===========================================
+// Effective prior metrics integration tests (Phase 14-03)
+// ===========================================
+
+describe('EVSI effective prior metrics', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('probClearsThreshold reflects effective (truncated) probability for non-Normal', () => {
+    // Uniform prior spanning L=-1 boundary
+    // Untruncated: U[-1.5, 0.5] has P(L >= 0) = 0.5/2 = 0.25
+    // Truncated to [-1, 0.5]: P(L >= 0) = 0.5/1.5 ≈ 0.333
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.5,
+      threshold_L: 0,
+      prior: { type: 'uniform' as const, low_L: -1.5, high_L: 0.5 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // Should use effective (truncated) probability
+    // Truncated prob should be higher than untruncated since we cut off negative mass
+    expect(result.probabilityClearsThreshold).toBeGreaterThan(0.25);
+    expect(result.probabilityClearsThreshold).toBeCloseTo(0.333, 1);
+  });
+
+  it('probClearsThreshold for narrow Normal matches untruncated', () => {
+    // Narrow Normal prior well within bounds - truncation doesn't matter
+    const inputs = {
+      K: 100000,
+      baselineConversionRate: 0.5,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 0.05, sigma_L: 0.03 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo(inputs, 5000);
+
+    // Should match untruncated probability closely
+    // P(L >= 0) for N(0.05, 0.03) = 1 - Phi(-0.05/0.03) ≈ 0.952
+    expect(result.probabilityClearsThreshold).toBeGreaterThan(0.9);
+    expect(result.probabilityClearsThreshold).toBeLessThan(1);
+  });
+});
+
+// ===========================================
 // computeEffectivePriorMetrics tests (Phase 14-03)
 // ===========================================
 
