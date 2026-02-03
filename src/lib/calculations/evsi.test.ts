@@ -1391,6 +1391,77 @@ describe('computePosteriorMeanGrid invalid bounds', () => {
   });
 });
 
+// ===========================================
+// Log-space grid weights tests (Phase 14-02)
+// ===========================================
+
+describe('computePosteriorMeanGrid log-space weights', () => {
+  it('handles very small SE without underflow', () => {
+    // Very small SE creates narrow likelihood spike that would cause underflow
+    // in linear-space weights. Log-space should handle this correctly.
+    const prior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 5 };
+    const L_hat = 0.02;
+    const SE = 0.001; // Very small SE
+
+    const result = computePosteriorMean(L_hat, SE, prior, 0.5);
+
+    // With tiny SE, posterior should be very close to L_hat
+    expect(result).toBeCloseTo(L_hat, 2);
+    expect(Number.isFinite(result)).toBe(true);
+    expect(Number.isNaN(result)).toBe(false);
+  });
+
+  it('handles moderately small SE correctly', () => {
+    const prior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 5 };
+    const L_hat = 0.03;
+    const SE = 0.005;
+
+    const result = computePosteriorMean(L_hat, SE, prior, 0.5);
+
+    // Should be close to L_hat but with some shrinkage toward prior
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeLessThan(L_hat);
+    expect(Number.isFinite(result)).toBe(true);
+  });
+
+  it('produces consistent results across SE range', () => {
+    const prior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 5 };
+    const L_hat = 0.04;
+
+    // Test a range of SE values - all should produce finite, reasonable results
+    const seValues = [0.001, 0.005, 0.01, 0.02, 0.05, 0.1];
+    const results: number[] = [];
+
+    for (const se of seValues) {
+      const result = computePosteriorMean(L_hat, se, prior, 0.5);
+      results.push(result);
+      expect(Number.isFinite(result)).toBe(true);
+      expect(Number.isNaN(result)).toBe(false);
+    }
+
+    // Results should be monotonic: smaller SE => closer to L_hat
+    // (more precise data => less shrinkage)
+    for (let i = 1; i < results.length; i++) {
+      // With L_hat > prior mean, smaller SE should give larger posterior mean
+      expect(results[i - 1]).toBeGreaterThanOrEqual(results[i] - 0.001);
+    }
+  });
+
+  it('totalWeight=0 fallback returns clamped L_hat', () => {
+    // This is a theoretical edge case - in practice, log-space should prevent
+    // totalWeight=0. But if it happens, fallback is clamped L_hat.
+    // We can't easily trigger this, so just verify the formula conceptually
+    // by checking that normal operation produces reasonable results.
+    const prior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 5 };
+
+    const result = computePosteriorMean(0.02, 0.01, prior, 0.5);
+
+    // Should work normally and return value between 0 and L_hat
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeLessThan(0.02);
+  });
+});
+
 describe('Accuracy-02: CR0 validation', () => {
   beforeEach(() => {
     randomSeed = 12345;

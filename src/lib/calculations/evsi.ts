@@ -156,39 +156,67 @@ function computePosteriorMeanGrid(
   const gridStep = (L_max - L_min) / gridSize;
 
   // ===========================================
-  // Step 2: Compute unnormalized posterior weights at each grid point
+  // Step 2: Compute log weights at each grid point (Controversial C.1)
   // ===========================================
+  // Using log-space prevents underflow when SE is small (narrow likelihood spike)
+  // Without this, all weights can underflow to 0 when likelihood PDF values are tiny
+
+  const logWeights: number[] = [];
+  const gridPoints: number[] = [];
+  let maxLogWeight = -Infinity;
+
+  for (let i = 0; i <= gridSize; i++) {
+    const L = L_min + i * gridStep;
+    gridPoints.push(L);
+
+    // Prior PDF at this L value (from distributions.ts)
+    const priorPDF = pdf(L, prior);
+    if (priorPDF <= 0) {
+      logWeights.push(-Infinity);
+      continue;
+    }
+
+    // Likelihood: L_hat | L ~ N(L, SE^2)
+    // This is the probability of observing L_hat given true lift L
+    const likelihoodPDF = normalPdf(L_hat, L, SE);
+    if (likelihoodPDF <= 0) {
+      logWeights.push(-Infinity);
+      continue;
+    }
+
+    // Log of unnormalized posterior weight
+    // log(priorPDF * likelihoodPDF) = log(priorPDF) + log(likelihoodPDF)
+    const logWeight = Math.log(priorPDF) + Math.log(likelihoodPDF);
+    logWeights.push(logWeight);
+    maxLogWeight = Math.max(maxLogWeight, logWeight);
+  }
+
+  // ===========================================
+  // Step 3: Exponentiate with max subtraction (log-sum-exp trick)
+  // ===========================================
+  // Subtracting maxLogWeight before exp() prevents overflow/underflow
+  // The subtraction cancels out in the ratio (weightedSum / totalWeight)
+
   let weightedSum = 0;
   let totalWeight = 0;
 
   for (let i = 0; i <= gridSize; i++) {
-    const L = L_min + i * gridStep;
+    if (logWeights[i] === -Infinity) continue;
 
-    // Prior PDF at this L value (from distributions.ts)
-    const priorPDF = pdf(L, prior);
-    if (priorPDF <= 0) continue; // Skip zero-probability regions
-
-    // Likelihood: L_hat | L ~ N(L, SE^2)
-    // This is the probability of observing L_hat given true lift L
-    // Uses normalPdf from abtest-math (replaces jStat.normal.pdf)
-    const likelihoodPDF = normalPdf(L_hat, L, SE);
-
-    // Unnormalized posterior weight: p(L|L_hat) ∝ p(L_hat|L) * p(L)
-    const weight = priorPDF * likelihoodPDF;
-
-    // Accumulate for weighted mean calculation
-    weightedSum += L * weight;
+    // exp(logWeight - maxLogWeight) is numerically stable
+    const weight = Math.exp(logWeights[i] - maxLogWeight);
+    weightedSum += gridPoints[i] * weight;
     totalWeight += weight;
   }
 
   // ===========================================
-  // Step 3: Return posterior mean = weighted average
+  // Step 4: Return posterior mean = weighted average
   // ===========================================
-  // E[L|L_hat] = Σ(L * weight) / Σ(weight)
   if (totalWeight === 0) {
-    // Edge case: no probability mass found - fall back to prior mean
-    // This can happen if likelihood is extremely narrow and misses all grid points
-    return getPriorMean(prior);
+    // Edge case: no valid weights (shouldn't happen with log-space)
+    // Fallback: clamp L_hat to valid range (data-dominant regime)
+    // Changed from prior mean per audit recommendation
+    return Math.max(L_min, Math.min(feasibleMax, L_hat));
   }
 
   return weightedSum / totalWeight;
