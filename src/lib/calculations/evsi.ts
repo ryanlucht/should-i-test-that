@@ -188,8 +188,9 @@ export function computePosteriorMean(
  *    b. Feasibility check: reject if CR1 = CR0*(1+L) outside [0,1]
  *    c. Calculate value without test (based on default decision)
  *    d. Simulate observed lift: L_hat = L_i + noise, where noise ~ N(0, SE)
- *    e. Make posterior decision (ship if L_hat >= threshold)
- *    f. Calculate value with test
+ *    e. Compute posteriorMean = E[L | L_hat] (Bayesian shrinkage estimate)
+ *    f. Make posterior decision (ship if posteriorMean >= threshold)
+ *    g. Calculate value with test
  * 2. EVSI = avg(value_with_test) - avg(value_without_test)
  *
  * Feasibility constraint:
