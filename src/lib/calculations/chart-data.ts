@@ -12,7 +12,6 @@
  * Per 05-CONTEXT.md: Chart updates live when prior shape changes.
  */
 
-import { standardNormalPDF } from './statistics';
 import { pdf, type PriorDistribution } from './distributions';
 
 /**
@@ -107,31 +106,6 @@ export function generateDistributionData(
 }
 
 /**
- * Generate data points for a normal distribution density curve
- *
- * BACKWARD COMPATIBILITY WRAPPER: This function maintains the original
- * signature for existing callers. Internally converts to PriorDistribution.
- *
- * @param mu_L - Prior mean lift (decimal, e.g., 0.05 for 5%)
- * @param sigma_L - Prior standard deviation (decimal, e.g., 0.05 for 5%)
- * @param numPoints - Number of points to generate (default 100 for smooth curve)
- * @returns Array of chart data points with liftPercent in percentage form
- */
-export function generateDensityCurveData(
-  mu_L: number,
-  sigma_L: number,
-  numPoints: number = 100
-): ChartDataPoint[] {
-  // Convert legacy signature to PriorDistribution and delegate
-  const prior: PriorDistribution = {
-    type: 'normal',
-    mu_L,
-    sigma_L,
-  };
-  return generateDistributionData(prior, numPoints);
-}
-
-/**
  * Get probability density at a specific lift value for any distribution
  *
  * Used for positioning markers (e.g., mean indicator dot) on the curve.
@@ -155,33 +129,4 @@ export function getDensityAtLiftForPrior(
   }
 
   return pdf(lift_L, prior);
-}
-
-/**
- * Get probability density at a specific lift value (Normal distribution)
- *
- * BACKWARD COMPATIBILITY WRAPPER: Maintains original signature for existing callers.
- * Used for positioning markers (e.g., mean indicator dot) on the curve.
- *
- * Mathematical formula:
- *   f(lift) = phi((lift - mu_L) / sigma_L) / sigma_L
- *
- * @param lift_L - Lift value (decimal, e.g., 0.05 for 5%)
- * @param mu_L - Prior mean lift (decimal)
- * @param sigma_L - Prior standard deviation (decimal)
- * @returns Probability density at the specified lift
- */
-export function getDensityAtLift(
-  lift_L: number,
-  mu_L: number,
-  sigma_L: number
-): number {
-  // Handle edge case: very small sigma
-  if (sigma_L < 0.0001) {
-    // Return 1 at mean, 0 elsewhere (spike approximation)
-    return Math.abs(lift_L - mu_L) < 0.0001 ? 1 : 0;
-  }
-
-  const z = (lift_L - mu_L) / sigma_L;
-  return standardNormalPDF(z) / sigma_L;
 }

@@ -48,7 +48,7 @@ import type { NetValueInputs, NetValueResults } from './types';
  * @param K - Annual dollars per unit lift
  * @returns Value relative to threshold baseline for full year
  */
-export function calculateBaselineValue(
+function calculateBaselineValue(
   L_true: number,
   defaultDecision: 'ship' | 'dont-ship',
   threshold_L: number,
@@ -90,7 +90,7 @@ export function calculateBaselineValue(
  * @param params - Test parameters
  * @returns Breakdown of value across three periods
  */
-export function calculateIterationValue(
+function calculateIterationValue(
   L_true: number,
   posteriorDecision: 'ship' | 'dont-ship',
   params: {
