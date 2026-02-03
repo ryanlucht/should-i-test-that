@@ -148,19 +148,13 @@ function calculateEVPITruncated(
       : probabilityClearsThreshold; // P(L >= T | don't ship)
 
   // ===========================================
-  // Step 5: Calculate z-score relative to truncated distribution
+  // Step 5: Calculate truncated diagnostics
   // ===========================================
-  // z = (T_L - truncated_mu) / truncated_sigma
-  const zScore =
-    truncatedSigma > 0
-      ? (threshold_L - truncatedMean) / truncatedSigma
-      : truncatedMean >= threshold_L
-        ? -Infinity
-        : Infinity;
-
-  // phi and Phi at threshold (using truncated PDF/CDF for consistency)
-  const phiZ = truncatedNormalPDF(threshold_L, mu_L, sigma_L, lower);
-  const PhiZ = truncatedNormalCDF(threshold_L, mu_L, sigma_L, lower);
+  // Per Audit Fix C: Standard normal diagnostics (zScore, phiZ, PhiZ) are
+  // not meaningful for truncated distributions. Instead, we provide
+  // truncated-specific diagnostics and set the standard ones to NaN.
+  const pdfAtThreshold = truncatedNormalPDF(threshold_L, mu_L, sigma_L, lower);
+  const cdfAtThreshold = truncatedNormalCDF(threshold_L, mu_L, sigma_L, lower);
 
   // ===========================================
   // Step 6: Return results with truncation flag
@@ -175,15 +169,24 @@ function calculateEVPITruncated(
     K,
     threshold_L,
     threshold_dollars,
-    zScore,
-    phiZ,
-    PhiZ,
+    // Standard normal diagnostics are NaN when truncation is applied
+    // to prevent misuse (they don't represent standard normal values)
+    zScore: Number.NaN,
+    phiZ: Number.NaN,
+    PhiZ: Number.NaN,
     edgeCases: {
       truncationApplied: true, // Always true when this function is called
       nearZeroSigma: truncatedSigma < 0.001,
       priorOneSided:
         probabilityClearsThreshold > 0.9999 ||
         probabilityClearsThreshold < 0.0001,
+    },
+    // Truncated-specific diagnostics for debugging
+    truncatedDiagnostics: {
+      truncatedMean,
+      truncatedSigma,
+      pdfAtThreshold,
+      cdfAtThreshold,
     },
   };
 }

@@ -63,17 +63,56 @@ export interface EVPIResults {
   /** T_$ = K * T_L (threshold in dollars) */
   threshold_dollars: number;
 
-  /** z = (T_L - mu_L) / sigma_L (standardized z-score) */
+  /**
+   * z = (T_L - mu_L) / sigma_L (standardized z-score)
+   * Only valid when edgeCases.truncationApplied is false.
+   * When truncation is applied, this is NaN.
+   */
   zScore: number;
 
-  /** phi(z) - standard normal PDF at z */
+  /**
+   * phi(z) - standard normal PDF at z
+   * Only valid when edgeCases.truncationApplied is false.
+   * When truncation is applied, this is NaN.
+   */
   phiZ: number;
 
-  /** Phi(z) - standard normal CDF at z */
+  /**
+   * Phi(z) - standard normal CDF at z
+   * Only valid when edgeCases.truncationApplied is false.
+   * When truncation is applied, this is NaN.
+   */
   PhiZ: number;
 
   /** Flags indicating special edge cases */
   edgeCases: EdgeCaseFlags;
+
+  /**
+   * Additional diagnostics when truncation is applied.
+   * Only present when edgeCases.truncationApplied is true.
+   */
+  truncatedDiagnostics?: TruncatedDiagnostics;
+}
+
+/**
+ * Additional diagnostics for truncated prior calculations
+ *
+ * Per Audit Fix C: When truncation is applied, the standard normal
+ * diagnostics (zScore, phiZ, PhiZ) are not meaningful. Instead,
+ * use these truncated-specific values for debugging.
+ */
+export interface TruncatedDiagnostics {
+  /** Mean of the truncated prior distribution */
+  truncatedMean: number;
+
+  /** Standard deviation of the truncated prior distribution */
+  truncatedSigma: number;
+
+  /** PDF of the truncated distribution evaluated at the threshold */
+  pdfAtThreshold: number;
+
+  /** CDF of the truncated distribution evaluated at the threshold */
+  cdfAtThreshold: number;
 }
 
 /**

@@ -836,4 +836,67 @@ describe('calculateEVPI', () => {
       expect(Number.isNaN(result.evpiDollars)).toBe(false);
     });
   });
+
+  describe('Audit Fix C: truncated EVPI type contract', () => {
+    // Per Audit Fix C: When truncation is applied, phiZ/PhiZ/zScore should be NaN
+    // (not meaningful for truncated distributions). Instead, truncatedDiagnostics
+    // should contain the truncated-specific values.
+
+    it('C1: truncated result has NaN for standard normal diagnostics', () => {
+      // Prior N(-0.8, 0.2) has ~16% mass below -1, triggering truncation
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: 0,
+      });
+
+      expect(result.edgeCases.truncationApplied).toBe(true);
+      // Standard normal diagnostics should be NaN
+      expect(Number.isNaN(result.zScore)).toBe(true);
+      expect(Number.isNaN(result.phiZ)).toBe(true);
+      expect(Number.isNaN(result.PhiZ)).toBe(true);
+    });
+
+    it('C2: truncated result includes truncatedDiagnostics', () => {
+      // Prior N(-0.8, 0.2) triggers truncation
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -0.8, sigma_L: 0.2 },
+        threshold_L: 0,
+      });
+
+      expect(result.edgeCases.truncationApplied).toBe(true);
+      expect(result.truncatedDiagnostics).toBeDefined();
+      expect(Number.isFinite(result.truncatedDiagnostics!.truncatedMean)).toBe(true);
+      expect(Number.isFinite(result.truncatedDiagnostics!.truncatedSigma)).toBe(true);
+      expect(Number.isFinite(result.truncatedDiagnostics!.pdfAtThreshold)).toBe(true);
+      expect(Number.isFinite(result.truncatedDiagnostics!.cdfAtThreshold)).toBe(true);
+
+      // Truncated mean should be higher than untruncated mean (removing lower tail)
+      expect(result.truncatedDiagnostics!.truncatedMean).toBeGreaterThan(-0.8);
+    });
+
+    it('C3: non-truncated result has valid standard normal diagnostics', () => {
+      // Prior N(0, 0.05) has negligible mass below -1
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: 0, sigma_L: 0.05 },
+        threshold_L: 0,
+      });
+
+      expect(result.edgeCases.truncationApplied).toBe(false);
+      // Standard normal diagnostics should be valid
+      expect(Number.isFinite(result.zScore)).toBe(true);
+      expect(Number.isFinite(result.phiZ)).toBe(true);
+      expect(Number.isFinite(result.PhiZ)).toBe(true);
+      // truncatedDiagnostics should NOT be present
+      expect(result.truncatedDiagnostics).toBeUndefined();
+    });
+  });
 });
