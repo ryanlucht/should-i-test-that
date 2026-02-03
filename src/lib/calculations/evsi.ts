@@ -26,7 +26,7 @@
 import { sample, cdf, getPriorMean, pdf } from './distributions';
 import type { PriorDistribution } from './distributions';
 import { standardNormalPDF, standardNormalCDF } from './statistics';
-import { normalPdf, seOfRelativeLift, sampleStandardNormal } from './abtest-math';
+import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
@@ -53,12 +53,10 @@ export function computeEffectivePriorMetrics(
   CR0: number,
   numSamples: number = 2000
 ): { effectivePriorMean: number; effectiveProbClears: number } {
-  // Feasibility bounds for lift
+  // Feasibility bounds for lift (via shared helper)
   // CR1 = CR0 * (1 + L) must be in [0, 1]
-  // L_min = -1 (CR1 = 0)
-  // L_max = (1/CR0) - 1 (CR1 = 1)
-  const L_min = -1;
-  const L_max = 1 / CR0 - 1;
+  // L_min = -1 (CR1 = 0), L_max = (1/CR0) - 1 (CR1 = 1)
+  const { L_min, L_max } = liftFeasibilityBounds(CR0);
 
   let sumL = 0;
   let countExceedsThreshold = 0;
@@ -184,7 +182,7 @@ function computePosteriorMeanGrid(
   let L_max: number;
 
   // Feasibility upper bound: CR1 = CR0 * (1 + L) <= 1, so L <= 1/CR0 - 1
-  const feasibleMax = 1 / CR0 - 1;
+  const { L_max: feasibleMax } = liftFeasibilityBounds(CR0);
 
   if (prior.type === 'uniform') {
     // Uniform has explicit bounds - use them directly, clamped to feasibility
@@ -356,7 +354,7 @@ export function computePosteriorMean(
   // Use exact truncated normal mean formula (faster and more accurate than grid).
   if (prior.type === 'uniform') {
     // Feasibility bounds intersected with prior bounds
-    const feasibleMax = 1 / CR0 - 1;
+    const { L_max: feasibleMax } = liftFeasibilityBounds(CR0);
     const a = Math.max(-1, prior.low_L!);
     const b = Math.min(prior.high_L!, feasibleMax);
 
@@ -504,13 +502,11 @@ export function calculateEVSIMonteCarlo(
   const probClearsThreshold = effectiveProbClears;
 
   // ===========================================
-  // Step 4: Feasibility bounds for lift
+  // Step 4: Feasibility bounds for lift (via shared helper)
   // ===========================================
   // CR1 = CR0 * (1 + L) must be in [0, 1]
-  // L_min = -1 (CR1 = 0)
-  // L_max = (1/CR0) - 1 (CR1 = 1)
-  const L_min = -1;
-  const L_max = 1 / CR0 - 1;
+  // L_min = -1 (CR1 = 0), L_max = (1/CR0) - 1 (CR1 = 1)
+  const { L_min, L_max } = liftFeasibilityBounds(CR0);
 
   // ===========================================
   // Step 5: Monte Carlo simulation
