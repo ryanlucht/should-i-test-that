@@ -10,7 +10,7 @@
  * value for the full user base."
  *
  * Mathematical notes (for statistician audit):
- * - CoD only applies when default decision is Ship (mu_L >= T_L)
+ * - CoD only applies when expected value is positive (mu_L > T_L)
  * - During the test, only the control group foregoes the potential benefit
  * - During decision latency, everyone foregoes the benefit
  */
