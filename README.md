@@ -2,7 +2,7 @@
 
 A decision-value calculator that helps you decide whether an A/B test is worth running.
 
-**Try it:** [should-i-test-that.vercel.app](https://should-i-test-that.vercel.app) *(coming soon)*
+**Try it:** [should-i-test-that.vercel.app](https://should-i-test-that.vercel.app)
 
 ## What It Does
 
@@ -51,12 +51,13 @@ Based on decision theory concepts from Douglas Hubbard's *How to Measure Anythin
 
 - **EVPI** = Expected opportunity loss under your prior beliefs
 - **EVSI** = Value of imperfect information from a specific test design
-- **Cost of Delay** = Opportunity cost of waiting for test results
+- **Cost of Delay** = Opportunity cost of waiting for test results (integrated into simulation)
 
 The tool uses:
 - Closed-form Normal formulas for EVPI (Basic mode)
-- Monte Carlo pre-posterior analysis for EVSI (Advanced mode)
-- Proper truncation at feasibility bounds (lift ≥ -100%)
+- Monte Carlo pre-posterior analysis for EVSI with Bayesian posterior-mean decision rule (Advanced mode)
+- Proper truncation at feasibility bounds (lift ≥ -100%) applied consistently across all calculations
+- Integrated timing simulation for net value (accounts for split traffic during test period)
 
 ## Development
 
@@ -122,10 +123,11 @@ npm run test:watch
 npm run test:coverage
 ```
 
-262 tests covering:
-- Statistical primitives (PDF, CDF)
-- EVPI and EVSI calculations
+463 tests covering:
+- Statistical primitives (PDF, CDF, truncated distributions)
+- EVPI and EVSI calculations (including edge cases)
 - Distribution functions (Normal, Student-t, Uniform)
+- Net value integration with timing effects
 - React hooks and components
 - Accessibility (vitest-axe)
 
@@ -134,6 +136,17 @@ npm run test:coverage
 - [Hubbard, "How to Measure Anything"](https://www.howtomeasureanything.com/) — Chapter 7 on the value of information
 - [Eppo Docs](https://docs.geteppo.com/statistics/confidence-intervals/statistical-nitty-gritty/) — Default prior N(0, 0.05)
 - [Azevedo et al., "A/B Testing with Fat Tails"](https://joseluismontielolea.com/azevedo-et-al-ab.pdf) — Evidence for fat-tailed experiment outcomes
+
+## Version History
+
+**v1.1** (2026-02-03) — Statistics engine refinements based on external audit:
+- EVSI uses correct Bayesian posterior-mean decision rule
+- Truncation at feasibility bounds applied consistently
+- Cost of Delay integrated into coherent timing simulation
+- Hardened edge case handling (sigma=0, rare events warnings)
+- 463 tests (up from 264)
+
+**v1.0** (2026-02-02) — Initial release with Basic and Advanced modes
 
 ## License
 
