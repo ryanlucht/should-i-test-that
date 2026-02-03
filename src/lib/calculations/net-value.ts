@@ -25,7 +25,7 @@
  */
 
 import { sample, cdf, getPriorMean } from './distributions';
-import { computePosteriorMean } from './evsi';
+import { computePosteriorMean, computeEffectivePriorMetrics } from './evsi';
 import { seOfRelativeLift, sampleStandardNormal } from './abtest-math';
 import { determineDefaultDecision } from './derived';
 import type { NetValueInputs, NetValueResults, CalculationWarning } from './types';
@@ -230,6 +230,7 @@ export function calculateNetValueMonteCarlo(
 
     return {
       netValueDollars: 0,
+      maxTestBudgetDollars: 0,
       defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
@@ -247,6 +248,7 @@ export function calculateNetValueMonteCarlo(
 
     return {
       netValueDollars: 0,
+      maxTestBudgetDollars: 0,
       defaultDecision,
       probabilityClearsThreshold: 0.5, // Indeterminate
       probabilityTestChangesDecision: 0,
@@ -290,8 +292,31 @@ export function calculateNetValueMonteCarlo(
   const priorMean = getPriorMean(prior);
   const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
 
-  // Probability of clearing threshold under prior
-  const probClearsThreshold = 1 - cdf(threshold_L, prior);
+  // ===========================================
+  // Step 3.5: Compute effective prior metrics under feasibility truncation
+  // ===========================================
+  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
+  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
+  // on a truncated prior. For consistency, we should display metrics
+  // (mean, probClearsThreshold) from the same truncated prior.
+  //
+  // Only compute effective metrics when truncation is likely to matter:
+  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
+  // - Normal priors with wide sigma relative to distance to L=-1
+  // This adds ~2000 samples overhead, so skip for tight Normal priors
+  let effectiveProbClears = 1 - cdf(threshold_L, prior);
+
+  const needsEffectiveMetrics =
+    prior.type !== 'normal' ||
+    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
+
+  if (needsEffectiveMetrics) {
+    const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
+    effectiveProbClears = effective.effectiveProbClears;
+  }
+
+  // Use effective probClears for the returned metric
+  const probClearsThreshold = effectiveProbClears;
 
   // ===========================================
   // Step 4: Feasibility bounds for lift
@@ -382,11 +407,29 @@ export function calculateNetValueMonteCarlo(
   }
 
   // ===========================================
+  // Step 5.5: Check for high rejection rate warning (Edge Case 6)
+  // ===========================================
+  // High rejection indicates prior places substantial mass outside feasible bounds.
+  // This can lead to metrics that don't reflect the full prior distribution.
+  // Threshold: >10% rejection rate triggers warning.
+  const totalAttempted = validSamples + rejectedSamples;
+  if (totalAttempted > 0) {
+    const rejectionRate = rejectedSamples / totalAttempted;
+    if (rejectionRate > 0.10) {
+      warnings.push({
+        code: 'high_rejection',
+        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing prior or adjusting baseline rate.`,
+      });
+    }
+  }
+
+  // ===========================================
   // Guard: Handle zero valid samples edge case
   // ===========================================
   if (validSamples === 0) {
     return {
       netValueDollars: 0,
+      maxTestBudgetDollars: 0,
       defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
