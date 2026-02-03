@@ -371,3 +371,94 @@ describe('COD-03: Coherent single simulation', () => {
     expect(result.defaultDecision).toBeDefined();
   });
 });
+
+// ===========================================
+// Accuracy-01: One-arm-zero handling tests
+// ===========================================
+
+describe('Accuracy-01: NetValue one-arm-zero handling', () => {
+  it('handles n_control=0, n_variant>0 without NaN', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 0,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 7,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    expect(result.netValueDollars).toBe(0);
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(Number.isFinite(result.probabilityClearsThreshold)).toBe(true);
+    expect(result.numSamples).toBe(0);
+  });
+
+  it('handles n_variant=0, n_control>0 without NaN', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 0,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 7,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    expect(result.netValueDollars).toBe(0);
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+  });
+});
+
+// ===========================================
+// Accuracy-02: CR0 validation tests
+// ===========================================
+
+describe('Accuracy-02: NetValue CR0 validation', () => {
+  it('handles CR0=0 without division by zero', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 7,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    expect(result.netValueDollars).toBe(0);
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(Number.isFinite(result.probabilityClearsThreshold)).toBe(true);
+  });
+
+  it('handles CR0=1 without collapsed bounds', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 1,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 7,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    expect(result.netValueDollars).toBe(0);
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+  });
+});

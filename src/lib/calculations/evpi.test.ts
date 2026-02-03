@@ -783,4 +783,57 @@ describe('calculateEVPI', () => {
       expect(result.edgeCases.truncationApplied).toBe(true);
     });
   });
+
+  // ===========================================
+  // Accuracy-05: truncated EVPI bounds
+  // ===========================================
+
+  describe('Accuracy-05: truncated EVPI bounds', () => {
+    it('handles prior centered far below -1 without bound inversion', () => {
+      // Prior N(-2.0, 0.1) has mu + 6*sigma = -2.0 + 0.6 = -1.4 < -1
+      // Without the guard, this would cause L_max < L_min (bound inversion)
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -2.0, sigma_L: 0.1 }, // mu + 6*sigma = -1.4 < -1
+        threshold_L: 0,
+      });
+
+      // Should produce valid finite results (not NaN or Infinity)
+      expect(Number.isFinite(result.evpiDollars)).toBe(true);
+      expect(result.evpiDollars).toBeGreaterThanOrEqual(0);
+      expect(Number.isNaN(result.evpiDollars)).toBe(false);
+      expect(Number.isNaN(result.probabilityClearsThreshold)).toBe(false);
+    });
+
+    it('handles prior with mu + 6*sigma exactly at -1', () => {
+      // Prior N(-1.3, 0.05) has mu + 6*sigma = -1.3 + 0.3 = -1.0 = L_min
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -1.3, sigma_L: 0.05 },
+        threshold_L: 0,
+      });
+
+      expect(Number.isFinite(result.evpiDollars)).toBe(true);
+      expect(result.evpiDollars).toBeGreaterThanOrEqual(0);
+    });
+
+    it('handles very negative prior mean gracefully', () => {
+      // Extreme case: prior mean is way below -1
+      const result = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000,
+        valuePerConversion: 100,
+        prior: { mu_L: -5.0, sigma_L: 0.5 }, // mu + 6*sigma = -2.0 < -1
+        threshold_L: 0,
+      });
+
+      expect(Number.isFinite(result.evpiDollars)).toBe(true);
+      expect(result.evpiDollars).toBeGreaterThanOrEqual(0);
+      expect(Number.isNaN(result.evpiDollars)).toBe(false);
+    });
+  });
 });

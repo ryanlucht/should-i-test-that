@@ -1072,3 +1072,148 @@ describe('calculateEVSINormalFastPath', () => {
     });
   });
 });
+
+// ===========================================
+// Accuracy-01: One-arm-zero handling tests
+// ===========================================
+
+describe('Accuracy-01: one-arm-zero handling', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Monte Carlo handles n_control=0, n_variant>0 without NaN', () => {
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 0,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.probabilityClearsThreshold)).toBe(true);
+    expect(result.numSamples).toBe(0);
+  });
+
+  it('Monte Carlo handles n_variant=0, n_control>0 without NaN', () => {
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 0,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+
+  it('fast path handles n_control=0 without NaN', () => {
+    const result = calculateEVSINormalFastPath({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 0,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+
+  it('fast path handles n_variant=0 without NaN', () => {
+    const result = calculateEVSINormalFastPath({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 0,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+});
+
+// ===========================================
+// Accuracy-02: CR0 validation tests
+// ===========================================
+
+describe('Accuracy-02: CR0 validation', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Monte Carlo handles CR0=0 without division by zero', () => {
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.probabilityClearsThreshold)).toBe(true);
+  });
+
+  it('Monte Carlo handles CR0=1 without collapsed bounds', () => {
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 1,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+
+  it('fast path handles CR0=0 without division by zero', () => {
+    const result = calculateEVSINormalFastPath({
+      K: 100000,
+      baselineConversionRate: 0,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+
+  it('fast path handles CR0=1 without collapsed bounds', () => {
+    const result = calculateEVSINormalFastPath({
+      K: 100000,
+      baselineConversionRate: 1,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+});

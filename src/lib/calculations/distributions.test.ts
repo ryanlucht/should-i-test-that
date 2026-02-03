@@ -309,4 +309,42 @@ describe('distributions', () => {
       }
     });
   });
+
+  // ===========================================
+  // Accuracy-03: Normal sigma=0 handling
+  // ===========================================
+
+  describe('Accuracy-03: Normal sigma=0 handling', () => {
+    it('cdf returns 0 below point mass', () => {
+      const prior: PriorDistribution = { type: 'normal', mu_L: 0.05, sigma_L: 0 };
+      expect(cdf(0.04, prior)).toBe(0);
+      expect(cdf(-0.10, prior)).toBe(0);
+    });
+
+    it('cdf returns 1 at and above point mass', () => {
+      const prior: PriorDistribution = { type: 'normal', mu_L: 0.05, sigma_L: 0 };
+      expect(cdf(0.05, prior)).toBe(1);
+      expect(cdf(0.06, prior)).toBe(1);
+      expect(cdf(0.50, prior)).toBe(1);
+    });
+
+    it('pdf returns 0 for point mass (not NaN)', () => {
+      const prior: PriorDistribution = { type: 'normal', mu_L: 0.05, sigma_L: 0 };
+      expect(pdf(0.05, prior)).toBe(0);
+      expect(pdf(0.04, prior)).toBe(0);
+      expect(Number.isNaN(pdf(0.05, prior))).toBe(false);
+    });
+
+    it('cdf and pdf do not produce NaN or Infinity for sigma=0', () => {
+      const prior: PriorDistribution = { type: 'normal', mu_L: 0.03, sigma_L: 0 };
+
+      const testPoints = [-1, -0.5, 0, 0.03, 0.05, 0.5, 1];
+      for (const point of testPoints) {
+        expect(Number.isNaN(cdf(point, prior))).toBe(false);
+        expect(Number.isNaN(pdf(point, prior))).toBe(false);
+        expect(Number.isFinite(cdf(point, prior))).toBe(true);
+        expect(Number.isFinite(pdf(point, prior))).toBe(true);
+      }
+    });
+  });
 });
