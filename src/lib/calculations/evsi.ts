@@ -488,8 +488,23 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
   const CR0 = baselineConversionRate;
 
   // ===========================================
-  // Input validation guards (Accuracy-01, Accuracy-02)
+  // Input validation guards (Accuracy-01, Accuracy-02, Accuracy-B)
   // ===========================================
+
+  // Guard: Degenerate prior (sigma=0) means no uncertainty => EVSI = 0
+  // Must check BEFORE any division by sigma_prior to avoid Infinity/NaN
+  if (sigma_prior === 0) {
+    const defaultDecision = determineDefaultDecision(mu_prior, threshold_L);
+    // Point mass prior: P(L >= T) is 1 if mu >= T, else 0
+    const probabilityClearsThreshold = mu_prior >= threshold_L ? 1 : 0;
+
+    return {
+      evsiDollars: 0,
+      defaultDecision,
+      probabilityClearsThreshold,
+      probabilityTestChangesDecision: 0,
+    };
+  }
 
   // Guard: One-arm-zero produces Infinity in SE formula (1/0)
   if (n_control <= 0 || n_variant <= 0) {

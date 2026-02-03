@@ -1020,7 +1020,70 @@ describe('calculateEVSINormalFastPath', () => {
   });
 
   // ===========================================
-  // 4. EVSI <= EVPI
+  // 4. Degenerate prior (sigma_prior = 0)
+  // ===========================================
+
+  describe('Audit Fix B: degenerate prior (sigma_prior = 0)', () => {
+    it('B1: returns EVSI=0 when sigma_prior=0 and mu > threshold (no NaN)', () => {
+      // Point mass at 2% lift, threshold at 1%
+      // Decision is certain (ship), so no information value
+      const result = calculateEVSINormalFastPath({
+        K: 1000000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0.01,
+        prior: { type: 'normal', mu_L: 0.02, sigma_L: 0 },
+        n_control: 5000,
+        n_variant: 5000,
+      });
+
+      expect(result.evsiDollars).toBe(0);
+      expect(Number.isNaN(result.evsiDollars)).toBe(false);
+      expect(result.probabilityTestChangesDecision).toBe(0);
+      expect(result.probabilityClearsThreshold).toBe(1);
+      expect(result.defaultDecision).toBe('ship');
+    });
+
+    it('B2: returns EVSI=0 when sigma_prior=0 and mu == threshold (no NaN)', () => {
+      // Point mass exactly at threshold
+      // Decision is certain (at boundary), so no information value
+      const result = calculateEVSINormalFastPath({
+        K: 1000000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0.01,
+        prior: { type: 'normal', mu_L: 0.01, sigma_L: 0 },
+        n_control: 5000,
+        n_variant: 5000,
+      });
+
+      expect(result.evsiDollars).toBe(0);
+      expect(Number.isNaN(result.evsiDollars)).toBe(false);
+      expect(result.probabilityTestChangesDecision).toBe(0);
+      // At threshold: mu_prior >= threshold_L, so P(clears) = 1 by convention
+      expect(result.probabilityClearsThreshold).toBe(1);
+    });
+
+    it('B3: returns EVSI=0 when sigma_prior=0 and mu < threshold (no NaN)', () => {
+      // Point mass at 0% lift, threshold at 1%
+      // Decision is certain (don't ship), so no information value
+      const result = calculateEVSINormalFastPath({
+        K: 1000000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0.01,
+        prior: { type: 'normal', mu_L: 0, sigma_L: 0 },
+        n_control: 5000,
+        n_variant: 5000,
+      });
+
+      expect(result.evsiDollars).toBe(0);
+      expect(Number.isNaN(result.evsiDollars)).toBe(false);
+      expect(result.probabilityTestChangesDecision).toBe(0);
+      expect(result.probabilityClearsThreshold).toBe(0);
+      expect(result.defaultDecision).toBe('dont-ship');
+    });
+  });
+
+  // ===========================================
+  // 5. EVSI <= EVPI
   // ===========================================
 
   describe('EVSI <= EVPI', () => {

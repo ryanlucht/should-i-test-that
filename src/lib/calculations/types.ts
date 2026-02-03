@@ -228,8 +228,18 @@ export interface NetValueInputs {
  * metrics for display and decision analysis.
  */
 export interface NetValueResults {
-  /** Net value of testing in dollars - the headline result */
+  /**
+   * Net value of testing in dollars - the headline result.
+   * CAN BE NEGATIVE when testing delays rollout of a beneficial change
+   * or exposes users to harm during the test period.
+   */
   netValueDollars: number;
+
+  /**
+   * Maximum amount you should pay for a test (clamped to >= 0).
+   * Use this for "test budget" calculations. Derived from netValueDollars.
+   */
+  maxTestBudgetDollars: number;
 
   /** Default decision based on prior mean vs threshold */
   defaultDecision: 'ship' | 'dont-ship';

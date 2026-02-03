@@ -39,7 +39,7 @@ describe('COD-01: Value during test period', () => {
     // With strong positive prior (mu=10%) and threshold=0:
     // - Default is Ship
     // - Net value should be non-negative (information can't hurt)
-    expect(result.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     expect(result.defaultDecision).toBe('ship');
   });
 
@@ -72,8 +72,8 @@ describe('COD-01: Value during test period', () => {
     );
 
     // Both should produce valid results
-    expect(shortTest.netValueDollars).toBeGreaterThanOrEqual(0);
-    expect(longTest.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(shortTest.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
+    expect(longTest.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     expect(shortTest.defaultDecision).toBe('ship');
     expect(longTest.defaultDecision).toBe('ship');
   });
@@ -101,8 +101,8 @@ describe('COD-01: Value during test period', () => {
     );
 
     // Both should produce valid non-negative results
-    expect(fiftyFifty.netValueDollars).toBeGreaterThanOrEqual(0);
-    expect(thirtyPercent.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(fiftyFifty.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
+    expect(thirtyPercent.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -169,8 +169,8 @@ describe('COD-02: Value during latency period', () => {
     );
 
     // Both results should be valid
-    expect(zeroLatency.netValueDollars).toBeGreaterThanOrEqual(0);
-    expect(longLatency.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(zeroLatency.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
+    expect(longLatency.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     // When there's meaningful test value, latency reduces the net benefit
     // (less remaining year to capture value after deciding)
     // Note: Both could be 0 if test has no value, but long latency cannot exceed short
@@ -214,8 +214,8 @@ describe('COD-02: Value during latency period', () => {
     expect(noShipResult.defaultDecision).toBe('dont-ship');
 
     // Both should have valid results
-    expect(shipResult.netValueDollars).toBeGreaterThanOrEqual(0);
-    expect(noShipResult.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(shipResult.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
+    expect(noShipResult.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -239,7 +239,7 @@ describe('COD-03: Coherent single simulation', () => {
 
     // Net value should always be non-negative
     // (clamped because information can't hurt in expectation)
-    expect(result.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
   });
 
   it('works with Normal prior', () => {
@@ -257,7 +257,7 @@ describe('COD-03: Coherent single simulation', () => {
 
     const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    expect(result.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     expect(result.defaultDecision).toBe('ship');
     expect(result.probabilityClearsThreshold).toBeGreaterThan(0);
     expect(result.probabilityClearsThreshold).toBeLessThanOrEqual(1);
@@ -278,7 +278,7 @@ describe('COD-03: Coherent single simulation', () => {
 
     const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    expect(result.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     expect(result.defaultDecision).toBe('ship');
   });
 
@@ -297,7 +297,7 @@ describe('COD-03: Coherent single simulation', () => {
 
     const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    expect(result.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     expect(result.defaultDecision).toBe('ship');
   });
 
@@ -367,8 +367,73 @@ describe('COD-03: Coherent single simulation', () => {
     const result = calculateNetValueMonteCarlo(inputs, 5000);
 
     // Should still produce valid results (remaining fraction = 0)
-    expect(result.netValueDollars).toBeGreaterThanOrEqual(0);
+    expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
     expect(result.defaultDecision).toBeDefined();
+  });
+});
+
+// ===========================================
+// Audit Fix A: netValueDollars can be legitimately negative
+// ===========================================
+
+describe('Audit Fix A: Net value can be negative', () => {
+  // Per audit: "information can't hurt" applies to EVSI alone, but net value
+  // includes real costs of acquiring information (delayed rollout, variant exposure)
+
+  it('A1: "Always ship" scenario - test delays beneficial rollout (negative net value)', () => {
+    // Prior: point mass at +10% lift (sigma_L=0.001 near-deterministic)
+    // Threshold: 0 (always ship)
+    // Without test: ship immediately, get full year of value
+    // With test: delay 30 days for 50% of traffic, then ship
+    // Net effect: lose 15/365 * K * 0.10 = negative
+    const inputs: NetValueInputs = {
+      K: 1000000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0.10, sigma_L: 0.001 }, // Near-deterministic positive
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 30,
+      variantFraction: 0.5,
+      decisionLatencyDays: 0,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 5000);
+
+    // Net value should be negative because test delays full deployment
+    // Expected: K * 0.10 * ((0.5*30 + 335)/365 - 1) = K * 0.10 * (-15/365) ≈ -$4,110
+    expect(result.netValueDollars).toBeLessThan(0);
+    // But maxTestBudgetDollars is clamped to 0
+    expect(result.maxTestBudgetDollars).toBe(0);
+    expect(result.defaultDecision).toBe('ship');
+  });
+
+  it('A2: "Don\'t ship" scenario - variant exposes users to harm (negative net value)', () => {
+    // Prior: point mass at -5% lift (always harmful)
+    // Threshold: 0 (don't ship)
+    // Without test: don't ship, get 0 value
+    // With test: variant group experiences negative lift during test period
+    // Net effect: valueDuringTest = 0.5 * K * (-0.05) * (30/365) = negative
+    const inputs: NetValueInputs = {
+      K: 1000000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: -0.05, sigma_L: 0.001 }, // Near-deterministic negative
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 30,
+      variantFraction: 0.5,
+      decisionLatencyDays: 0,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 5000);
+
+    // Net value should be negative because variant suffers during test
+    // Expected: 0.5 * K * (-0.05 - 0) * (30/365) ≈ -$2,055
+    expect(result.netValueDollars).toBeLessThan(0);
+    // But maxTestBudgetDollars is clamped to 0
+    expect(result.maxTestBudgetDollars).toBe(0);
+    expect(result.defaultDecision).toBe('dont-ship');
   });
 });
 

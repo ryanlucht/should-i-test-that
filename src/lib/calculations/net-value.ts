@@ -404,16 +404,19 @@ export function calculateNetValueMonteCarlo(
 
   // Net Value = E[Value with test] - E[Value without test]
   // This is the coherent "EVSI - CoD" computed in one simulation
-  let netValueDollars = avgValueWithTest - avgValueWithoutTest;
+  // NOTE: Net value CAN be negative when testing delays beneficial rollout
+  // or exposes users to harm during test period. This is NOT Monte Carlo noise.
+  const netValueDollars = avgValueWithTest - avgValueWithoutTest;
 
-  // Net value should be non-negative (information can't hurt in expectation)
-  // Small negative values can occur due to Monte Carlo variance
-  netValueDollars = Math.max(0, netValueDollars);
+  // Max test budget: what you should pay for a test (cannot be negative)
+  // Use this for budget decisions; preserve raw netValueDollars for analysis
+  const maxTestBudgetDollars = Math.max(0, netValueDollars);
 
   const probabilityTestChangesDecision = decisionChanges / validSamples;
 
   return {
     netValueDollars,
+    maxTestBudgetDollars,
     defaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
