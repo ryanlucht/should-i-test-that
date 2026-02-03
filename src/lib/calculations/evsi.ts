@@ -31,6 +31,61 @@ import { determineDefaultDecision } from './derived';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
 /**
+ * Compute mean of a Normal distribution truncated to [a, b].
+ *
+ * For Uniform prior U[a,b] with Normal likelihood N(L_hat, SE^2),
+ * the posterior is proportional to Normal truncated to [a, b].
+ * This is faster and more accurate than grid approximation.
+ *
+ * Mathematical formula (Wikipedia: Truncated normal distribution):
+ *   E[X | a <= X <= b] = mu + sigma * (phi(alpha) - phi(beta)) / (Phi(beta) - Phi(alpha))
+ *   where alpha = (a - mu)/sigma, beta = (b - mu)/sigma
+ *
+ * For likelihood-based inference: mu = L_hat, sigma = SE
+ *
+ * @param mu - Mean of the underlying Normal (L_hat from likelihood)
+ * @param sigma - Std dev of the underlying Normal (SE from likelihood)
+ * @param a - Lower truncation bound (max of prior low and feasibility -1)
+ * @param b - Upper truncation bound (min of prior high and feasibility 1/CR0-1)
+ * @returns Truncated normal mean, or clamped mu for degenerate cases
+ */
+export function truncatedNormalMeanTwoSided(
+  mu: number,
+  sigma: number,
+  a: number,
+  b: number
+): number {
+  // Guard: degenerate bounds
+  if (!(b > a)) {
+    return Math.max(a, Math.min(b, mu));
+  }
+
+  // Guard: sigma = 0 means point mass at mu
+  if (sigma === 0) {
+    return Math.max(a, Math.min(b, mu));
+  }
+
+  const alpha = (a - mu) / sigma;
+  const beta = (b - mu) / sigma;
+
+  const phiAlpha = standardNormalPDF(alpha);
+  const phiBeta = standardNormalPDF(beta);
+  const PhiAlpha = standardNormalCDF(alpha);
+  const PhiBeta = standardNormalCDF(beta);
+
+  const Z = PhiBeta - PhiAlpha; // Normalization constant
+
+  // Guard: Z near zero means almost all mass outside bounds
+  // Return midpoint as fallback (data is so far from bounds that any value in [a,b] is equally likely)
+  if (Z < 1e-10) {
+    return (a + b) / 2;
+  }
+
+  // Truncated normal mean formula
+  return mu + sigma * (phiAlpha - phiBeta) / Z;
+}
+
+/**
  * Compute posterior mean E[L|L_hat] via grid integration for non-conjugate priors.
  *
  * This function numerically integrates to compute the expected value of true lift
@@ -193,7 +248,23 @@ export function computePosteriorMean(
   }
 
   // ===========================================
-  // Grid integration for non-conjugate priors (Student-t, Uniform)
+  // Exact formula for Uniform prior (Controversial C.3)
+  // ===========================================
+  // For Uniform prior U[a,b] with Normal likelihood N(L_hat, SE^2),
+  // the posterior is Normal truncated to [a, b].
+  // Use exact truncated normal mean formula (faster and more accurate than grid).
+  if (prior.type === 'uniform') {
+    // Feasibility bounds intersected with prior bounds
+    const feasibleMax = 1 / CR0 - 1;
+    const a = Math.max(-1, prior.low_L!);
+    const b = Math.min(prior.high_L!, feasibleMax);
+
+    // Use exact truncated normal formula (mu=L_hat, sigma=SE)
+    return truncatedNormalMeanTwoSided(L_hat, SE, a, b);
+  }
+
+  // ===========================================
+  // Grid integration for Student-t only
   // ===========================================
   return computePosteriorMeanGrid(L_hat, SE, prior, CR0);
 }

@@ -13,6 +13,7 @@ import {
   calculateEVSIMonteCarlo,
   calculateEVSINormalFastPath,
   computePosteriorMean,
+  truncatedNormalMeanTwoSided,
 } from './evsi';
 import { calculateEVPI } from './evpi';
 import type { PriorDistribution } from './distributions';
@@ -1234,6 +1235,108 @@ describe('Accuracy-01: one-arm-zero handling', () => {
 // ===========================================
 // Accuracy-02: CR0 validation tests
 // ===========================================
+
+// ===========================================
+// truncatedNormalMeanTwoSided tests (Phase 14-02)
+// ===========================================
+
+describe('truncatedNormalMeanTwoSided', () => {
+  describe('basic functionality', () => {
+    it('symmetric bounds centered on mu returns ~mu', () => {
+      // N(0, 1) truncated to [-1, 1] has mean = 0 by symmetry
+      const result = truncatedNormalMeanTwoSided(0, 1, -1, 1);
+      expect(result).toBeCloseTo(0, 5);
+    });
+
+    it('asymmetric bounds shift mean in expected direction', () => {
+      // N(0, 1) truncated to [0, 2] should have positive mean
+      const result = truncatedNormalMeanTwoSided(0, 1, 0, 2);
+      expect(result).toBeGreaterThan(0);
+      expect(result).toBeLessThan(2);
+    });
+
+    it('narrow bounds constrain mean', () => {
+      // N(0, 0.1) truncated to [-0.5, 0.5] should be close to 0
+      const result = truncatedNormalMeanTwoSided(0, 0.1, -0.5, 0.5);
+      expect(result).toBeCloseTo(0, 4);
+    });
+
+    it('mu inside bounds gives sensible result', () => {
+      // N(0.05, 0.02) truncated to [-0.1, 0.1]
+      const result = truncatedNormalMeanTwoSided(0.05, 0.02, -0.1, 0.1);
+      expect(result).toBeGreaterThan(-0.1);
+      expect(result).toBeLessThan(0.1);
+      expect(result).toBeCloseTo(0.05, 2); // Should be near mu when sigma is small
+    });
+  });
+
+  describe('edge cases', () => {
+    it('sigma=0 returns clamped mu (point mass)', () => {
+      // Point mass at 0.03, bounds [-0.1, 0.1]
+      const result = truncatedNormalMeanTwoSided(0.03, 0, -0.1, 0.1);
+      expect(result).toBe(0.03);
+    });
+
+    it('sigma=0 with mu outside bounds returns clamped value', () => {
+      // Point mass at 0.5, but bounds only go to 0.1
+      const resultHigh = truncatedNormalMeanTwoSided(0.5, 0, -0.1, 0.1);
+      expect(resultHigh).toBe(0.1);
+
+      // Point mass at -0.5, but bounds start at -0.1
+      const resultLow = truncatedNormalMeanTwoSided(-0.5, 0, -0.1, 0.1);
+      expect(resultLow).toBe(-0.1);
+    });
+
+    it('degenerate bounds (a >= b) returns clamped mu', () => {
+      // a = b: clamp returns the single point
+      const result1 = truncatedNormalMeanTwoSided(0.05, 0.02, 0.1, 0.1);
+      expect(result1).toBe(0.1); // Both a and b are 0.1
+
+      // a > b (invalid): Math.max(a, Math.min(b, mu)) = Math.max(0.2, Math.min(0.1, 0.05)) = 0.2
+      const result2 = truncatedNormalMeanTwoSided(0.05, 0.02, 0.2, 0.1);
+      expect(result2).toBe(0.2); // Clamped to a (the larger bound)
+    });
+
+    it('Z near zero (mu far outside bounds) returns midpoint', () => {
+      // N(100, 1) truncated to [-0.1, 0.1] - mu is 100 sigma away!
+      const result = truncatedNormalMeanTwoSided(100, 1, -0.1, 0.1);
+      expect(result).toBeCloseTo(0, 5); // Midpoint of [-0.1, 0.1]
+    });
+
+    it('returns finite value for extreme inputs', () => {
+      const testCases = [
+        { mu: 0, sigma: 0.001, a: -0.1, b: 0.1 },  // Very small sigma
+        { mu: 0, sigma: 100, a: -0.1, b: 0.1 },    // Very large sigma
+        { mu: 50, sigma: 0.01, a: -1, b: 1 },      // mu far from bounds
+      ];
+
+      for (const { mu, sigma, a, b } of testCases) {
+        const result = truncatedNormalMeanTwoSided(mu, sigma, a, b);
+        expect(Number.isFinite(result)).toBe(true);
+        expect(Number.isNaN(result)).toBe(false);
+      }
+    });
+  });
+
+  describe('Uniform posterior integration', () => {
+    it('matches expected behavior for Uniform prior posterior mean', () => {
+      // Uniform[-0.1, 0.1] with L_hat=0.05, SE=0.02
+      // Posterior mean should be pulled toward L_hat but stay in bounds
+      const a = -0.1;
+      const b = 0.1;
+      const L_hat = 0.05;
+      const SE = 0.02;
+
+      const posteriorMean = truncatedNormalMeanTwoSided(L_hat, SE, a, b);
+
+      // Should be between prior midpoint (0) and L_hat (0.05)
+      expect(posteriorMean).toBeGreaterThan(0);
+      expect(posteriorMean).toBeLessThan(L_hat);
+      expect(posteriorMean).toBeGreaterThan(a);
+      expect(posteriorMean).toBeLessThan(b);
+    });
+  });
+});
 
 describe('Accuracy-02: CR0 validation', () => {
   beforeEach(() => {
