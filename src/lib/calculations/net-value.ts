@@ -26,7 +26,8 @@
 
 import { sample, cdf, getPriorMean } from './distributions';
 import { computePosteriorMean } from './evsi';
-import type { PriorDistribution } from './distributions';
+import { seOfRelativeLift, sampleStandardNormal } from './abtest-math';
+import { determineDefaultDecision } from './derived';
 import type { NetValueInputs, NetValueResults } from './types';
 
 /**
@@ -229,7 +230,7 @@ export function calculateNetValueMonteCarlo(
   if (totalSamples === 0) {
     // No data = no information = zero net value
     const priorMean = getPriorMean(prior);
-    const defaultDecision = priorMean >= threshold_L ? 'ship' : 'dont-ship';
+    const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
     const probClearsThreshold = 1 - cdf(threshold_L, prior);
 
     return {
@@ -242,17 +243,15 @@ export function calculateNetValueMonteCarlo(
     };
   }
 
-  // Calculate SE for non-zero samples
-  // SE^2 = (1-CR0)/CR0 * (1/n_control + 1/n_variant)
-  const varianceFactor = (1 - CR0) / CR0;
-  const sampleFactor = 1 / n_control + 1 / n_variant;
-  const SE = Math.sqrt(varianceFactor * sampleFactor);
+  // Calculate SE for non-zero samples using shared seOfRelativeLift
+  // SE = sqrt((1-CR0)/CR0 * (1/n_control + 1/n_variant))
+  const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
   // Step 2: Determine prior mean and default decision
   // ===========================================
   const priorMean = getPriorMean(prior);
-  const defaultDecision = priorMean >= threshold_L ? 'ship' : 'dont-ship';
+  const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
 
   // Probability of clearing threshold under prior
   const probClearsThreshold = 1 - cdf(threshold_L, prior);
@@ -308,11 +307,8 @@ export function calculateNetValueMonteCarlo(
     // Simulate test outcome
     // ===========================================
     // L_hat = L_true + noise, noise ~ N(0, SE)
-    // Use Box-Muller for normal sampling
-    // Guard against u1 = 0 which causes Math.log(0) = -Infinity -> NaN
-    const u1 = Math.max(Math.random(), 1e-16);
-    const u2 = Math.random();
-    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    // Uses shared sampleStandardNormal (Box-Muller with guard against log(0))
+    const z = sampleStandardNormal();
     const L_hat = L_true + SE * z;
 
     // ===========================================

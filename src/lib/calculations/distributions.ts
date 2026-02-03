@@ -16,6 +16,7 @@
  */
 
 import { standardNormalPDF, standardNormalCDF } from './statistics';
+import { sampleStandardNormal } from './abtest-math';
 import jStat from 'jstat';
 
 /**
@@ -175,12 +176,9 @@ export function cdf(lift_L: number, prior: PriorDistribution): number {
 export function sample(prior: PriorDistribution): number {
   switch (prior.type) {
     case 'normal': {
-      // Box-Muller transform for normal sampling
+      // Box-Muller transform for normal sampling (uses shared sampleStandardNormal)
       // This generates standard normal, then transform to location-scale
-      // Guard against u1 = 0 which causes Math.log(0) = -Infinity -> NaN
-      const u1 = Math.max(Math.random(), 1e-16);
-      const u2 = Math.random();
-      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      const z = sampleStandardNormal();
       return prior.mu_L! + prior.sigma_L! * z;
     }
 
