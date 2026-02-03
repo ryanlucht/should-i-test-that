@@ -1298,10 +1298,23 @@ describe('truncatedNormalMeanTwoSided', () => {
       expect(result2).toBe(0.2); // Clamped to a (the larger bound)
     });
 
-    it('Z near zero (mu far outside bounds) returns midpoint', () => {
-      // N(100, 1) truncated to [-0.1, 0.1] - mu is 100 sigma away!
+    it('Z near zero (mu far above bounds) returns upper bound', () => {
+      // N(100, 1) truncated to [-0.1, 0.1] - mu is 100 sigma above b
+      // Posterior collapses to upper bound, not midpoint
       const result = truncatedNormalMeanTwoSided(100, 1, -0.1, 0.1);
-      expect(result).toBeCloseTo(0, 5); // Midpoint of [-0.1, 0.1]
+      expect(result).toBe(0.1); // Upper bound
+    });
+
+    it('Z near zero (mu far below bounds) returns lower bound', () => {
+      // N(-10, 0.1) truncated to [-1, 0.2] - mu is far below a
+      const result = truncatedNormalMeanTwoSided(-10, 0.1, -1, 0.2);
+      expect(result).toBe(-1); // Lower bound
+    });
+
+    it('Z near zero (mu inside bounds with tiny sigma) returns mu', () => {
+      // N(0.1, 1e-6) truncated to [-1, 0.2] - mu inside bounds, sigma tiny
+      const result = truncatedNormalMeanTwoSided(0.1, 1e-6, -1, 0.2);
+      expect(result).toBeCloseTo(0.1, 5); // mu itself
     });
 
     it('returns finite value for extreme inputs', () => {

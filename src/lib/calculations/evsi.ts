@@ -136,10 +136,12 @@ export function truncatedNormalMeanTwoSided(
 
   const Z = PhiBeta - PhiAlpha; // Normalization constant
 
-  // Guard: Z near zero means almost all mass outside bounds
-  // Return midpoint as fallback (data is so far from bounds that any value in [a,b] is equally likely)
+  // Guard: Z near zero means almost all prior mass lies outside [a, b].
+  // The posterior collapses to the nearest bound (not the midpoint).
   if (Z < 1e-10) {
-    return (a + b) / 2;
+    if (mu <= a) return a;
+    if (mu >= b) return b;
+    return mu; // mu inside [a, b]: return mu directly
   }
 
   // Truncated normal mean formula

@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .planning/
+
+# Private files (not for GitHub)
+HubbardChp7.pdf
+SPEC.md
