@@ -160,6 +160,12 @@ export function computePosteriorMean(
   prior: PriorDistribution,
   CR0: number = 0.5
 ): number {
+  // Guard: Return prior mean if inputs are non-finite (defensive)
+  // This prevents NaN propagation if upstream guards are bypassed
+  if (!Number.isFinite(L_hat) || !Number.isFinite(SE)) {
+    return getPriorMean(prior);
+  }
+
   if (prior.type === 'normal') {
     // ===========================================
     // Closed-form for Normal-Normal conjugacy

@@ -200,6 +200,24 @@ describe('truncatedNormalCDF', () => {
     expect(result).toBeGreaterThanOrEqual(0);
     expect(result).toBeLessThanOrEqual(1);
   });
+
+  it('should handle degenerate case (point mass at lower) correctly', () => {
+    // When mu << lower, almost all mass is below lower, Z ≈ 0
+    // Distribution degenerates to point mass at lower
+    // CDF should be: 0 for x < lower, 1 for x >= lower
+    // Test: N(-10, 0.1) truncated at -1: alpha = (-1 - (-10))/0.1 = 90, Z ≈ 0
+    const lower = -1;
+    const mu = -10;
+    const sigma = 0.1;
+
+    // x < lower should return 0
+    expect(truncatedNormalCDF(-1.5, mu, sigma, lower)).toBe(0);
+
+    // x >= lower should return 1 (point mass at lower)
+    expect(truncatedNormalCDF(-1, mu, sigma, lower)).toBe(1);
+    expect(truncatedNormalCDF(0, mu, sigma, lower)).toBe(1);
+    expect(truncatedNormalCDF(1, mu, sigma, lower)).toBe(1);
+  });
 });
 
 describe('truncatedNormalPDF', () => {

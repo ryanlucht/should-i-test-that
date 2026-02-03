@@ -693,6 +693,28 @@ describe('computePosteriorMean', () => {
         expect(Number.isFinite(posteriorMean)).toBe(true);
       }
     });
+
+    it('returns prior mean when L_hat is Infinity (defensive guard)', () => {
+      // When upstream guards fail, L_hat or SE could be Infinity
+      // computePosteriorMean should return prior mean as fallback
+      const prior = { type: 'normal' as const, mu_L: 0.05, sigma_L: 0.03 };
+
+      // Test Infinity L_hat
+      const result1 = computePosteriorMean(Infinity, 0.02, prior);
+      expect(result1).toBe(0.05); // Returns prior mean
+
+      // Test -Infinity L_hat
+      const result2 = computePosteriorMean(-Infinity, 0.02, prior);
+      expect(result2).toBe(0.05);
+
+      // Test Infinity SE
+      const result3 = computePosteriorMean(0.10, Infinity, prior);
+      expect(result3).toBe(0.05);
+
+      // Test NaN inputs
+      const result4 = computePosteriorMean(NaN, 0.02, prior);
+      expect(result4).toBe(0.05);
+    });
   });
 });
 

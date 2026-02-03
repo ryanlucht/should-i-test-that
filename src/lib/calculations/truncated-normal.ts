@@ -153,26 +153,28 @@ export function truncatedNormalCDF(
     return 0;
   }
 
-  // At the truncation bound: CDF is 0 (no mass at or below the bound in the truncated distribution)
-  // Note: The truncated distribution has support [lower, infinity), with P(L = lower) = 0 for continuous dist
-  if (x === lower) {
-    return 0;
-  }
-
   // alpha = (lower - mu) / sigma: standardized lower bound
   const alpha = (lower - mu) / sigma;
-
-  // beta = (x - mu) / sigma: standardized query point
-  const beta = (x - mu) / sigma;
 
   // Z = 1 - Phi(alpha): survival probability (normalization constant)
   const Z = 1 - standardNormalCDF(alpha);
 
-  // Handle degenerate case: point mass at lower bound
-  // CDF is 0 for x < lower, 1 for x >= lower
+  // Handle degenerate case FIRST: point mass at lower bound
+  // When Z < MIN_Z, almost all prior mass is below lower, so the truncated
+  // distribution degenerates to a point mass exactly at lower.
+  // CDF is 0 for x < lower, 1 for x >= lower (step function)
   if (Z < MIN_Z) {
-    return 1;
+    return x < lower ? 0 : 1;
   }
+
+  // At the truncation bound (continuous case only): CDF is 0
+  // Note: The truncated distribution has support [lower, infinity), with P(L = lower) = 0
+  if (x === lower) {
+    return 0;
+  }
+
+  // beta = (x - mu) / sigma: standardized query point
+  const beta = (x - mu) / sigma;
 
   // P(L <= x | L >= lower) = [Phi(beta) - Phi(alpha)] / Z
   const cdf = (standardNormalCDF(beta) - standardNormalCDF(alpha)) / Z;
