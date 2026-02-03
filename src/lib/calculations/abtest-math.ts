@@ -79,6 +79,13 @@ export function normalPdf(x: number, mean: number, sd: number): number {
  * @returns Standard error of the lift estimate
  */
 export function seOfRelativeLift(CR0: number, n_control: number, n_variant: number): number {
+  // Input validation - return Infinity for invalid inputs (Accuracy-13, Edge Case 1)
+  // Infinity propagates cleanly and signals invalid calculation to caller
+  // CR0 must be strictly in (0,1) for valid conversion rate
+  if (!(CR0 > 0 && CR0 < 1)) return Infinity;
+  // Sample sizes must be positive
+  if (!(n_control > 0 && n_variant > 0)) return Infinity;
+
   // Variance factor: (1 - CR0) / CR0
   // Sample factor: 1/n_control + 1/n_variant
   // SE = sqrt(varianceFactor * sampleFactor)

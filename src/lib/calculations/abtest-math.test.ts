@@ -122,4 +122,46 @@ describe('seOfRelativeLift', () => {
     const seUnbalanced = seOfRelativeLift(0.05, 5000, 15000);
     expect(seUnbalanced).toBeGreaterThan(seBalanced);
   });
+
+  // Edge Case 1: Input validation guards (Accuracy-13)
+  describe('input validation guards', () => {
+    it('returns Infinity for CR0 = 0', () => {
+      expect(seOfRelativeLift(0, 10000, 10000)).toBe(Infinity);
+    });
+
+    it('returns Infinity for CR0 = 1', () => {
+      expect(seOfRelativeLift(1, 10000, 10000)).toBe(Infinity);
+    });
+
+    it('returns Infinity for CR0 < 0', () => {
+      expect(seOfRelativeLift(-0.1, 10000, 10000)).toBe(Infinity);
+    });
+
+    it('returns Infinity for CR0 > 1', () => {
+      expect(seOfRelativeLift(1.5, 10000, 10000)).toBe(Infinity);
+    });
+
+    it('returns Infinity for n_control = 0', () => {
+      expect(seOfRelativeLift(0.05, 0, 10000)).toBe(Infinity);
+    });
+
+    it('returns Infinity for n_variant = 0', () => {
+      expect(seOfRelativeLift(0.05, 10000, 0)).toBe(Infinity);
+    });
+
+    it('returns Infinity for n_control < 0', () => {
+      expect(seOfRelativeLift(0.05, -1000, 10000)).toBe(Infinity);
+    });
+
+    it('returns Infinity for n_variant < 0', () => {
+      expect(seOfRelativeLift(0.05, 10000, -1000)).toBe(Infinity);
+    });
+
+    it('valid inputs continue to return correct SE value', () => {
+      // Verify normal computation still works
+      const se = seOfRelativeLift(0.05, 10000, 10000);
+      expect(se).toBeCloseTo(0.0616, 3);
+      expect(isFinite(se)).toBe(true);
+    });
+  });
 });
