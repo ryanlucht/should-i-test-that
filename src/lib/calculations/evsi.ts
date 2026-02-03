@@ -23,7 +23,8 @@
  * - Posterior decision uses E[L|L_hat] >= T (Bayes-optimal rule)
  */
 
-import { sample, cdf, getPriorMean, pdf, PriorDistribution } from './distributions';
+import { sample, cdf, getPriorMean, pdf } from './distributions';
+import type { PriorDistribution } from './distributions';
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal } from './abtest-math';
 import { determineDefaultDecision } from './derived';

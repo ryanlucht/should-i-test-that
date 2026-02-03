@@ -217,18 +217,13 @@ export function calculateNetValueMonteCarlo(
   } = inputs;
 
   // ===========================================
-  // Step 1: Calculate measurement noise (standard error)
+  // Step 1: Input validation guards (Accuracy-01, Accuracy-02)
   // ===========================================
-  // SE of lift estimate from A/B test
-  // For relative lift L = (CR1 - CR0) / CR0:
-  //   SE(L) = sqrt(CR0*(1-CR0) * (1/n_control + 1/n_variant)) / CR0
-  //         = sqrt((1-CR0)/CR0 * (1/n_control + 1/n_variant))
   const CR0 = baselineConversionRate;
 
-  // Handle zero sample size edge case
-  const totalSamples = n_control + n_variant;
-  if (totalSamples === 0) {
-    // No data = no information = zero net value
+  // Guard: One-arm-zero produces Infinity in SE formula (1/0)
+  // This can happen when Math.floor() in sample-size derivation produces 0
+  if (n_control <= 0 || n_variant <= 0) {
     const priorMean = getPriorMean(prior);
     const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
     const probClearsThreshold = 1 - cdf(threshold_L, prior);
@@ -243,12 +238,35 @@ export function calculateNetValueMonteCarlo(
     };
   }
 
-  // Calculate SE for non-zero samples using shared seOfRelativeLift
-  // SE = sqrt((1-CR0)/CR0 * (1/n_control + 1/n_variant))
+  // Guard: CR0 must be strictly in (0, 1)
+  // CR0=0 causes division by zero in SE formula
+  // CR0=1 collapses feasibility bounds (L_max = 0)
+  if (!(CR0 > 0 && CR0 < 1)) {
+    const priorMean = getPriorMean(prior);
+    const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
+
+    return {
+      netValueDollars: 0,
+      defaultDecision,
+      probabilityClearsThreshold: 0.5, // Indeterminate
+      probabilityTestChangesDecision: 0,
+      numSamples: 0,
+      numRejected: 0,
+    };
+  }
+
+  // ===========================================
+  // Step 2: Calculate measurement noise (standard error)
+  // ===========================================
+  // SE of lift estimate from A/B test
+  // For relative lift L = (CR1 - CR0) / CR0:
+  //   SE(L) = sqrt(CR0*(1-CR0) * (1/n_control + 1/n_variant)) / CR0
+  //         = sqrt((1-CR0)/CR0 * (1/n_control + 1/n_variant))
+  // Calculate SE using shared seOfRelativeLift
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
-  // Step 1.5: Check for rare events warning (Accuracy-08)
+  // Step 2.5: Check for rare events warning (Accuracy-08)
   // ===========================================
   // The Normal approximation for lift becomes unreliable when expected
   // conversions per arm are low (<20). Warn user to consider alternatives.
@@ -267,7 +285,7 @@ export function calculateNetValueMonteCarlo(
   }
 
   // ===========================================
-  // Step 2: Determine prior mean and default decision
+  // Step 3: Determine prior mean and default decision
   // ===========================================
   const priorMean = getPriorMean(prior);
   const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
@@ -276,7 +294,7 @@ export function calculateNetValueMonteCarlo(
   const probClearsThreshold = 1 - cdf(threshold_L, prior);
 
   // ===========================================
-  // Step 3: Feasibility bounds for lift
+  // Step 4: Feasibility bounds for lift
   // ===========================================
   // CR1 = CR0 * (1 + L) must be in [0, 1]
   // L_min = -1 (CR1 = 0)
@@ -285,7 +303,7 @@ export function calculateNetValueMonteCarlo(
   const L_max = 1 / CR0 - 1;
 
   // ===========================================
-  // Step 4: Monte Carlo simulation
+  // Step 5: Monte Carlo simulation
   // ===========================================
   let sumValueWithTest = 0;
   let sumValueWithoutTest = 0;
@@ -379,7 +397,7 @@ export function calculateNetValueMonteCarlo(
   }
 
   // ===========================================
-  // Step 5: Calculate Net Value
+  // Step 6: Calculate Net Value
   // ===========================================
   const avgValueWithoutTest = sumValueWithoutTest / validSamples;
   const avgValueWithTest = sumValueWithTest / validSamples;
