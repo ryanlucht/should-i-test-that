@@ -311,6 +311,70 @@ describe('distributions', () => {
   });
 
   // ===========================================
+  // Edge Case 2: Uniform distribution bounds guards
+  // ===========================================
+
+  describe('Edge Case 2: Uniform invalid bounds', () => {
+    const equalBoundsPrior: PriorDistribution = {
+      type: 'uniform',
+      low_L: 0.05,
+      high_L: 0.05, // equal to low_L (width = 0)
+    };
+
+    const invertedBoundsPrior: PriorDistribution = {
+      type: 'uniform',
+      low_L: 0.10,
+      high_L: 0.05, // high < low (width < 0)
+    };
+
+    it('pdf with equal bounds returns 0', () => {
+      expect(pdf(0.05, equalBoundsPrior)).toBe(0);
+      expect(pdf(0.00, equalBoundsPrior)).toBe(0);
+      expect(pdf(0.10, equalBoundsPrior)).toBe(0);
+    });
+
+    it('pdf with inverted bounds returns 0', () => {
+      expect(pdf(0.05, invertedBoundsPrior)).toBe(0);
+      expect(pdf(0.07, invertedBoundsPrior)).toBe(0);
+      expect(pdf(0.00, invertedBoundsPrior)).toBe(0);
+    });
+
+    it('cdf with equal bounds returns step function', () => {
+      // CDF is 0 below low_L, 1 at/above low_L
+      expect(cdf(0.04, equalBoundsPrior)).toBe(0);
+      expect(cdf(0.05, equalBoundsPrior)).toBe(1);
+      expect(cdf(0.06, equalBoundsPrior)).toBe(1);
+    });
+
+    it('cdf with inverted bounds returns step function', () => {
+      // Treat as point mass at low_L (which is 0.10)
+      expect(cdf(0.09, invertedBoundsPrior)).toBe(0);
+      expect(cdf(0.10, invertedBoundsPrior)).toBe(1);
+      expect(cdf(0.11, invertedBoundsPrior)).toBe(1);
+    });
+
+    it('sample with equal bounds returns low_L', () => {
+      const result = sample(equalBoundsPrior);
+      expect(result).toBe(0.05);
+    });
+
+    it('sample with inverted bounds returns low_L', () => {
+      const result = sample(invertedBoundsPrior);
+      expect(result).toBe(0.10);
+    });
+
+    it('pdf/cdf do not produce NaN or Infinity for invalid bounds', () => {
+      const testPoints = [-1, 0, 0.05, 0.10, 1];
+      for (const point of testPoints) {
+        expect(Number.isNaN(pdf(point, equalBoundsPrior))).toBe(false);
+        expect(Number.isNaN(cdf(point, equalBoundsPrior))).toBe(false);
+        expect(Number.isFinite(pdf(point, equalBoundsPrior))).toBe(true);
+        expect(Number.isFinite(cdf(point, equalBoundsPrior))).toBe(true);
+      }
+    });
+  });
+
+  // ===========================================
   // Accuracy-03: Normal sigma=0 handling
   // ===========================================
 

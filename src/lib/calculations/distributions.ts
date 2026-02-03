@@ -104,13 +104,21 @@ export function pdf(lift_L: number, prior: PriorDistribution): number {
     }
 
     case 'uniform': {
+      const width = prior.high_L! - prior.low_L!;
+
+      // Guard: invalid bounds (width <= 0) (Edge Case 2)
+      // Return 0 for degenerate/invalid uniform - no density at any point
+      if (!(width > 0)) {
+        return 0;
+      }
+
       // Uniform PDF is constant within bounds, zero outside
       // f(L) = 1 / (high - low) for low <= L <= high
       // f(L) = 0 otherwise
       if (lift_L < prior.low_L! || lift_L > prior.high_L!) {
         return 0;
       }
-      return 1 / (prior.high_L! - prior.low_L!);
+      return 1 / width;
     }
   }
 }
@@ -161,13 +169,23 @@ export function cdf(lift_L: number, prior: PriorDistribution): number {
     }
 
     case 'uniform': {
+      const low = prior.low_L!;
+      const high = prior.high_L!;
+      const width = high - low;
+
+      // Guard: invalid bounds (width <= 0) (Edge Case 2)
+      // Treat as point mass at low_L: CDF is step function
+      if (!(width > 0)) {
+        return lift_L < low ? 0 : 1;
+      }
+
       // Linear interpolation within bounds, clamped to [0, 1]
       // F(L) = 0 if L <= low
       // F(L) = 1 if L >= high
       // F(L) = (L - low) / (high - low) otherwise
-      if (lift_L <= prior.low_L!) return 0;
-      if (lift_L >= prior.high_L!) return 1;
-      return (lift_L - prior.low_L!) / (prior.high_L! - prior.low_L!);
+      if (lift_L <= low) return 0;
+      if (lift_L >= high) return 1;
+      return (lift_L - low) / width;
     }
   }
 }
@@ -218,8 +236,15 @@ export function sample(prior: PriorDistribution): number {
     }
 
     case 'uniform': {
+      const width = prior.high_L! - prior.low_L!;
+
+      // Guard: invalid bounds - return low_L as fallback (Edge Case 2)
+      if (!(width > 0)) {
+        return prior.low_L!;
+      }
+
       // Simple linear scaling of uniform random
-      return prior.low_L! + Math.random() * (prior.high_L! - prior.low_L!);
+      return prior.low_L! + Math.random() * width;
     }
   }
 }
