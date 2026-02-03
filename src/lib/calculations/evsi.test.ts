@@ -14,6 +14,7 @@ import {
   calculateEVSINormalFastPath,
   computePosteriorMean,
   truncatedNormalMeanTwoSided,
+  computeEffectivePriorMetrics,
 } from './evsi';
 import { calculateEVPI } from './evpi';
 import type { PriorDistribution } from './distributions';
@@ -1527,5 +1528,168 @@ describe('Accuracy-02: CR0 validation', () => {
 
     expect(result.evsiDollars).toBe(0);
     expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+});
+
+// ===========================================
+// computeEffectivePriorMetrics tests (Phase 14-03)
+// ===========================================
+
+describe('computeEffectivePriorMetrics', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Normal prior with minimal truncation', () => {
+    it('metrics match untruncated when prior is well within bounds', () => {
+      // Normal prior centered at 0.05 with small sigma
+      // CR0=0.5 gives L_max = 1, so prior is well within [-1, 1]
+      const prior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0.05,
+        sigma_L: 0.03,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5, 5000);
+
+      // Effective mean should be close to prior mean
+      expect(result.effectivePriorMean).toBeCloseTo(0.05, 1);
+      // Effective prob should be close to untruncated
+      // P(L >= 0) for N(0.05, 0.03) = 1 - Phi(-0.05/0.03) = 1 - Phi(-1.67) ≈ 0.95
+      expect(result.effectiveProbClears).toBeGreaterThan(0.9);
+      expect(result.effectiveProbClears).toBeLessThan(1);
+    });
+  });
+
+  describe('Normal prior with significant mass below L=-1', () => {
+    it('effectivePriorMean > untruncated mean when prior has mass below -1', () => {
+      // Normal prior centered at -0.8 with sigma=0.3
+      // Untruncated mean = -0.8
+      // With L_min=-1, samples below -1 are rejected
+      // So effective mean > -0.8
+      const prior: PriorDistribution = {
+        type: 'normal',
+        mu_L: -0.8,
+        sigma_L: 0.3,
+      };
+
+      randomSeed = 12345;
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5, 5000);
+
+      // Effective mean should be greater than -0.8 (pulled toward 0)
+      expect(result.effectivePriorMean).toBeGreaterThan(-0.8);
+      // Effective mean should still be negative (prior is centered below 0)
+      expect(result.effectivePriorMean).toBeLessThan(0);
+      // Values should be finite
+      expect(Number.isFinite(result.effectivePriorMean)).toBe(true);
+      expect(Number.isFinite(result.effectiveProbClears)).toBe(true);
+    });
+  });
+
+  describe('Uniform prior spanning feasibility bounds', () => {
+    it('metrics reflect truncation when uniform spans L=-1', () => {
+      // Uniform[-1.5, 0.5] has untruncated mean = -0.5
+      // After truncation to [-1, 0.5], effective mean = (−1 + 0.5)/2 = -0.25
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: -1.5,
+        high_L: 0.5,
+      };
+
+      randomSeed = 12345;
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5, 5000);
+
+      // Untruncated mean = -0.5, effective mean ≈ -0.25 (truncated to [-1, 0.5])
+      expect(result.effectivePriorMean).toBeGreaterThan(-0.5);
+      expect(result.effectivePriorMean).toBeCloseTo(-0.25, 1);
+      // P(L >= 0) in truncated Uniform[-1, 0.5] = 0.5/1.5 ≈ 0.333
+      expect(result.effectiveProbClears).toBeCloseTo(0.333, 1);
+    });
+  });
+
+  describe('Student-t with wide tails', () => {
+    it('effective metrics differ from naive due to truncation', () => {
+      // Student-t with heavy tails (df=3) centered at 0
+      // Will have significant mass outside [-1, L_max]
+      const prior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0,
+        sigma_L: 0.5,
+        df: 3,
+      };
+
+      randomSeed = 12345;
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5, 5000);
+
+      // Effective mean should be close to 0 (symmetric prior)
+      // but slightly positive if lower tail truncation > upper tail
+      expect(Math.abs(result.effectivePriorMean)).toBeLessThan(0.2);
+      // P(L >= 0) should be around 0.5 for symmetric prior
+      expect(result.effectiveProbClears).toBeGreaterThan(0.3);
+      expect(result.effectiveProbClears).toBeLessThan(0.7);
+      expect(Number.isFinite(result.effectivePriorMean)).toBe(true);
+    });
+  });
+
+  describe('Degenerate case (all rejected)', () => {
+    it('falls back to untruncated metrics when all samples rejected', () => {
+      // Prior entirely outside feasibility bounds
+      // Uniform[5, 10] with CR0=0.5 => L_max=1, so all samples rejected
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: 5,
+        high_L: 10,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5, 100);
+
+      // Should fallback to untruncated mean = 7.5
+      expect(result.effectivePriorMean).toBe(7.5);
+      // Fallback to untruncated P(L >= 0) = 1 (entire uniform above 0)
+      expect(result.effectiveProbClears).toBe(1);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('returns finite values for all prior types', () => {
+      const priors: PriorDistribution[] = [
+        { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+        { type: 'student-t', mu_L: 0, sigma_L: 0.05, df: 5 },
+        { type: 'uniform', low_L: -0.1, high_L: 0.1 },
+      ];
+
+      for (const prior of priors) {
+        randomSeed = 12345;
+        const result = computeEffectivePriorMetrics(prior, 0, 0.5);
+
+        expect(Number.isFinite(result.effectivePriorMean)).toBe(true);
+        expect(Number.isFinite(result.effectiveProbClears)).toBe(true);
+        expect(result.effectiveProbClears).toBeGreaterThanOrEqual(0);
+        expect(result.effectiveProbClears).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('handles very low CR0 (tight L_max)', () => {
+      // CR0=0.9 gives L_max = 1/0.9 - 1 ≈ 0.111
+      const prior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0,
+        sigma_L: 0.05,
+      };
+
+      randomSeed = 12345;
+      const result = computeEffectivePriorMetrics(prior, 0, 0.9, 2000);
+
+      // Should still produce valid results
+      expect(Number.isFinite(result.effectivePriorMean)).toBe(true);
+      expect(Number.isFinite(result.effectiveProbClears)).toBe(true);
+      // Effective mean should be close to prior mean (most mass within bounds)
+      expect(result.effectivePriorMean).toBeCloseTo(0, 1);
+    });
   });
 });

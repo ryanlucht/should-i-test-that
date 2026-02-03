@@ -31,6 +31,69 @@ import { determineDefaultDecision } from './derived';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
 /**
+ * Compute effective prior metrics under feasibility truncation.
+ *
+ * Per Controversial B: Monte Carlo EVSI/NetValue use rejection sampling
+ * to enforce L in [-1, 1/CR0-1]. This means the simulation effectively
+ * operates on a truncated prior. For consistency, we should display
+ * metrics (mean, probClearsThreshold) from the same truncated prior.
+ *
+ * This function uses Monte Carlo to compute these metrics using the same
+ * feasibility bounds as the main simulation, ensuring consistency.
+ *
+ * @param prior - Prior distribution
+ * @param threshold_L - Decision threshold in lift units
+ * @param CR0 - Baseline conversion rate (determines L_max)
+ * @param numSamples - Number of Monte Carlo samples (default 2000)
+ * @returns Effective prior metrics under feasibility truncation
+ */
+export function computeEffectivePriorMetrics(
+  prior: PriorDistribution,
+  threshold_L: number,
+  CR0: number,
+  numSamples: number = 2000
+): { effectivePriorMean: number; effectiveProbClears: number } {
+  // Feasibility bounds for lift
+  // CR1 = CR0 * (1 + L) must be in [0, 1]
+  // L_min = -1 (CR1 = 0)
+  // L_max = (1/CR0) - 1 (CR1 = 1)
+  const L_min = -1;
+  const L_max = 1 / CR0 - 1;
+
+  let sumL = 0;
+  let countExceedsThreshold = 0;
+  let accepted = 0;
+  const maxIterations = numSamples * 10;
+  let iterations = 0;
+
+  while (accepted < numSamples && iterations < maxIterations) {
+    iterations++;
+    const L = sample(prior);
+
+    // Apply same feasibility filter as main simulation
+    if (L < L_min || L > L_max) continue;
+
+    accepted++;
+    sumL += L;
+    if (L >= threshold_L) countExceedsThreshold++;
+  }
+
+  // Fallback if all samples rejected (degenerate case)
+  // Return untruncated metrics since we can't compute effective metrics
+  if (accepted === 0) {
+    return {
+      effectivePriorMean: getPriorMean(prior),
+      effectiveProbClears: 1 - cdf(threshold_L, prior),
+    };
+  }
+
+  return {
+    effectivePriorMean: sumL / accepted,
+    effectiveProbClears: countExceedsThreshold / accepted,
+  };
+}
+
+/**
  * Compute mean of a Normal distribution truncated to [a, b].
  *
  * For Uniform prior U[a,b] with Normal likelihood N(L_hat, SE^2),
