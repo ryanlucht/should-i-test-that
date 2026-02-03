@@ -1338,6 +1338,59 @@ describe('truncatedNormalMeanTwoSided', () => {
   });
 });
 
+// ===========================================
+// computePosteriorMeanGrid invalid bounds tests (Phase 14-02)
+// ===========================================
+
+describe('computePosteriorMeanGrid invalid bounds', () => {
+  it('returns clamped prior mean when Student-t bounds become invalid', () => {
+    // Student-t with mu=0.5 and high CR0 causes L_max < L_min
+    // CR0=0.99 => feasibleMax = 1/0.99 - 1 = 0.0101
+    // mu - 6*sigma = 0.5 - 6*0.05 = 0.2 > feasibleMax
+    // So L_min = max(-1, 0.2) = 0.2, L_max = min(0.8, 0.0101) = 0.0101
+    // L_max < L_min => invalid grid
+    const prior = { type: 'student-t' as const, mu_L: 0.5, sigma_L: 0.05, df: 5 };
+
+    // computePosteriorMean will route to grid for Student-t
+    const result = computePosteriorMean(0.03, 0.01, prior, 0.99);
+
+    // Should return clamped prior mean
+    // Prior mean = 0.5, but feasibleMax = 0.0101
+    // Clamped result = Math.max(-1, Math.min(0.0101, 0.5)) = 0.0101
+    expect(result).toBeCloseTo(1 / 0.99 - 1, 4);
+    expect(Number.isFinite(result)).toBe(true);
+    expect(Number.isNaN(result)).toBe(false);
+  });
+
+  it('handles extreme CR0 with positive prior mean', () => {
+    // CR0=0.99 => feasibleMax = 0.0101
+    // Student-t with mu=0.2, sigma=0.01 => bounds [0.14, 0.26]
+    // After clamping: L_min = 0.14, L_max = min(0.26, 0.0101) = 0.0101
+    // 0.0101 < 0.14 => invalid bounds!
+    const prior = { type: 'student-t' as const, mu_L: 0.2, sigma_L: 0.01, df: 10 };
+
+    const result = computePosteriorMean(0.05, 0.01, prior, 0.99);
+
+    // Should return clamped prior mean
+    // Prior mean = 0.2, feasibleMax = 0.0101
+    // Clamped = Math.max(-1, Math.min(0.0101, 0.2)) = 0.0101
+    expect(result).toBeCloseTo(1 / 0.99 - 1, 4);
+    expect(Number.isFinite(result)).toBe(true);
+  });
+
+  it('returns prior mean when bounds are valid but tight', () => {
+    // Normal case where bounds are valid - should work normally
+    const prior = { type: 'student-t' as const, mu_L: 0, sigma_L: 0.05, df: 5 };
+
+    const result = computePosteriorMean(0.03, 0.02, prior, 0.5);
+
+    // Should be between prior mean (0) and L_hat (0.03)
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeLessThan(0.03);
+    expect(Number.isFinite(result)).toBe(true);
+  });
+});
+
 describe('Accuracy-02: CR0 validation', () => {
   beforeEach(() => {
     randomSeed = 12345;

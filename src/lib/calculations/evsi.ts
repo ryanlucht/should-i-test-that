@@ -143,6 +143,16 @@ function computePosteriorMeanGrid(
     L_max = Math.min(2, feasibleMax);
   }
 
+  // Guard: Invalid bounds after feasibility clamping (Controversial C.2)
+  // This can occur when prior bounds conflict with feasibility bounds.
+  // E.g., Student-t with mu=0.5, sigma=0.1 and CR0=0.99 gives feasibleMax=0.0101
+  // which is below mu - 6*sigma = -0.1, so L_max < L_min after clamping.
+  // Return safe fallback: clamp prior mean to feasible range
+  if (!(L_max > L_min)) {
+    const priorMean = getPriorMean(prior);
+    return Math.max(-1, Math.min(feasibleMax, priorMean));
+  }
+
   const gridStep = (L_max - L_min) / gridSize;
 
   // ===========================================
