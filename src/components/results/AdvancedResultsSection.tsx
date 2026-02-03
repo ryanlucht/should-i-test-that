@@ -23,6 +23,7 @@ import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { CostOfDelayCard } from './CostOfDelayCard';
 import { SupportingCard } from './SupportingCard';
 import { ExportButton } from '@/components/export/ExportButton';
+import { AlertTriangle } from 'lucide-react';
 import {
   formatSmartCurrency,
   formatProbabilityPercent,
@@ -133,6 +134,22 @@ export function AdvancedResultsSection() {
         netValueDollars={results ? Math.max(0, results.netValueDollars) : null}
         isLoading={loading}
       />
+
+      {/* Calculation Warnings - Accuracy-08 */}
+      {results?.evsi.warnings && results.evsi.warnings.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              {results.evsi.warnings.map((warning, index) => (
+                <p key={warning.code} className={index > 0 ? 'mt-2' : ''}>
+                  {warning.message}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Supporting Metrics Grid - ADV-OUT-03 through ADV-OUT-07 */}
       {results && (
