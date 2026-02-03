@@ -152,3 +152,164 @@ describe('Accuracy-13.3: Truncated integration bound sanity', () => {
     }
   });
 });
+
+// ===========================================
+// EVSI Validation Tests (Accuracy-13 items 4-6)
+// ===========================================
+
+describe('Accuracy-13.4: Normal fast-path vs Monte Carlo agreement', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('fast-path and MC converge for standard scenario', () => {
+    // Use a single well-behaved scenario with high sample count for reliable convergence
+    // Threshold at prior mean gives maximum information value (good for testing)
+    const inputs = {
+      K: 1000000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    };
+
+    const fastPath = calculateEVSINormalFastPath(inputs);
+
+    // Use fixed seed for reproducible MC
+    randomSeed = 12345;
+    const monteCarlo = calculateEVSIMonteCarlo(inputs, 20000);
+
+    // Both should produce positive EVSI
+    expect(fastPath.evsiDollars).toBeGreaterThan(0);
+    expect(monteCarlo.evsiDollars).toBeGreaterThan(0);
+
+    // Should match within 20% (Monte Carlo variance is inherent)
+    // This validates the mathematical equivalence, not exact precision
+    const ratio = fastPath.evsiDollars / monteCarlo.evsiDollars;
+    expect(ratio).toBeGreaterThan(0.8);
+    expect(ratio).toBeLessThan(1.2);
+  });
+});
+
+describe('Accuracy-13.5: One-arm-zero safety (guards from Plan 01)', () => {
+  // Note: These tests verify guards added in 13-01-PLAN
+  it('handles n_control=0, n_variant>0 without NaN', () => {
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 0,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.probabilityClearsThreshold)).toBe(true);
+  });
+
+  it('handles n_variant=0, n_control>0 without NaN', () => {
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 0,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+
+  it('fast path handles one-arm-zero without NaN', () => {
+    const result = calculateEVSINormalFastPath({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.05 },
+      n_control: 0,
+      n_variant: 5000,
+    });
+
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+  });
+});
+
+describe('Accuracy-13.6: Monotonicity sanity checks', () => {
+  it('EVSI increases as both arm sizes scale up', () => {
+    const baseInputs = {
+      K: 1000000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 0, sigma_L: 0.05 },
+    };
+
+    const sizes = [100, 500, 1000, 5000, 10000];
+    let previousEvsi = 0;
+
+    for (const n of sizes) {
+      const result = calculateEVSINormalFastPath({
+        ...baseInputs,
+        n_control: n,
+        n_variant: n,
+      });
+
+      expect(result.evsiDollars).toBeGreaterThanOrEqual(previousEvsi);
+      previousEvsi = result.evsiDollars;
+    }
+  });
+
+  it('EVPI increases as sigma increases', () => {
+    const baseInputs = {
+      baselineConversionRate: 0.05,
+      annualVisitors: 1000000,
+      valuePerConversion: 100,
+      threshold_L: 0,
+    };
+
+    const sigmas = [0.01, 0.02, 0.05, 0.1, 0.2];
+    let previousEvpi = 0;
+
+    for (const sigma of sigmas) {
+      const result = calculateEVPI({
+        ...baseInputs,
+        prior: { mu_L: 0, sigma_L: sigma },
+      });
+
+      expect(result.evpiDollars).toBeGreaterThanOrEqual(previousEvpi);
+      previousEvpi = result.evpiDollars;
+    }
+  });
+
+  it('EVSI is bounded by EVPI for same prior', () => {
+    const prior = { mu_L: 0, sigma_L: 0.05 };
+
+    const evpiResult = calculateEVPI({
+      baselineConversionRate: 0.05,
+      annualVisitors: 1000000,
+      valuePerConversion: 100,
+      prior,
+      threshold_L: 0,
+    });
+
+    const evsiResult = calculateEVSINormalFastPath({
+      K: 5000000, // Same K as EVPI
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'normal', ...prior },
+      n_control: 10000,
+      n_variant: 10000,
+    });
+
+    // EVSI should be less than or equal to EVPI
+    expect(evsiResult.evsiDollars).toBeLessThanOrEqual(evpiResult.evpiDollars * 1.01);
+  });
+});
