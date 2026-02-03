@@ -184,15 +184,17 @@ export function sample(prior: PriorDistribution): number {
 
     case 'student-t': {
       // Inverse CDF method using jStat's quantile function
-      // jStat.studentt.inv(p, df) returns T_df^{-1}(p)
-      // Then transform to location-scale
-      const u = Math.random();
-      const z = jStat.studentt.inv(u, prior.df!);
-      // Guard: re-sample if inverse CDF returned non-finite value (extreme tails)
-      if (!isFinite(z)) {
-        return sample(prior); // Recursive re-sample
+      // Use bounded loop instead of recursion to prevent stack overflow
+      // Non-finite values can occur at extreme tails (p very close to 0 or 1)
+      for (let attempts = 0; attempts < 10; attempts++) {
+        const u = Math.random();
+        const z = jStat.studentt.inv(u, prior.df!);
+        if (isFinite(z)) {
+          return prior.mu_L! + prior.sigma_L! * z;
+        }
       }
-      return prior.mu_L! + prior.sigma_L! * z;
+      // Fallback: return prior mean if all attempts failed (extremely rare)
+      return prior.mu_L!;
     }
 
     case 'uniform': {
