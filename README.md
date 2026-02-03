@@ -21,7 +21,7 @@ Uses **EVPI** (Expected Value of Perfect Information) — an optimistic ceiling 
 - Baseline conversion rate
 - Annual visitors/sessions
 - Value per conversion
-- Your uncertainty (90% confidence interval on lift)
+- Your uncertainty (90% credible interval on lift)
 - Shipping threshold
 
 **Output:** Maximum test cost worth paying (EVPI)
@@ -46,8 +46,6 @@ Uses **EVSI** (Expected Value of Sample Information) minus **Cost of Delay** —
 - **No backend required** — all calculations run in your browser
 
 ## Mathematical Foundation
-
-Based on decision theory concepts from Douglas Hubbard's *How to Measure Anything* (Chapter 7):
 
 - **EVPI** = Expected opportunity loss under your prior beliefs
 - **EVSI** = Value of imperfect information from a specific test design
@@ -133,13 +131,13 @@ npm run test:coverage
 
 ## References
 
-- [Hubbard, "How to Measure Anything"](https://www.howtomeasureanything.com/) — Chapter 7 on the value of information
+- [Hubbard, "How to Measure Anything"](https://www.howtomeasureanything.com/)
 - [Eppo Docs](https://docs.geteppo.com/statistics/confidence-intervals/statistical-nitty-gritty/) — Default prior N(0, 0.05)
 - [Azevedo et al., "A/B Testing with Fat Tails"](https://joseluismontielolea.com/azevedo-et-al-ab.pdf) — Evidence for fat-tailed experiment outcomes
 
 ## Version History
 
-**v1.1** (2026-02-03) — Statistics engine refinements based on external audit:
+**v1.1** (2026-02-03) — Statistics engine refinements:
 - EVSI uses correct Bayesian posterior-mean decision rule
 - Truncation at feasibility bounds applied consistently
 - Cost of Delay integrated into coherent timing simulation
@@ -154,4 +152,5 @@ MIT
 
 ---
 
-Built with decision theory and caffeine.
+Created by [Ryan Lucht](https://ryanlucht.com) and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
+
