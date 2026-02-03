@@ -66,7 +66,8 @@ function computePosteriorMeanGrid(
   } else if (prior.type === 'student-t') {
     // Student-t is unbounded but we use practical bounds
     // Center around prior mean, extend by 6 scale parameters
-    // This captures >99.9% of probability mass even for df=3
+    // This provides practical coverage for numerical integration
+    // (exact coverage depends on df; heavier tails = less coverage)
     const mu = prior.mu_L!;
     const sigma = prior.sigma_L!;
     L_min = Math.max(-1, mu - 6 * sigma);
