@@ -375,6 +375,96 @@ describe('distributions', () => {
   });
 
   // ===========================================
+  // Edge Case 3: Student-t distribution guards
+  // ===========================================
+
+  describe('Edge Case 3: Student-t sigma=0 and invalid df', () => {
+    const sigma0Prior: PriorDistribution = {
+      type: 'student-t',
+      mu_L: 0.03,
+      sigma_L: 0,
+      df: 5,
+    };
+
+    const df0Prior: PriorDistribution = {
+      type: 'student-t',
+      mu_L: 0.03,
+      sigma_L: 0.05,
+      df: 0,
+    };
+
+    const dfNegativePrior: PriorDistribution = {
+      type: 'student-t',
+      mu_L: 0.03,
+      sigma_L: 0.05,
+      df: -2,
+    };
+
+    it('pdf with sigma=0 returns 0', () => {
+      expect(pdf(0.03, sigma0Prior)).toBe(0);
+      expect(pdf(0.00, sigma0Prior)).toBe(0);
+      expect(pdf(0.10, sigma0Prior)).toBe(0);
+    });
+
+    it('cdf with sigma=0 returns step function', () => {
+      expect(cdf(0.02, sigma0Prior)).toBe(0);
+      expect(cdf(0.03, sigma0Prior)).toBe(1);
+      expect(cdf(0.04, sigma0Prior)).toBe(1);
+    });
+
+    it('sample with sigma=0 returns mu', () => {
+      const result = sample(sigma0Prior);
+      expect(result).toBe(0.03);
+    });
+
+    it('pdf with df=0 returns 0', () => {
+      expect(pdf(0.03, df0Prior)).toBe(0);
+      expect(pdf(0.00, df0Prior)).toBe(0);
+    });
+
+    it('cdf with df=0 returns step function at mu', () => {
+      expect(cdf(0.02, df0Prior)).toBe(0);
+      expect(cdf(0.03, df0Prior)).toBe(1);
+      expect(cdf(0.04, df0Prior)).toBe(1);
+    });
+
+    it('pdf with df < 0 returns 0', () => {
+      expect(pdf(0.03, dfNegativePrior)).toBe(0);
+      expect(pdf(0.00, dfNegativePrior)).toBe(0);
+    });
+
+    it('cdf with df < 0 returns step function at mu', () => {
+      expect(cdf(0.02, dfNegativePrior)).toBe(0);
+      expect(cdf(0.03, dfNegativePrior)).toBe(1);
+      expect(cdf(0.04, dfNegativePrior)).toBe(1);
+    });
+
+    it('pdf/cdf do not produce NaN or Infinity for sigma=0', () => {
+      const testPoints = [-1, 0, 0.03, 0.10, 1];
+      for (const point of testPoints) {
+        expect(Number.isNaN(pdf(point, sigma0Prior))).toBe(false);
+        expect(Number.isNaN(cdf(point, sigma0Prior))).toBe(false);
+        expect(Number.isFinite(pdf(point, sigma0Prior))).toBe(true);
+        expect(Number.isFinite(cdf(point, sigma0Prior))).toBe(true);
+      }
+    });
+
+    it('pdf/cdf do not produce NaN or Infinity for invalid df', () => {
+      const testPoints = [-1, 0, 0.03, 0.10, 1];
+      for (const point of testPoints) {
+        expect(Number.isNaN(pdf(point, df0Prior))).toBe(false);
+        expect(Number.isNaN(cdf(point, df0Prior))).toBe(false);
+        expect(Number.isNaN(pdf(point, dfNegativePrior))).toBe(false);
+        expect(Number.isNaN(cdf(point, dfNegativePrior))).toBe(false);
+        expect(Number.isFinite(pdf(point, df0Prior))).toBe(true);
+        expect(Number.isFinite(cdf(point, df0Prior))).toBe(true);
+        expect(Number.isFinite(pdf(point, dfNegativePrior))).toBe(true);
+        expect(Number.isFinite(cdf(point, dfNegativePrior))).toBe(true);
+      }
+    });
+  });
+
+  // ===========================================
   // Accuracy-03: Normal sigma=0 handling
   // ===========================================
 

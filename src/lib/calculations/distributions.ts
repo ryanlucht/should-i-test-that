@@ -93,14 +93,29 @@ export function pdf(lift_L: number, prior: PriorDistribution): number {
     }
 
     case 'student-t': {
+      const mu = prior.mu_L!;
+      const sigma = prior.sigma_L!;
+      const df = prior.df!;
+
+      // Guard: df must be positive (Edge Case 3)
+      if (!(df > 0)) {
+        return 0; // Invalid distribution, return 0 density
+      }
+
+      // Guard: sigma=0 means point mass (same behavior as Normal sigma=0)
+      // PDF of point mass is 0 at all points (Dirac delta approximation)
+      if (sigma === 0) {
+        return 0;
+      }
+
       // jStat.studentt.pdf(x, df) gives the standardized Student-t PDF
       // For location-scale form: f(L; mu, sigma, df) = t_df((L - mu) / sigma) / sigma
       //
       // CRITICAL per 05-RESEARCH.md Pitfall 1:
       // jStat implements the STANDARD Student-t (location=0, scale=1)
       // We must transform to z-score and scale the density
-      const z = (lift_L - prior.mu_L!) / prior.sigma_L!;
-      return jStat.studentt.pdf(z, prior.df!) / prior.sigma_L!;
+      const z = (lift_L - mu) / sigma;
+      return jStat.studentt.pdf(z, df) / sigma;
     }
 
     case 'uniform': {
@@ -162,10 +177,24 @@ export function cdf(lift_L: number, prior: PriorDistribution): number {
     }
 
     case 'student-t': {
+      const mu = prior.mu_L!;
+      const sigma = prior.sigma_L!;
+      const df = prior.df!;
+
+      // Guard: df must be positive (Edge Case 3)
+      if (!(df > 0)) {
+        return lift_L < mu ? 0 : 1; // Fallback to step at mu
+      }
+
+      // Guard: sigma=0 means point mass - step function at mu
+      if (sigma === 0) {
+        return lift_L < mu ? 0 : 1;
+      }
+
       // jStat.studentt.cdf(x, df) gives the standardized Student-t CDF
       // For location-scale form: F(L; mu, sigma, df) = T_df((L - mu) / sigma)
-      const z = (lift_L - prior.mu_L!) / prior.sigma_L!;
-      return jStat.studentt.cdf(z, prior.df!);
+      const z = (lift_L - mu) / sigma;
+      return jStat.studentt.cdf(z, df);
     }
 
     case 'uniform': {
@@ -221,6 +250,11 @@ export function sample(prior: PriorDistribution): number {
     }
 
     case 'student-t': {
+      // Guard: sigma=0 means point mass - always return mu (Edge Case 3)
+      if (prior.sigma_L === 0) {
+        return prior.mu_L!;
+      }
+
       // Inverse CDF method using jStat's quantile function
       // Use bounded loop instead of recursion to prevent stack overflow
       // Non-finite values can occur at extreme tails (p very close to 0 or 1)
