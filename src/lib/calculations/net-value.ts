@@ -12,10 +12,11 @@
  *   while CoD used prior mean lift.
  *
  * Mathematical notes (for statistician audit):
- * - Net Value = E_L [ max(ValueWithTest(L), 0) - max(ValueWithoutTest(L), 0) ]
+ * - Net Value = E[ValueWithTest] - E[ValueWithoutTest]
+ * - Final result is clamped to >= 0 to avoid negative values due to Monte Carlo noise
+ *   (information cannot hurt in expectation, so negative net value is an artifact)
  * - ValueWithTest = ValueDuringTest + ValueDuringLatency + ValueAfterDecision
  * - ValueWithoutTest = K * (L - T) if default=ship, else 0
- * - Information cannot hurt, so net value is clamped to >= 0
  *
  * Three time periods modeled:
  * 1. Test period: variant fraction gets treatment, control gets nothing
