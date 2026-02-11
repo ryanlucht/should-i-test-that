@@ -12,8 +12,10 @@
  * - EXPORT-01 through EXPORT-04: PNG export functionality
  */
 
+import { useEffect, useRef } from 'react';
 import { useEVPICalculations } from '@/hooks/useEVPICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
+import { trackCalculationCompleted } from '@/lib/analytics';
 import { VerdictCard } from './VerdictCard';
 import { SupportingCard } from './SupportingCard';
 import { ExportButton } from '@/components/export/ExportButton';
@@ -31,6 +33,17 @@ interface ResultsSectionProps {
 export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
   const evpiResults = useEVPICalculations();
   const sharedInputs = useWizardStore((state) => state.inputs.shared);
+
+  // Track when EVPI calculation completes (OBS-07)
+  // Use ref to prevent duplicate tracking on re-renders
+  const lastTrackedEvpi = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (evpiResults && evpiResults.evpiDollars !== lastTrackedEvpi.current) {
+      trackCalculationCompleted('EVPI', evpiResults.evpiDollars);
+      lastTrackedEvpi.current = evpiResults.evpiDollars;
+    }
+  }, [evpiResults]);
 
   // Don't render anything if calculations aren't complete
   if (!evpiResults) {
