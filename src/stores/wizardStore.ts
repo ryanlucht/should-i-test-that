@@ -28,6 +28,7 @@ import {
   initialSharedInputs,
   initialAdvancedInputs,
 } from '@/types/wizard';
+import { trackModeSelected } from '@/lib/analytics';
 
 /**
  * Initial inputs state combining shared and advanced values
@@ -69,6 +70,9 @@ export const useWizardStore = create<WizardStore>()(
           if (state.mode === mode) {
             return state;
           }
+
+          // Track mode selection for analytics (OBS-06)
+          trackModeSelected(mode);
 
           // When switching to basic mode, clear advanced inputs
           if (mode === 'basic') {
