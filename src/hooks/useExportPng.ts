@@ -16,6 +16,7 @@
 
 import { useRef, useState, useCallback } from 'react';
 import { toPng } from 'html-to-image';
+import { trackExportPng } from '@/lib/analytics';
 
 /**
  * Return type for the useExportPng hook
@@ -122,6 +123,11 @@ export function useExportPng(): UseExportPngReturn {
         width: 1080,
         height: 1080,
       });
+
+      // Track successful export for analytics (OBS-08)
+      // Track AFTER successful toPng() to only count successful exports
+      // Track BEFORE link.click() to ensure event fires even if download has issues
+      trackExportPng(mode, Boolean(customTitle?.trim()));
 
       // Generate filename based on mode and custom title
       const filename = generateFilename(mode, customTitle);
