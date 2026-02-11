@@ -47,6 +47,7 @@ import {
 import { ResultsSection, AdvancedResultsSection } from '@/components/results';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useWizardStore } from '@/stores/wizardStore';
+import { trackStepCompleted } from '@/lib/analytics';
 
 /**
  * Section configuration for the wizard
@@ -171,6 +172,12 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
     (sectionIndex: number) => {
       // Mark current section complete
       markSectionComplete(sectionIndex);
+
+      // Track step completion for analytics (OBS-05)
+      const sectionId = sections[sectionIndex]?.id;
+      if (sectionId) {
+        trackStepCompleted(sectionId, sectionIndex);
+      }
 
       // If not last section, scroll to next
       if (sectionIndex < sections.length - 1) {
