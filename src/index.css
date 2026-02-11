@@ -4,28 +4,24 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Datadog-inspired Design System
+ * DRUIDS Design System - Datadog-inspired
  *
- * Design spec: .planning/phases/01-foundation-wizard-infrastructure/designs/
- * - welcome-screen.md
- * - calculator-page.md
+ * Design spec: .planning/mockups/code.html
  *
- * Key colors:
- * - Primary accent: #7C3AED (purple)
- * - Success: #10B981 (green - for completed states)
- * - Background: #F9FAFB (subtle gray)
- * - Surface: #FFFFFF (white cards)
- * - Text primary: #1A1A2E (dark navy)
- * - Text secondary: #6B7280 (gray)
+ * Color tokens:
+ * - Primary: #7C3AED (dd-grape) - CTAs, selection states
+ * - Primary dark: #6D28D9 (dd-grapeDark) - hover states
+ * - Primary light: #F3E8FF (dd-grapeLight) - backgrounds
+ * - Background: #F9FAFB (dd-bg) - page background
+ * - Card: #FFFFFF (dd-card) - card surfaces
+ * - Border: #E5E7EB (dd-border) - subtle borders
+ * - Text: #111827 (dd-text) - primary text
+ * - Text secondary: #4B5563 (dd-textSecondary) - secondary text
+ * - Muted: #6B7280 (dd-muted) - muted/placeholder text
+ * - Success: #10B981 (dd-success) - success states
+ * - Info: #3B82F6 (dd-info) - info callouts
  *
- * Design Consistency (06-02):
- * Purple accent (#7C3AED) is used consistently across all interactive elements:
- * - Primary buttons (bg-primary)
- * - Focus rings (--ring = --primary)
- * - Selected states on RadioCards (border-primary)
- * - Links (text-primary)
- * - Chart accent colors (--chart-1)
- * All colors use CSS custom properties for theme consistency.
+ * Font: Inter (400, 500, 600, 700)
  */
 
 @theme inline {
@@ -73,33 +69,41 @@
   /* Border radius */
   --radius: 0.5rem;
 
-  /* Datadog-inspired light theme */
-  --background: oklch(0.99 0.002 250);
-  --foreground: oklch(0.15 0.02 250);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 250);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 250);
+  /* DRUIDS tokens - exactly from .planning/mockups/code.html */
+  --background: #F9FAFB;         /* dd-bg - Main Background */
+  --foreground: #111827;         /* dd-text - Main Text */
+  --card: #FFFFFF;               /* dd-card - Card Background */
+  --card-foreground: #111827;    /* dd-text */
+  --popover: #FFFFFF;            /* dd-card */
+  --popover-foreground: #111827; /* dd-text */
 
-  /* Purple primary - Datadog-inspired #7C3AED */
+  /* Purple primary - #7C3AED (dd-grape) */
   --primary: #7C3AED;
   --primary-foreground: #FFFFFF;
 
-  /* Secondary/Muted/Accent - subtle blue-gray */
-  --secondary: oklch(0.95 0.01 250);
-  --secondary-foreground: oklch(0.2 0.02 250);
-  --muted: oklch(0.95 0.01 250);
-  --muted-foreground: oklch(0.5 0.02 250);
-  --accent: oklch(0.95 0.01 250);
-  --accent-foreground: oklch(0.2 0.02 250);
+  /* Secondary/Muted/Accent - DRUIDS values */
+  --secondary: #F3F4F6;          /* dd-cardHover - Light Gray */
+  --secondary-foreground: #111827;
+  --muted: #F3F4F6;              /* dd-cardHover */
+  --muted-foreground: #6B7280;   /* dd-muted - Muted Text */
+  --accent: #F3E8FF;             /* dd-grapeLight - Purple tint */
+  --accent-foreground: #111827;
 
   /* Destructive - red */
-  --destructive: oklch(0.55 0.2 25);
+  --destructive: #EF4444;        /* Standard red */
 
   /* Borders and inputs */
-  --border: oklch(0.9 0.01 250);
-  --input: oklch(0.9 0.01 250);
+  --border: #E5E7EB;             /* dd-border - Subtle Border */
+  --input: #E5E7EB;              /* dd-border */
   --ring: #7C3AED;
+
+  /* DRUIDS additional tokens */
+  --dd-text-secondary: #4B5563;  /* dd-textSecondary */
+  --dd-grape-dark: #6D28D9;      /* dd-grapeDark */
+  --dd-success-bg: #ECFDF5;      /* dd-successBg */
+  --dd-success-border: #A7F3D0;  /* dd-successBorder */
+  --dd-info: #3B82F6;            /* dd-info */
+  --dd-info-bg: #EFF6FF;         /* dd-infoBg */
 
   /* Chart colors */
   --chart-1: #7C3AED;
@@ -109,13 +113,13 @@
   --chart-5: oklch(0.6 0.2 320);
 
   /* Sidebar (matches main theme) */
-  --sidebar: oklch(0.98 0.005 250);
-  --sidebar-foreground: oklch(0.15 0.02 250);
+  --sidebar: #F9FAFB;            /* dd-bg */
+  --sidebar-foreground: #111827; /* dd-text */
   --sidebar-primary: #7C3AED;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: oklch(0.95 0.01 250);
-  --sidebar-accent-foreground: oklch(0.2 0.02 250);
-  --sidebar-border: oklch(0.9 0.01 250);
+  --sidebar-accent: #F3F4F6;     /* dd-cardHover */
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #E5E7EB;     /* dd-border */
   --sidebar-ring: #7C3AED;
 }
 
