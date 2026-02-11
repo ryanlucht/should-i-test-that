@@ -16,7 +16,7 @@
  * - Supporting cards adapt from Basic mode
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useEVSICalculations } from '@/hooks/useEVSICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 import { EVSIVerdictCard } from './EVSIVerdictCard';
@@ -29,6 +29,7 @@ import {
   formatProbabilityPercent,
   formatPercentage,
 } from '@/lib/formatting';
+import { trackCalculationCompleted } from '@/lib/analytics';
 import { DEFAULT_INTERVAL, DEFAULT_PRIOR, computePriorFromInterval } from '@/lib/prior';
 import type { PriorDistribution } from '@/lib/calculations/types';
 
@@ -103,6 +104,18 @@ export function AdvancedResultsSection() {
     advancedInputs.priorShape,
     advancedInputs.studentTDf,
   ]);
+
+  // Track when EVSI calculation completes (OBS-07)
+  // Use ref to prevent duplicate tracking on re-renders
+  const lastTrackedNetValue = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Only track when results exist and loading is complete
+    if (!loading && results && results.netValueDollars !== lastTrackedNetValue.current) {
+      trackCalculationCompleted('EVSI', results.netValueDollars);
+      lastTrackedNetValue.current = results.netValueDollars;
+    }
+  }, [loading, results]);
 
   // Show placeholder if no results and not loading
   // The hook returns null results when inputs are incomplete
