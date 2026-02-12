@@ -394,258 +394,263 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
             </div>
           )}
 
-          {/* Custom Interval Section (always visible) */}
-          <div className="space-y-4">
-            {/* Only show the header label in Basic mode (Advanced mode has its own header above) */}
-            {mode === 'basic' && (
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium text-foreground">
-                  Or specify your own 90% credible interval:
-                </Label>
-                <InfoTooltip content="This means you're 90% confident the true effect falls within this range." />
-              </div>
-            )}
+          {/* Side-by-side container: prior options left, chart right */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left side: Prior selection options */}
+            <div className="flex-1 space-y-4">
+              {/* Only show the header label in Basic mode (Advanced mode has its own header above) */}
+              {mode === 'basic' && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-foreground">
+                    Or specify your own 90% credible interval:
+                  </Label>
+                  <InfoTooltip content="This means you're 90% confident the true effect falls within this range." />
+                </div>
+              )}
 
-            {/* Helper text for Uniform prior in Advanced mode */}
-            {isUniformPrior && (
-              <p className="text-xs text-muted-foreground">
-                These bounds define the edges of your uniform distribution.
-              </p>
-            )}
+              {/* Helper text for Uniform prior in Advanced mode */}
+              {isUniformPrior && (
+                <p className="text-xs text-muted-foreground">
+                  These bounds define the edges of your uniform distribution.
+                </p>
+              )}
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Lower bound input */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="intervalLow"
-                  className="text-sm text-muted-foreground"
-                >
-                  {isUniformPrior
-                    ? 'Minimum possible lift'
-                    : "I'm 90% sure the lift is at least"}
-                </Label>
-                <Controller
-                  name="intervalLow"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="relative">
-                      <Input
-                        id="intervalLow"
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="-5"
-                        className={cn(
-                          'pr-6',
-                          errors.intervalLow && 'border-destructive'
-                        )}
-                        // When focused, show raw string to allow typing "-" or "."
-                        // When blurred, show the form value (number converted to string)
-                        value={
-                          intervalLowFocused
-                            ? intervalLowDisplay
-                            : field.value !== undefined && field.value !== null
-                              ? String(field.value)
-                              : ''
-                        }
-                        onChange={(e) => {
-                          // Store raw string in local state (allows "-", ".", etc.)
-                          setIntervalLowDisplay(e.target.value);
-                        }}
-                        onFocus={() => {
-                          setIntervalLowFocused(true);
-                          // Initialize display value from current form value
-                          const val = field.value;
-                          setIntervalLowDisplay(
-                            val !== undefined && val !== null ? String(val) : ''
-                          );
-                        }}
-                        onBlur={() => {
-                          setIntervalLowFocused(false);
-                          // Parse and propagate to form on blur
-                          const trimmed = intervalLowDisplay.trim();
-                          if (
-                            trimmed === '' ||
-                            trimmed === '-' ||
-                            trimmed === '.'
-                          ) {
-                            field.onChange(undefined);
-                          } else {
-                            const parsed = parseFloat(trimmed);
-                            field.onChange(
-                              Number.isNaN(parsed) ? undefined : parsed
-                            );
+              <div className="grid grid-cols-2 gap-4">
+                {/* Lower bound input */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="intervalLow"
+                    className="text-sm text-muted-foreground"
+                  >
+                    {isUniformPrior
+                      ? 'Minimum possible lift'
+                      : "I'm 90% sure the lift is at least"}
+                  </Label>
+                  <Controller
+                    name="intervalLow"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="relative">
+                        <Input
+                          id="intervalLow"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="-5"
+                          className={cn(
+                            'pr-6',
+                            errors.intervalLow && 'border-destructive'
+                          )}
+                          // When focused, show raw string to allow typing "-" or "."
+                          // When blurred, show the form value (number converted to string)
+                          value={
+                            intervalLowFocused
+                              ? intervalLowDisplay
+                              : field.value !== undefined && field.value !== null
+                                ? String(field.value)
+                                : ''
                           }
-                          field.onBlur();
-                          handleIntervalChange();
-                        }}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                        %
-                      </span>
-                    </div>
-                  )}
-                />
-                {errors.intervalLow && (
-                  <p className="text-sm text-destructive">
-                    {errors.intervalLow.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Upper bound input */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="intervalHigh"
-                  className="text-sm text-muted-foreground"
-                >
-                  {isUniformPrior ? 'Maximum possible lift' : 'and at most'}
-                </Label>
-                <Controller
-                  name="intervalHigh"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="relative">
-                      <Input
-                        id="intervalHigh"
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="10"
-                        className={cn(
-                          'pr-6',
-                          errors.intervalHigh && 'border-destructive'
-                        )}
-                        // When focused, show raw string to allow typing "-" or "."
-                        // When blurred, show the form value (number converted to string)
-                        value={
-                          intervalHighFocused
-                            ? intervalHighDisplay
-                            : field.value !== undefined && field.value !== null
-                              ? String(field.value)
-                              : ''
-                        }
-                        onChange={(e) => {
-                          // Store raw string in local state (allows "-", ".", etc.)
-                          setIntervalHighDisplay(e.target.value);
-                        }}
-                        onFocus={() => {
-                          setIntervalHighFocused(true);
-                          // Initialize display value from current form value
-                          const val = field.value;
-                          setIntervalHighDisplay(
-                            val !== undefined && val !== null ? String(val) : ''
-                          );
-                        }}
-                        onBlur={() => {
-                          setIntervalHighFocused(false);
-                          // Parse and propagate to form on blur
-                          const trimmed = intervalHighDisplay.trim();
-                          if (
-                            trimmed === '' ||
-                            trimmed === '-' ||
-                            trimmed === '.'
-                          ) {
-                            field.onChange(undefined);
-                          } else {
-                            const parsed = parseFloat(trimmed);
-                            field.onChange(
-                              Number.isNaN(parsed) ? undefined : parsed
+                          onChange={(e) => {
+                            // Store raw string in local state (allows "-", ".", etc.)
+                            setIntervalLowDisplay(e.target.value);
+                          }}
+                          onFocus={() => {
+                            setIntervalLowFocused(true);
+                            // Initialize display value from current form value
+                            const val = field.value;
+                            setIntervalLowDisplay(
+                              val !== undefined && val !== null ? String(val) : ''
                             );
-                          }
-                          field.onBlur();
-                          handleIntervalChange();
-                        }}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                        %
-                      </span>
-                    </div>
+                          }}
+                          onBlur={() => {
+                            setIntervalLowFocused(false);
+                            // Parse and propagate to form on blur
+                            const trimmed = intervalLowDisplay.trim();
+                            if (
+                              trimmed === '' ||
+                              trimmed === '-' ||
+                              trimmed === '.'
+                            ) {
+                              field.onChange(undefined);
+                            } else {
+                              const parsed = parseFloat(trimmed);
+                              field.onChange(
+                                Number.isNaN(parsed) ? undefined : parsed
+                              );
+                            }
+                            field.onBlur();
+                            handleIntervalChange();
+                          }}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                          %
+                        </span>
+                      </div>
+                    )}
+                  />
+                  {errors.intervalLow && (
+                    <p className="text-sm text-destructive">
+                      {errors.intervalLow.message}
+                    </p>
                   )}
-                />
-                {errors.intervalHigh && (
-                  <p className="text-sm text-destructive">
-                    {errors.intervalHigh.message}
-                  </p>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* Implied Mean Display */}
-            {intervalLow !== undefined &&
-              intervalHigh !== undefined &&
-              !errors.intervalLow &&
-              !errors.intervalHigh && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">
-                      {isUniformPrior
-                        ? 'Midpoint (expected value):'
-                        : 'Implied expected lift:'}
-                    </span>
-                    <span className="font-medium text-foreground">
-                      {impliedMeanPercent > 0 ? '+' : ''}
-                      {impliedMeanPercent.toFixed(1)}%
-                    </span>
-                    {/* Only show dispersion in Advanced mode, hidden in Basic mode */}
-                    {/* For Normal: "std dev", for Student-t: "σ" (scale param, not SD) */}
-                    {priorParams && !isUniformPrior && mode === 'advanced' && (
+                {/* Upper bound input */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="intervalHigh"
+                    className="text-sm text-muted-foreground"
+                  >
+                    {isUniformPrior ? 'Maximum possible lift' : 'and at most'}
+                  </Label>
+                  <Controller
+                    name="intervalHigh"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="relative">
+                        <Input
+                          id="intervalHigh"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="10"
+                          className={cn(
+                            'pr-6',
+                            errors.intervalHigh && 'border-destructive'
+                          )}
+                          // When focused, show raw string to allow typing "-" or "."
+                          // When blurred, show the form value (number converted to string)
+                          value={
+                            intervalHighFocused
+                              ? intervalHighDisplay
+                              : field.value !== undefined && field.value !== null
+                                ? String(field.value)
+                                : ''
+                          }
+                          onChange={(e) => {
+                            // Store raw string in local state (allows "-", ".", etc.)
+                            setIntervalHighDisplay(e.target.value);
+                          }}
+                          onFocus={() => {
+                            setIntervalHighFocused(true);
+                            // Initialize display value from current form value
+                            const val = field.value;
+                            setIntervalHighDisplay(
+                              val !== undefined && val !== null ? String(val) : ''
+                            );
+                          }}
+                          onBlur={() => {
+                            setIntervalHighFocused(false);
+                            // Parse and propagate to form on blur
+                            const trimmed = intervalHighDisplay.trim();
+                            if (
+                              trimmed === '' ||
+                              trimmed === '-' ||
+                              trimmed === '.'
+                            ) {
+                              field.onChange(undefined);
+                            } else {
+                              const parsed = parseFloat(trimmed);
+                              field.onChange(
+                                Number.isNaN(parsed) ? undefined : parsed
+                              );
+                            }
+                            field.onBlur();
+                            handleIntervalChange();
+                          }}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                          %
+                        </span>
+                      </div>
+                    )}
+                  />
+                  {errors.intervalHigh && (
+                    <p className="text-sm text-destructive">
+                      {errors.intervalHigh.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Implied Mean Display */}
+              {intervalLow !== undefined &&
+                intervalHigh !== undefined &&
+                !errors.intervalLow &&
+                !errors.intervalHigh && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
                       <span className="text-muted-foreground">
-                        ({advancedInputs.priorShape === 'student-t' ? 'σ' : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
+                        {isUniformPrior
+                          ? 'Midpoint (expected value):'
+                          : 'Implied expected lift:'}
                       </span>
+                      <span className="font-medium text-foreground">
+                        {impliedMeanPercent > 0 ? '+' : ''}
+                        {impliedMeanPercent.toFixed(1)}%
+                      </span>
+                      {/* Only show dispersion in Advanced mode, hidden in Basic mode */}
+                      {/* For Normal: "std dev", for Student-t: "σ" (scale param, not SD) */}
+                      {priorParams && !isUniformPrior && mode === 'advanced' && (
+                        <span className="text-muted-foreground">
+                          ({advancedInputs.priorShape === 'student-t' ? 'σ' : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Asymmetry Explanation (not for Uniform) */}
+                    {asymmetryMessage && !isUniformPrior && (
+                      <div className="rounded-lg bg-muted/50 border border-muted px-4 py-3">
+                        <p className="text-sm text-muted-foreground">
+                          {asymmetryMessage}
+                        </p>
+                      </div>
                     )}
                   </div>
+                )}
+            </div>
 
-                  {/* Asymmetry Explanation (not for Uniform) */}
-                  {asymmetryMessage && !isUniformPrior && (
-                    <div className="rounded-lg bg-muted/50 border border-muted px-4 py-3">
-                      <p className="text-sm text-muted-foreground">
-                        {asymmetryMessage}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Prior Distribution Chart */}
+            {/* Right side: Distribution chart in bordered container */}
+            {priorParams && (
+              <div className="flex-1 min-w-0 lg:max-w-md">
+                <div className="bg-card border rounded-lg p-4 shadow-sm">
+                  <p className="text-sm font-medium text-foreground mb-4">
+                    Your belief distribution:
+                  </p>
                   {/* Per 04-CONTEXT.md: Chart lives in Prior section because it visualizes uncertainty input */}
                   {/* Shows when priorParams are valid; uses EVPI results when available, else derives */}
                   {/* Per 05-CONTEXT.md: In Advanced mode, chart reflects selected prior shape */}
-                  {priorParams && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm font-medium text-foreground">
-                        Your belief distribution:
-                      </p>
-                      {mode === 'advanced' ? (
-                        // Advanced mode: build full PriorDistribution based on selected shape
-                        <PriorDistributionChart
-                          prior={buildPriorDistribution(
-                            advancedInputs.priorShape ?? 'normal',
-                            priorParams,
-                            advancedInputs.studentTDf,
-                            sharedInputs.priorIntervalLow,
-                            sharedInputs.priorIntervalHigh
-                          )}
-                          threshold_L={
-                            evpiResults
-                              ? evpiResults.threshold_dollars / evpiResults.K
-                              : 0
-                          }
-                          K={evpiResults?.K ?? derivedK ?? 100000}
-                        />
-                      ) : (
-                        // Basic mode: use legacy chart (always Normal)
-                        <PriorDistributionChartLegacy
-                          mu_L={priorParams.mu_L}
-                          sigma_L={priorParams.sigma_L}
-                          threshold_L={
-                            evpiResults
-                              ? evpiResults.threshold_dollars / evpiResults.K
-                              : 0
-                          }
-                          K={evpiResults?.K ?? derivedK ?? 100000}
-                        />
+                  {mode === 'advanced' ? (
+                    // Advanced mode: build full PriorDistribution based on selected shape
+                    <PriorDistributionChart
+                      prior={buildPriorDistribution(
+                        advancedInputs.priorShape ?? 'normal',
+                        priorParams,
+                        advancedInputs.studentTDf,
+                        sharedInputs.priorIntervalLow,
+                        sharedInputs.priorIntervalHigh
                       )}
-                    </div>
+                      threshold_L={
+                        evpiResults
+                          ? evpiResults.threshold_dollars / evpiResults.K
+                          : 0
+                      }
+                      K={evpiResults?.K ?? derivedK ?? 100000}
+                    />
+                  ) : (
+                    // Basic mode: use legacy chart (always Normal)
+                    <PriorDistributionChartLegacy
+                      mu_L={priorParams.mu_L}
+                      sigma_L={priorParams.sigma_L}
+                      threshold_L={
+                        evpiResults
+                          ? evpiResults.threshold_dollars / evpiResults.K
+                          : 0
+                      }
+                      K={evpiResults?.K ?? derivedK ?? 100000}
+                    />
                   )}
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </form>
       </FormProvider>
