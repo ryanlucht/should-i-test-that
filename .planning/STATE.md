@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 17 - Layout Updates (in progress)
-Plan: 02 of 3 complete
-Status: Executing Phase 17
-Last activity: 2026-02-12 -- Completed 17-02 (Uncertainty Model Layout)
+Phase: 17 - Layout Updates (complete)
+Plan: 03 of 3 complete
+Status: Phase 17 Complete - v1.2 Milestone Ready
+Last activity: 2026-02-12 -- Completed 17-03 (Results Metrics + Tooltips)
 
-Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [================-----] 89%
+Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
 
 ## Milestone History
 
@@ -30,7 +30,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [================-----] 89%
 |-------|------|--------------|--------|
 | 15 | Datadog Observability | 8 | Complete (3/3 plans) |
 | 16 | DRUIDS Foundation + Copy Audit | 4 | Complete (3/3 plans) |
-| 17 | Layout Updates | 5 | In Progress (2/3 plans) |
+| 17 | Layout Updates | 5 | Complete (3/3 plans) |
 
 ## Performance Metrics
 
@@ -45,8 +45,8 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [================-----] 89%
 - Total execution time: ~68 min (~1 hour)
 
 **v1.2 Velocity:**
-- Total plans completed: 8
-- Phases completed: 2/3
+- Total plans completed: 9
+- Phases completed: 3/3
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -58,6 +58,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [================-----] 89%
 | 16-03 | Copy Audit | 2 min | 2 | 1 |
 | 17-01 | Header + Baseline Grid | 2 min | 3 | 2 |
 | 17-02 | Uncertainty Model Layout | 3 min | 2 | 2 |
+| 17-03 | Results Metrics + Tooltips | 2 min | 3 | 3 |
 
 ## Accumulated Context
 
@@ -108,6 +109,11 @@ v1.2 decisions (17-02):
 - Chart wrapped in bordered container matching DRUIDS mockup pattern
 - "What's this?" text link chosen over icon-only tooltip for proactive discoverability
 
+v1.2 decisions (17-03):
+- Shortened card titles for compact 4-column display ("Prior Belief", "Threshold", etc.)
+- Moved EVPI explanation context to blue statistical callout, simplified EVPI intuition section
+- divide-x pattern with wrapper container (not individual card borders)
+
 ### Pending Todos
 
 1. **Add Test Costs for declarative verdict** (calculations) - Backlog for v1.2+
@@ -126,8 +132,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 17-02 (Uncertainty Model Layout)
-Next action: `/gsd:execute-phase 17-03` to complete Layout Updates
+Stopped at: Completed 17-03 (Results Metrics + Tooltips) - Phase 17 Complete
+Next action: v1.2 milestone wrap-up and deployment
 
 ## Archive Reference
 
@@ -151,4 +157,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-12 (17-02 complete)*
+*Updated: 2026-02-12 (17-03 complete, Phase 17 complete, v1.2 milestone complete)*
