@@ -173,7 +173,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             name="testDurationDays"
             label="How long will you run the test?"
             placeholder="14"
-            helpText="Enter duration in days. Longer tests = more data = less noise."
+            tooltip="Enter duration in days. Longer tests = more data = less noise."
             error={errors.testDurationDays?.message}
             suffix="days"
           />
@@ -183,7 +183,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             name="dailyTraffic"
             label="Daily eligible traffic"
             placeholder="5,000"
-            helpText="Average daily visitors who can enter the experiment"
+            tooltip="Average daily visitors who can enter the experiment"
             error={errors.dailyTraffic?.message}
             labelSuffix={
               canDeriveFromAnnual ? (
@@ -203,7 +203,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             name="trafficSplit"
             label="Variant allocation"
             placeholder="50%"
-            helpText="Percentage of traffic seeing the variant (50% = standard A/B)"
+            tooltip="Percentage of traffic seeing the variant (50% = standard A/B)"
             error={errors.trafficSplit?.message}
           />
 
@@ -212,7 +212,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             name="eligibilityFraction"
             label="Eligible traffic"
             placeholder="100%"
-            helpText="What fraction of all traffic is eligible for this experiment?"
+            tooltip="What fraction of all traffic is eligible for this experiment?"
             error={errors.eligibilityFraction?.message}
           />
 
@@ -228,7 +228,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
                 name="conversionLatencyDays"
                 label="Conversion latency"
                 placeholder="0"
-                helpText="Days from exposure to expected conversion (e.g., 7 for weekly purchases)"
+                tooltip="Days from exposure to expected conversion (e.g., 7 for weekly purchases)"
                 error={errors.conversionLatencyDays?.message}
                 suffix="days"
               />
