@@ -1,8 +1,10 @@
 /**
  * SupportingCard - Reusable card for supporting metrics
  *
- * Per 04-CONTEXT.md: Supporting cards layout at Claude's discretion
- * Using stacked grid layout (2x2 for 4 cards)
+ * Updated for DRUIDS mockup pattern:
+ * - 4-column grid with dividers (parent provides dividers via divide-x)
+ * - No individual borders/shadows (parent grid container has border)
+ * - Compact typography: 10px uppercase labels, xl bold values, xs descriptions
  */
 
 import { cn } from '@/lib/utils';
@@ -24,15 +26,23 @@ export function SupportingCard({
   return (
     <div
       className={cn(
-        'rounded-xl border p-4 space-y-1',
-        variant === 'default' && 'bg-card border-border',
-        variant === 'highlight' && 'bg-primary/5 border-primary/20'
+        'p-4 hover:bg-muted/30 transition-colors',
+        variant === 'highlight' && 'bg-primary/5'
       )}
     >
-      <p className="text-sm text-muted-foreground">{title}</p>
-      <p className="text-lg font-semibold text-foreground">{value}</p>
+      {/* Label - DRUIDS mockup: uppercase, tracking-wider, bold */}
+      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-2">
+        {title}
+      </span>
+      {/* Value - DRUIDS mockup: xl bold */}
+      <div className="text-xl font-bold text-foreground mb-1">
+        {value}
+      </div>
+      {/* Description */}
       {description && (
-        <p className="text-xs text-muted-foreground pt-1">{description}</p>
+        <div className="text-xs text-muted-foreground">
+          {description}
+        </div>
       )}
     </div>
   );

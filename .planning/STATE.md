@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 - Layout Updates (in progress)
-Plan: 01 of 3 complete
+Plan: 02 of 3 complete
 Status: Executing Phase 17
-Last activity: 2026-02-12 -- Completed 17-01 (Header + Baseline Grid)
+Last activity: 2026-02-12 -- Completed 17-02 (Uncertainty Model Layout)
 
-Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [===============------] 78%
+Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [================-----] 89%
 
 ## Milestone History
 
@@ -30,7 +30,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [===============------] 78%
 |-------|------|--------------|--------|
 | 15 | Datadog Observability | 8 | Complete (3/3 plans) |
 | 16 | DRUIDS Foundation + Copy Audit | 4 | Complete (3/3 plans) |
-| 17 | Layout Updates | 5 | In Progress (1/3 plans) |
+| 17 | Layout Updates | 5 | In Progress (2/3 plans) |
 
 ## Performance Metrics
 
@@ -45,7 +45,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [===============------] 78%
 - Total execution time: ~68 min (~1 hour)
 
 **v1.2 Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Phases completed: 2/3
 
 | Phase | Plan | Duration | Tasks | Files |
@@ -57,6 +57,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [===============------] 78%
 | 16-02 | Card Shadows + Input Styling | 2 min | 3 | 3 |
 | 16-03 | Copy Audit | 2 min | 2 | 1 |
 | 17-01 | Header + Baseline Grid | 2 min | 3 | 2 |
+| 17-02 | Uncertainty Model Layout | 3 min | 2 | 2 |
 
 ## Accumulated Context
 
@@ -102,6 +103,11 @@ v1.2 decisions (17-01):
 - Shorten "Baseline conversion rate" to "Conversion rate" for compact grid fit
 - Tooltip infrastructure already existed in input components - no changes needed
 
+v1.2 decisions (17-02):
+- Side-by-side layout uses flex-col lg:flex-row for mobile-first responsive stacking
+- Chart wrapped in bordered container matching DRUIDS mockup pattern
+- "What's this?" text link chosen over icon-only tooltip for proactive discoverability
+
 ### Pending Todos
 
 1. **Add Test Costs for declarative verdict** (calculations) - Backlog for v1.2+
@@ -120,8 +126,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 17-01 (Header + Baseline Grid)
-Next action: `/gsd:execute-phase 17-02` to continue Layout Updates
+Stopped at: Completed 17-02 (Uncertainty Model Layout)
+Next action: `/gsd:execute-phase 17-03` to complete Layout Updates
 
 ## Archive Reference
 
@@ -145,4 +151,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-12 (17-01 complete)*
+*Updated: 2026-02-12 (17-02 complete)*
