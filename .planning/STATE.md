@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 16 - DRUIDS Foundation + Copy Audit
-Plan: 02 of 4 complete
-Status: Executing Phase 16
-Last activity: 2026-02-11 -- Completed 16-02 (card shadows)
+Phase: 17 - Layout Updates (in progress)
+Plan: 01 of 3 complete
+Status: Executing Phase 17
+Last activity: 2026-02-12 -- Completed 17-01 (Header + Baseline Grid)
 
-Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [=========------------] 42%
+Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [===============------] 78%
 
 ## Milestone History
 
@@ -29,8 +29,8 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [=========------------] 42%
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 15 | Datadog Observability | 8 | Complete (3/3 plans) |
-| 16 | DRUIDS Foundation + Copy Audit | 4 | In Progress (2/4 plans) |
-| 17 | Layout Updates | 5 | Pending |
+| 16 | DRUIDS Foundation + Copy Audit | 4 | Complete (3/3 plans) |
+| 17 | Layout Updates | 5 | In Progress (1/3 plans) |
 
 ## Performance Metrics
 
@@ -45,8 +45,8 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [=========------------] 42%
 - Total execution time: ~68 min (~1 hour)
 
 **v1.2 Velocity:**
-- Total plans completed: 5
-- Phases completed: 1/3
+- Total plans completed: 7
+- Phases completed: 2/3
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -55,6 +55,8 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [=========------------] 42%
 | 15-03 | Event Instrumentation | 2 min | 3 | 3 |
 | 16-01 | DRUIDS Color Tokens & Inter Font | 2 min | 3 | 2 |
 | 16-02 | Card Shadows + Input Styling | 2 min | 3 | 3 |
+| 16-03 | Copy Audit | 2 min | 2 | 1 |
+| 17-01 | Header + Baseline Grid | 2 min | 3 | 2 |
 
 ## Accumulated Context
 
@@ -91,6 +93,15 @@ v1.2 decisions (16-02):
 - shadow-card over shadow-sm: custom class provides exact DRUIDS mockup values
 - Input focus states verified to use dd-grape via --ring token
 
+v1.2 decisions (16-03):
+- Hybrid tooltip approach: move Baseline (3) and Experiment Design (5) helpText to tooltips
+- Student-t df helper requires special handling - keep visible or add "What's this?" cue for discoverability
+
+v1.2 decisions (17-01):
+- Keep h-14 (56px) header height rather than mockup's h-16 for consistency
+- Shorten "Baseline conversion rate" to "Conversion rate" for compact grid fit
+- Tooltip infrastructure already existed in input components - no changes needed
+
 ### Pending Todos
 
 1. **Add Test Costs for declarative verdict** (calculations) - Backlog for v1.2+
@@ -108,9 +119,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Completed 16-02-PLAN.md
-Next action: Continue with 16-03-PLAN.md
+Last session: 2026-02-12
+Stopped at: Completed 17-01 (Header + Baseline Grid)
+Next action: `/gsd:execute-phase 17-02` to continue Layout Updates
 
 ## Archive Reference
 
@@ -134,4 +145,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-11 (16-01 complete)*
+*Updated: 2026-02-12 (17-01 complete)*
