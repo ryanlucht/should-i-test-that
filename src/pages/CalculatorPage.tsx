@@ -24,6 +24,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Calculator, ChevronRight } from 'lucide-react';
 import { SectionWrapper } from '@/components/wizard/SectionWrapper';
 import { NavigationButtons } from '@/components/wizard/NavigationButtons';
 import { StickyProgressIndicator } from '@/components/wizard/StickyProgressIndicator';
@@ -276,16 +277,33 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
       {/*
        * Sticky Header
        * Design spec: height 56px, white bg, border-bottom, shadow when scrolled
+       * DRUIDS pattern: Logo icon + "Experimentation" title with breadcrumb below
        */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card px-4 md:px-6 shadow-sm">
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-lg font-semibold text-foreground hover:text-primary transition-colors"
-        >
-          Should I Test That?
-        </button>
-        <ModeToggle />
+      <header className="sticky top-0 z-50 border-b bg-card shadow-sm">
+        <div className="max-w-[800px] mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Logo icon */}
+            <div className="bg-primary h-9 w-9 rounded-md flex items-center justify-center shadow-md">
+              <Calculator className="h-5 w-5 text-primary-foreground" />
+            </div>
+            {/* Title + breadcrumb */}
+            <div className="flex flex-col">
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-base font-bold text-foreground leading-tight hover:text-primary transition-colors text-left"
+              >
+                Experimentation
+              </button>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>Tools</span>
+                <ChevronRight className="h-3 w-3" />
+                <span className="text-primary font-medium">Decision Engine</span>
+              </div>
+            </div>
+          </div>
+          <ModeToggle />
+        </div>
       </header>
 
       {/* Sticky Progress Indicator - positioned below header */}

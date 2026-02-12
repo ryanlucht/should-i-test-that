@@ -40,9 +40,9 @@ Add Datadog observability instrumentation (RUM, Product Analytics, Error Trackin
 **Plans:** 3 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Install Datadog RUM SDK and initialize with error tracking + session replay
-- [ ] 15-02-PLAN.md — Create analytics module, add step and mode tracking
-- [ ] 15-03-PLAN.md — Add calculation completion and PNG export tracking
+- [x] 15-01-PLAN.md — Install Datadog RUM SDK and initialize with error tracking + session replay
+- [x] 15-02-PLAN.md — Create analytics module, add step and mode tracking
+- [x] 15-03-PLAN.md — Add calculation completion and PNG export tracking
 
 ---
 
@@ -71,9 +71,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 16-01-PLAN.md — Apply DRUIDS color tokens and Inter font (DES-01, DES-02)
-- [ ] 16-02-PLAN.md — Add card shadows and verify input styling (DES-09)
-- [ ] 16-03-PLAN.md — Audit helper copy and get user approval (DES-08)
+- [x] 16-01-PLAN.md — Apply DRUIDS color tokens and Inter font (DES-01, DES-02)
+- [x] 16-02-PLAN.md — Add card shadows and verify input styling (DES-09)
+- [x] 16-03-PLAN.md — Audit helper copy and get user approval (DES-08)
 
 ---
 
@@ -97,15 +97,22 @@ Plans:
 4. Results metrics display in 4-column grid with consistent padding and dividers
 5. Statistical interpretation appears in blue callout box below metrics with info icon
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Header breadcrumb + Baseline Metrics 3-column grid (DES-03, DES-04)
+- [ ] 17-02-PLAN.md — Uncertainty Model side-by-side layout (DES-05)
+- [ ] 17-03-PLAN.md — Results 4-column metrics grid + statistical callout (DES-06, DES-07)
+
 ---
 
 ## Progress
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 15 | Datadog Observability | OBS-01 through OBS-08 | Pending |
-| 16 | DRUIDS Foundation + Copy Audit | DES-01, DES-02, DES-08, DES-09 | Pending |
-| 17 | Layout Updates | DES-03, DES-04, DES-05, DES-06, DES-07 | Pending |
+| 15 | Datadog Observability | OBS-01 through OBS-08 | Complete (2026-02-11) |
+| 16 | DRUIDS Foundation + Copy Audit | DES-01, DES-02, DES-08, DES-09 | Complete (2026-02-12) |
+| 17 | Layout Updates | DES-03, DES-04, DES-05, DES-06, DES-07 | Planned |
 
 ## Coverage Validation
 

@@ -53,7 +53,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [=========------------] 42%
 | 15-01 | Datadog RUM SDK | 1 min | 2 | 3 |
 | 15-02 | Wizard Navigation Tracking | 2 min | 3 | 3 |
 | 15-03 | Event Instrumentation | 2 min | 3 | 3 |
-| 16-01 | DRUIDS Color Tokens | -- | -- | -- |
+| 16-01 | DRUIDS Color Tokens & Inter Font | 2 min | 3 | 2 |
 | 16-02 | Card Shadows + Input Styling | 2 min | 3 | 3 |
 
 ## Accumulated Context
@@ -81,6 +81,11 @@ v1.2 decisions (15-02):
 v1.2 decisions (15-03):
 - useRef deduplication for idempotent event firing on re-renders
 - Track export after toPng() success, before link.click() to ensure capture
+
+v1.2 decisions (16-01):
+- Exact hex values for DRUIDS tokens instead of oklch approximations
+- Inter font via Google Fonts CDN with preconnect for performance
+- text-secondary class (#4B5563) distinct from muted-foreground (#6B7280)
 
 v1.2 decisions (16-02):
 - shadow-card over shadow-sm: custom class provides exact DRUIDS mockup values
@@ -129,4 +134,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-11 (16-02 complete)*
+*Updated: 2026-02-11 (16-01 complete)*

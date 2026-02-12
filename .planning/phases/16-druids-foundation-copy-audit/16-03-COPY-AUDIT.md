@@ -305,8 +305,69 @@ Based on DRUIDS mockup patterns:
 - HelpText could go below row or in tooltip
 - Trade-off: Different from current vertical stacking
 
-**Recommendation:** Start with **Option A** for Phase 17. The longest copy (Baseline metrics) benefits most from tooltip treatment, and this is the cleanest change that preserves all guidance while fitting the new layout.
+**Initial recommendation:** Start with **Option A** for Phase 17.
+
+---
+
+## Approved Approach (User Decision 2026-02-12)
+
+**HYBRID APPROACH** - Combining tooltip migration with special handling for unfamiliar concepts.
+
+### 1. Baseline Metrics Section (HIGH impact)
+
+**Action:** Move all 3 helpText fields to tooltips
+
+| Input | Current Chars | Treatment |
+|-------|---------------|-----------|
+| Conversion rate | 185 | Move to tooltip |
+| Annual visitors | 113 | Move to tooltip |
+| Value per conversion | 197 | Move to tooltip |
+
+**Rationale:** These inputs are familiar to most experimentation practitioners (conversion rate, traffic, revenue value). Tooltips provide guidance on demand without cluttering the compact 3-column layout.
+
+### 2. Experiment Design Section (MEDIUM impact)
+
+**Action:** Move all 5 helpText fields to tooltips
+
+| Input | Current Chars | Treatment |
+|-------|---------------|-----------|
+| Test duration | 63 | Move to tooltip |
+| Daily traffic | 52 | Move to tooltip |
+| Variant allocation | 62 | Move to tooltip |
+| Eligible traffic | 63 | Move to tooltip |
+| Conversion latency | 73 | Move to tooltip |
+
+**Rationale:** Experiment design parameters are standard A/B testing concepts. Users who need guidance can access tooltips; experienced users won't be slowed by inline text.
+
+### 3. Student-t Degrees of Freedom (SPECIAL HANDLING)
+
+**Input:** Student-t df helper (160 chars)
+
+**Action:** Keep visible inline OR if tooltip, add explicit "What's this?" text link
+
+**Rationale:** This section covers fat-tailed distributions - an advanced statistical concept unfamiliar to most users. Unlike familiar inputs (conversion rate, traffic), users won't know to hover for help because they don't know what degrees of freedom means. The guidance must be discoverable without prior knowledge.
+
+**Implementation options for Phase 17:**
+1. Keep the 160-char helper text visible below the df slider
+2. Use a "What's this?" or "Learn more" text link that triggers the tooltip
+3. Use an info icon with accompanying text hint like "(?)"
+
+The key requirement is **proactive discoverability** - don't hide critical guidance behind an unmarked tooltip.
+
+---
+
+## Summary for Phase 17
+
+| Section | Items Affected | Action |
+|---------|----------------|--------|
+| Baseline Metrics | 3 inputs | Move helpText to tooltips |
+| Experiment Design | 5 inputs | Move helpText to tooltips |
+| Student-t df | 1 helper | Keep visible OR add "What's this?" cue |
+
+**Total tooltip migrations:** 8 inputs
+**Special handling:** 1 (Student-t df)
 
 ---
 
 *Audit completed: 2026-02-11*
+*User approval: 2026-02-12 (Hybrid approach)*
