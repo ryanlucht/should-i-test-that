@@ -23,6 +23,11 @@ import {
 import { useWizardStore } from '@/stores/wizardStore';
 import { RadioCard, RadioCardGroup } from './inputs/RadioCard';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 /** Type for prior shape option */
@@ -68,9 +73,24 @@ function DfPresetSelector({
 
   return (
     <div className="space-y-3 pt-2 border-t border-border/50">
-      <p className="text-sm font-medium text-foreground">
-        How fat should the tails be?
-      </p>
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-medium text-foreground">
+          How fat should the tails be?
+        </p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="text-xs text-primary hover:text-primary/80 underline"
+            >
+              What&apos;s this?
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[280px]" sideOffset={4}>
+            Degrees of freedom (df) controls how heavy the tails are. Lower df = fatter tails = more probability of extreme outcomes. This matters when you believe rare large effects are possible but unlikely.
+          </TooltipContent>
+        </Tooltip>
+      </div>
       <ToggleGroup
         type="single"
         value={value?.toString() ?? ''}
