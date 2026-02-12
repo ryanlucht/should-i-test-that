@@ -148,40 +148,43 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
 
     return (
       <FormProvider {...methods}>
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-          {/* Section helper text */}
+        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {/* Section helper text - keep full width */}
           <p className="text-sm text-muted-foreground">
             This will help us calculate the range of potential outcomes from the test in dollars.
           </p>
 
-          {/* Baseline Conversion Rate */}
-          <PercentageInput
-            name="baselineConversionRate"
-            label="Baseline conversion rate"
-            placeholder="3.2%"
-            helpText="This is your current conversion rate for the metric and audience/targeting you'd be testing. Ideally, choose a metric that is a revenue-generating event (e.g., visitors to signups)."
-            error={errors.baselineConversionRate?.message}
-          />
+          {/* 3-column responsive grid per DRUIDS mockup */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Baseline Conversion Rate */}
+            <PercentageInput
+              name="baselineConversionRate"
+              label="Conversion rate"
+              placeholder="3.2%"
+              tooltip="This is your current conversion rate for the metric and audience/targeting you'd be testing. Ideally, choose a metric that is a revenue-generating event (e.g., visitors to signups)."
+              error={errors.baselineConversionRate?.message}
+            />
 
-          {/* Annual Visitors */}
-          <NumberInput
-            name="annualVisitors"
-            label={`Annual ${unitLabel || 'visitors'}`}
-            placeholder="1,000,000"
-            helpText="Enter the number of visitors you expect in a year, based on the audience and triggering conditions of the test."
-            error={errors.annualVisitors?.message}
-            unitLabelValue={unitLabel}
-            onUnitLabelChange={handleUnitLabelChange}
-          />
+            {/* Annual Visitors */}
+            <NumberInput
+              name="annualVisitors"
+              label={`Annual ${unitLabel || 'visitors'}`}
+              placeholder="1,000,000"
+              tooltip="Enter the number of visitors you expect in a year, based on the audience and triggering conditions of the test."
+              error={errors.annualVisitors?.message}
+              unitLabelValue={unitLabel}
+              onUnitLabelChange={handleUnitLabelChange}
+            />
 
-          {/* Value per Conversion */}
-          <CurrencyInput
-            name="valuePerConversion"
-            label="Value per conversion"
-            placeholder="$50"
-            helpText="Put the business value of one conversion in dollars. Examples: average order value, gross margin per purchase, first-year LTV, or a blended estimate. Pick one that matches how you evaluate impact."
-            error={errors.valuePerConversion?.message}
-          />
+            {/* Value per Conversion */}
+            <CurrencyInput
+              name="valuePerConversion"
+              label="Value per conversion"
+              placeholder="$50"
+              tooltip="Put the business value of one conversion in dollars. Examples: average order value, gross margin per purchase, first-year LTV, or a blended estimate. Pick one that matches how you evaluate impact."
+              error={errors.valuePerConversion?.message}
+            />
+          </div>
         </form>
       </FormProvider>
     );
