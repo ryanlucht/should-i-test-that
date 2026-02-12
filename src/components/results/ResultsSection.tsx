@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { Info } from 'lucide-react';
 import { useEVPICalculations } from '@/hooks/useEVPICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 import { trackCalculationCompleted } from '@/lib/analytics';
@@ -98,54 +99,88 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
       />
 
       {/* Supporting Cards Grid - BASIC-OUT-03 through BASIC-OUT-06 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Prior Summary - BASIC-OUT-03 */}
-        <SupportingCard
-          title="Your belief (prior)"
-          value={`${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}% expected lift`}
-          description={`90% confident: ${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
-        />
+      {/* 4-column grid with dividers per DRUIDS mockup (DES-06) */}
+      <div className="bg-card rounded-lg border overflow-hidden shadow-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+          {/* Prior Summary - BASIC-OUT-03 */}
+          <SupportingCard
+            title="Prior Belief"
+            value={`${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`}
+            description={`Range: ${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
+          />
 
-        {/* Threshold Summary - BASIC-OUT-04 */}
-        <SupportingCard
-          title="Shipping threshold"
-          value={
-            sharedInputs.thresholdScenario === 'any-positive'
-              ? 'Any positive impact'
-              : `${thresholdLift > 0 ? '+' : ''}${thresholdLift}% lift`
-          }
-          description={
-            sharedInputs.thresholdScenario !== 'any-positive'
-              ? `Approx. ${formatSmartCurrency(threshold_dollars)}/year`
-              : 'Ship if the change helps at all'
-          }
-        />
+          {/* Threshold Summary - BASIC-OUT-04 */}
+          <SupportingCard
+            title="Threshold"
+            value={
+              sharedInputs.thresholdScenario === 'any-positive'
+                ? 'Any positive'
+                : `${thresholdLift > 0 ? '+' : ''}${thresholdLift}%`
+            }
+            description={
+              sharedInputs.thresholdScenario !== 'any-positive'
+                ? `~${formatSmartCurrency(threshold_dollars)}/year`
+                : 'Ship if it helps'
+            }
+          />
 
-        {/* Probability of clearing threshold - BASIC-OUT-05 */}
-        <SupportingCard
-          title="Chance of clearing threshold"
-          value={formatProbabilityPercent(probabilityClearsThreshold)}
-          description={
-            // Handle ~50% case separately to avoid misleading "more/less likely" text
-            probabilityClearsThreshold >= 0.49 && probabilityClearsThreshold <= 0.51
-              ? 'Equal odds of clearing the bar'
-              : probabilityClearsThreshold > 0.5
-                ? 'More likely than not to clear the bar'
-                : 'Less likely than not to clear the bar'
-          }
-        />
+          {/* Probability of clearing threshold - BASIC-OUT-05 */}
+          <SupportingCard
+            title="Success Probability"
+            value={formatProbabilityPercent(probabilityClearsThreshold)}
+            description={
+              // Handle ~50% case separately to avoid misleading "more/less likely" text
+              probabilityClearsThreshold >= 0.49 && probabilityClearsThreshold <= 0.51
+                ? 'Even odds'
+                : probabilityClearsThreshold > 0.5
+                  ? 'Likely to clear'
+                  : 'Unlikely to clear'
+            }
+          />
 
-        {/* Chance of regret - BASIC-OUT-06 */}
-        <SupportingCard
-          title="Chance you'd regret not testing"
-          value={formatProbabilityPercent(chanceOfBeingWrong)}
-          description={
-            defaultDecision === 'ship'
-              ? `If you ship without testing, there's a ${formatProbabilityPercent(chanceOfBeingWrong)} chance the change actually hurts`
-              : `If you don't ship, there's a ${formatProbabilityPercent(chanceOfBeingWrong)} chance you're leaving gains on the table`
-          }
-          variant={chanceOfBeingWrong > 0.2 ? 'highlight' : 'default'}
-        />
+          {/* Chance of regret - BASIC-OUT-06 */}
+          <SupportingCard
+            title="Regret Risk"
+            value={formatProbabilityPercent(chanceOfBeingWrong)}
+            description={
+              chanceOfBeingWrong > 0.2
+                ? 'Significant risk'
+                : 'Low risk'
+            }
+            variant={chanceOfBeingWrong > 0.2 ? 'highlight' : 'default'}
+          />
+        </div>
+      </div>
+
+      {/* Statistical Interpretation Callout - DES-07 */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <h4 className="text-sm font-bold text-blue-900">
+            Statistical Interpretation
+          </h4>
+          <p className="text-sm text-blue-800 leading-relaxed">
+            {defaultDecision === 'ship' ? (
+              <>
+                Based on your current inputs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
+                {' '}{comparisonWording} your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%).
+                Without further testing, the rational decision is to <strong>ship</strong>.
+                {probabilityClearsThreshold < 0.8 && (
+                  <> However, there is a {formatProbabilityPercent(chanceOfBeingWrong)} chance the change actually hurts.</>
+                )}
+              </>
+            ) : (
+              <>
+                Based on your current inputs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
+                {' '}{comparisonWording} your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%).
+                Without further testing, the rational decision is to <strong>not ship</strong>.
+                {probabilityClearsThreshold > 0.2 && (
+                  <> However, there is a {formatProbabilityPercent(probabilityClearsThreshold)} chance the change is actually worth shipping.</>
+                )}
+              </>
+            )}
+          </p>
+        </div>
       </div>
 
       {/* EVPI Intuition - BASIC-OUT-07 */}
@@ -154,20 +189,6 @@ export function ResultsSection({ onAdvancedModeClick }: ResultsSectionProps) {
           What {formatSmartCurrency(evpiDollars)} represents
         </p>
         <p className="text-sm text-muted-foreground">
-          {/* Explain WHY the default decision is ship/not-ship based on prior vs threshold */}
-          {defaultDecision === 'ship' ? (
-            <>
-              Based on your beliefs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
-              {' '}{comparisonWording} your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
-              so without more information you would <strong>ship</strong>.
-            </>
-          ) : (
-            <>
-              Based on your beliefs, the expected lift ({priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%)
-              {' '}{comparisonWording} your threshold ({thresholdLift > 0 ? '+' : ''}{thresholdLift.toFixed(1)}%),
-              so without more information you would <strong>not ship</strong>.
-            </>
-          )}{' '}
           The {formatSmartCurrency(evpiDollars)} is the expected value of
           the regret you'd avoid by having perfect foresight — it's the maximum
           you should pay for any information about whether this change helps.
