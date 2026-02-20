@@ -220,8 +220,8 @@ describe('AdvancedResultsSection accessibility', () => {
 
     render(<AdvancedResultsSection />);
 
-    // Find the card that uses highlight variant styling
-    const decisionCard = screen.getByText('P(test changes decision)').closest('div');
+    // Find the card that uses highlight variant styling - title is "P(Decision Change)"
+    const decisionCard = screen.getByText('P(Decision Change)').closest('div');
     expect(decisionCard).toBeInTheDocument();
   });
 });

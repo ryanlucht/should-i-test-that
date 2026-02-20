@@ -23,7 +23,7 @@ import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { ValueBreakdownCard } from './ValueBreakdownCard';
 import { SupportingCard } from './SupportingCard';
 import { ExportButton } from '@/components/export/ExportButton';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import {
   formatSmartCurrency,
   formatProbabilityPercent,
@@ -212,6 +212,35 @@ export function AdvancedResultsSection() {
                 }
                 variant={results.evsi.probabilityTestChangesDecision > 0.2 ? 'highlight' : 'default'}
               />
+            </div>
+          </div>
+
+          {/* Statistical Interpretation Callout - POL-04 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-blue-900">
+                Statistical Interpretation
+              </h4>
+              <p className="text-sm text-blue-800 leading-relaxed">
+                {results.evsi.defaultDecision === 'ship' ? (
+                  <>
+                    Based on your prior belief (mean: {priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%),
+                    the default decision without testing is to <strong>ship</strong>.
+                    {results.evsi.probabilityTestChangesDecision > 0.2 && (
+                      <> The test has a {formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)} chance of changing this decision.</>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Based on your prior belief (mean: {priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%),
+                    the default decision without testing is to <strong>not ship</strong>.
+                    {results.evsi.probabilityTestChangesDecision > 0.2 && (
+                      <> The test has a {formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)} chance of changing this decision.</>
+                    )}
+                  </>
+                )}
+              </p>
             </div>
           </div>
 
