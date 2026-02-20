@@ -24,7 +24,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Calculator, ChevronRight } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 import { SectionWrapper } from '@/components/wizard/SectionWrapper';
 import { NavigationButtons } from '@/components/wizard/NavigationButtons';
 import { StickyProgressIndicator } from '@/components/wizard/StickyProgressIndicator';
@@ -286,21 +286,14 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
             <div className="bg-primary h-9 w-9 rounded-md flex items-center justify-center shadow-md">
               <Calculator className="h-5 w-5 text-primary-foreground" />
             </div>
-            {/* Title + breadcrumb */}
-            <div className="flex flex-col">
-              <button
-                type="button"
-                onClick={onBack}
-                className="text-base font-bold text-foreground leading-tight hover:text-primary transition-colors text-left"
-              >
-                Experimentation
-              </button>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span>Tools</span>
-                <ChevronRight className="h-3 w-3" />
-                <span className="text-primary font-medium">Decision Engine</span>
-              </div>
-            </div>
+            {/* Title */}
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-base font-bold text-foreground leading-tight hover:text-primary transition-colors text-left"
+            >
+              Experiment Value Calculator
+            </button>
           </div>
           <ModeToggle />
         </div>
