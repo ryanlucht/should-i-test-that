@@ -5,8 +5,8 @@
 Add Datadog observability instrumentation (RUM, Product Analytics, Error Tracking, Session Replay) and refresh UI to align with DRUIDS design system. Helper copy preserved where possible, moved to tooltips where space-constrained.
 
 **Milestone:** v1.2
-**Phases:** 15-17 (3 phases)
-**Requirements:** 17 (8 OBS + 9 DES)
+**Phases:** 15-18 (4 phases)
+**Requirements:** 22 (8 OBS + 9 DES + 5 POL)
 **Depth:** Standard
 
 ## Phases
@@ -106,6 +106,34 @@ Plans:
 
 ---
 
+### Phase 18: UI Polish & Feedback Items
+
+**Goal:** Address UAT feedback from Phase 17 verification - polish header, tooltips, form layouts, and state persistence.
+
+**Dependencies:** Phase 17 (builds on layout updates)
+
+**Requirements:**
+- POL-01: Simplify header to "Experiment Value Calculator" title (keep logo icon, remove breadcrumb)
+- POL-02: Enhance Annual visitors tooltip to explain unit customization option
+- POL-03: Persist Advanced mode inputs in localStorage when switching between modes
+- POL-04: Add statistical interpretation callout to Advanced mode results
+- POL-05: Compact Experiment Design form layout (match Baseline Metrics grid pattern)
+
+**Success Criteria:**
+1. Header shows Calculator logo icon + "Experiment Value Calculator" title (no breadcrumb)
+2. Annual visitors tooltip explains: "If you want to display a different unit of randomization, you can replace 'visitors' in the text field below."
+3. User can fill Advanced mode → switch to Basic → switch back to Advanced and inputs are preserved
+4. Advanced mode Results shows blue statistical interpretation callout (like Basic mode)
+5. Experiment Design inputs display in compact grid layout matching Baseline Metrics section
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 18-01-PLAN.md — Header simplification + tooltip enhancement + form layout (POL-01, POL-02, POL-05)
+- [ ] 18-02-PLAN.md — Advanced input persistence + statistical callout (POL-03, POL-04)
+
+---
+
 ## Progress
 
 | Phase | Name | Requirements | Status |
@@ -113,6 +141,7 @@ Plans:
 | 15 | Datadog Observability | OBS-01 through OBS-08 | Complete (2026-02-11) |
 | 16 | DRUIDS Foundation + Copy Audit | DES-01, DES-02, DES-08, DES-09 | Complete (2026-02-12) |
 | 17 | Layout Updates | DES-03, DES-04, DES-05, DES-06, DES-07 | Complete (2026-02-12) |
+| 18 | UI Polish & Feedback Items | POL-01 through POL-05 | Planned (2 plans) |
 
 ## Coverage Validation
 
@@ -135,8 +164,13 @@ Plans:
 | DES-07 | 17 | Yes |
 | DES-08 | 16 | Yes |
 | DES-09 | 16 | Yes |
+| POL-01 | 18 | Yes |
+| POL-02 | 18 | Yes |
+| POL-03 | 18 | Yes |
+| POL-04 | 18 | Yes |
+| POL-05 | 18 | Yes |
 
-**Coverage:** 17/17 requirements mapped (100%)
+**Coverage:** 22/22 requirements mapped (100%)
 
 ---
 *Roadmap created: 2026-02-11*
