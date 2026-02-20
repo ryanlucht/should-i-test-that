@@ -100,8 +100,11 @@ describe('wizardStore', () => {
       expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(21);
     });
 
-    it('BUG REPRODUCTION: A->B->A mode switch - advanced inputs should be clearable and refillable', () => {
+    it('POL-03: A->B->A mode switch - advanced inputs should persist via localStorage backup', () => {
       const { setMode, setSharedInput, setAdvancedInput } = useWizardStore.getState();
+
+      // Clear any previous backup
+      localStorage.removeItem('wizard-advanced-backup');
 
       // Step 1: Start in Advanced mode and fill inputs
       setMode('advanced');
@@ -123,37 +126,30 @@ describe('wizardStore', () => {
       setMode('basic');
       state = useWizardStore.getState();
 
-      // Advanced inputs should be cleared
+      // Advanced inputs should be cleared from state
       expect(state.inputs.advanced.testDurationDays).toBe(null);
       expect(state.inputs.advanced.dailyTraffic).toBe(null);
       expect(state.inputs.advanced.priorShape).toBe(null);
+
+      // But backup should exist in localStorage
+      expect(localStorage.getItem('wizard-advanced-backup')).not.toBe(null);
 
       // Shared inputs should be preserved
       expect(state.inputs.shared.baselineConversionRate).toBe(0.05);
       expect(state.inputs.shared.annualVisitors).toBe(1000000);
 
-      // Step 3: Switch back to Advanced mode
+      // Step 3: Switch back to Advanced mode - inputs should be RESTORED (POL-03)
       setMode('advanced');
       state = useWizardStore.getState();
 
-      // priorShape should be initialized to 'normal'
+      // priorShape should be restored to 'normal'
       expect(state.inputs.advanced.priorShape).toBe('normal');
-      // Other advanced inputs should still be null (need to be refilled)
-      expect(state.inputs.advanced.testDurationDays).toBe(null);
-      expect(state.inputs.advanced.dailyTraffic).toBe(null);
+      // Other advanced inputs should be restored from backup
+      expect(state.inputs.advanced.testDurationDays).toBe(14);
+      expect(state.inputs.advanced.dailyTraffic).toBe(2740);
       // Default values should be preserved
       expect(state.inputs.advanced.trafficSplit).toBe(0.5);
       expect(state.inputs.advanced.eligibilityFraction).toBe(1.0);
-
-      // Step 4: Fill advanced inputs again
-      setAdvancedInput('testDurationDays', 21);
-      setAdvancedInput('dailyTraffic', 5000);
-
-      // Verify they're correctly set
-      state = useWizardStore.getState();
-      expect(state.inputs.advanced.testDurationDays).toBe(21);
-      expect(state.inputs.advanced.dailyTraffic).toBe(5000);
-      expect(state.inputs.advanced.priorShape).toBe('normal');
 
       // All inputs needed for EVSI calculation should be non-null
       expect(state.inputs.advanced.priorShape).not.toBe(null);

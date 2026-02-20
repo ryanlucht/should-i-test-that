@@ -55,8 +55,9 @@ export const useWizardStore = create<WizardStore>()(
 
       /**
        * Set the calculator mode
-       * When switching to 'basic', clears all advanced-only inputs
-       * to prevent stale data from affecting calculations
+       * When switching to 'basic', saves advanced inputs to localStorage backup
+       * and clears them from state to prevent affecting Basic calculations.
+       * When switching to 'advanced', restores inputs from backup if available.
        *
        * Also clears completedSections when switching modes, because:
        * - Basic mode has 4 sections: baseline(0), uncertainty(1), threshold(2), results(3)
@@ -74,8 +75,18 @@ export const useWizardStore = create<WizardStore>()(
           // Track mode selection for analytics (OBS-06)
           trackModeSelected(mode);
 
-          // When switching to basic mode, clear advanced inputs
+          // When switching to basic mode, backup and clear advanced inputs
           if (mode === 'basic') {
+            // Backup advanced inputs to localStorage before clearing (POL-03)
+            try {
+              localStorage.setItem(
+                'wizard-advanced-backup',
+                JSON.stringify(state.inputs.advanced)
+              );
+            } catch {
+              // Ignore localStorage errors (private browsing, quota exceeded, etc.)
+            }
+
             return {
               mode,
               inputs: {
@@ -88,15 +99,32 @@ export const useWizardStore = create<WizardStore>()(
               currentSection: 0,
             };
           }
-          // When switching to advanced, initialize priorShape if not set
-          // This ensures the default "Normal" selection in the UI is reflected in state
+
+          // When switching to advanced, restore from backup if available (POL-03)
+          let restoredAdvanced = state.inputs.advanced;
+          try {
+            const backup = localStorage.getItem('wizard-advanced-backup');
+            if (backup) {
+              const parsed = JSON.parse(backup) as AdvancedInputs;
+              // Merge with current state, preferring backup values
+              restoredAdvanced = {
+                ...state.inputs.advanced,
+                ...parsed,
+                // Ensure priorShape has a default
+                priorShape: parsed.priorShape ?? state.inputs.advanced.priorShape ?? 'normal',
+              };
+            }
+          } catch {
+            // Ignore parse errors, use current state
+          }
+
           return {
             mode,
             inputs: {
               ...state.inputs,
               advanced: {
-                ...state.inputs.advanced,
-                priorShape: state.inputs.advanced.priorShape ?? 'normal',
+                ...restoredAdvanced,
+                priorShape: restoredAdvanced.priorShape ?? 'normal',
               },
             },
             // Clear completedSections when switching modes
