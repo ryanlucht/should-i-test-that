@@ -176,43 +176,43 @@ export function AdvancedResultsSection() {
             decisionLatencyDays={advancedInputs.decisionLatencyDays ?? 0}
           />
 
-          {/* Probability test changes decision - ADV-OUT-07 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SupportingCard
-              title="P(test changes decision)"
-              value={formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)}
-              description={
-                results.evsi.probabilityTestChangesDecision > 0.2
-                  ? 'Significant chance the test will influence your decision'
-                  : 'Low chance the test will change your mind'
-              }
-              variant={results.evsi.probabilityTestChangesDecision > 0.2 ? 'highlight' : 'default'}
-            />
-          </div>
+          {/* Supporting Cards Grid - matches Basic mode DRUIDS pattern */}
+          <div className="bg-card rounded-lg border overflow-hidden shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+              {/* Prior Summary */}
+              <SupportingCard
+                title="Prior Belief"
+                value={`${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`}
+                description={`Range: ${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
+              />
 
-          {/* Prior and threshold summary cards (reused from Basic mode pattern) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Prior Summary */}
-            <SupportingCard
-              title="Your belief (prior)"
-              value={`${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}% expected lift`}
-              description={`90% confident: ${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
-            />
+              {/* Threshold Summary */}
+              <SupportingCard
+                title="Threshold"
+                value={
+                  sharedInputs.thresholdScenario === 'any-positive'
+                    ? 'Any positive'
+                    : `${thresholdLift > 0 ? '+' : ''}${thresholdLift}%`
+                }
+                description={
+                  sharedInputs.thresholdScenario !== 'any-positive'
+                    ? `Your minimum bar to ship`
+                    : 'Ship if it helps'
+                }
+              />
 
-            {/* Threshold Summary */}
-            <SupportingCard
-              title="Shipping threshold"
-              value={
-                sharedInputs.thresholdScenario === 'any-positive'
-                  ? 'Any positive impact'
-                  : `${thresholdLift > 0 ? '+' : ''}${thresholdLift}% lift`
-              }
-              description={
-                sharedInputs.thresholdScenario !== 'any-positive'
-                  ? `Your minimum bar to ship`
-                  : 'Ship if the change helps at all'
-              }
-            />
+              {/* Probability test changes decision - ADV-OUT-07 */}
+              <SupportingCard
+                title="P(Decision Change)"
+                value={formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)}
+                description={
+                  results.evsi.probabilityTestChangesDecision > 0.2
+                    ? 'Test likely to influence decision'
+                    : 'Test unlikely to change mind'
+                }
+                variant={results.evsi.probabilityTestChangesDecision > 0.2 ? 'highlight' : 'default'}
+              />
+            </div>
           </div>
 
           {/* EVSI Intuition */}
