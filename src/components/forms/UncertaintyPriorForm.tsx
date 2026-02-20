@@ -394,10 +394,8 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
             </div>
           )}
 
-          {/* Side-by-side container: prior options left, chart right */}
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left side: Prior selection options */}
-            <div className="flex-1 space-y-4">
+          {/* Prior selection options */}
+          <div className="space-y-4">
               {/* Only show the header label in Basic mode (Advanced mode has its own header above) */}
               {mode === 'basic' && (
                 <div className="flex items-center gap-2">
@@ -606,15 +604,14 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                     )}
                   </div>
                 )}
-            </div>
+          </div>
 
-            {/* Right side: Distribution chart in bordered container */}
-            {priorParams && (
-              <div className="flex-1 min-w-0 lg:max-w-md">
-                <div className="bg-card border rounded-lg p-4 shadow-sm">
-                  <p className="text-sm font-medium text-foreground mb-4">
-                    Your belief distribution:
-                  </p>
+          {/* Distribution chart - full width */}
+          {priorParams && (
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-foreground">
+                Your belief distribution:
+              </p>
                   {/* Per 04-CONTEXT.md: Chart lives in Prior section because it visualizes uncertainty input */}
                   {/* Shows when priorParams are valid; uses EVPI results when available, else derives */}
                   {/* Per 05-CONTEXT.md: In Advanced mode, chart reflects selected prior shape */}
@@ -648,10 +645,8 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                       K={evpiResults?.K ?? derivedK ?? 100000}
                     />
                   )}
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </form>
       </FormProvider>
     );

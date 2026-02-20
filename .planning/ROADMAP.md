@@ -100,9 +100,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Header breadcrumb + Baseline Metrics 3-column grid (DES-03, DES-04)
-- [ ] 17-02-PLAN.md — Uncertainty Model side-by-side layout (DES-05)
-- [ ] 17-03-PLAN.md — Results 4-column metrics grid + statistical callout (DES-06, DES-07)
+- [x] 17-01-PLAN.md — Header breadcrumb + Baseline Metrics 3-column grid (DES-03, DES-04)
+- [x] 17-02-PLAN.md — Uncertainty Model side-by-side layout (DES-05)
+- [x] 17-03-PLAN.md — Results 4-column metrics grid + statistical callout (DES-06, DES-07)
 
 ---
 
@@ -112,7 +112,7 @@ Plans:
 |-------|------|--------------|--------|
 | 15 | Datadog Observability | OBS-01 through OBS-08 | Complete (2026-02-11) |
 | 16 | DRUIDS Foundation + Copy Audit | DES-01, DES-02, DES-08, DES-09 | Complete (2026-02-12) |
-| 17 | Layout Updates | DES-03, DES-04, DES-05, DES-06, DES-07 | Planned |
+| 17 | Layout Updates | DES-03, DES-04, DES-05, DES-06, DES-07 | Complete (2026-02-12) |
 
 ## Coverage Validation
 

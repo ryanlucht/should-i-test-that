@@ -22,7 +22,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
 |-----------|--------|--------|---------|
 | v1.0 MVP | 1-6 + 4.1, 6.1 | Complete | 2026-02-02 |
 | v1.1 Refine Stats Engine | 7-14 | Complete | 2026-02-03 |
-| v1.2 Observability & Design | 15-17 | In Progress | -- |
+| v1.2 Observability & Design | 15-17 | Complete | 2026-02-12 |
 
 ## v1.2 Phase Overview
 
