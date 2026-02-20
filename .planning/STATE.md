@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 17 - Layout Updates (complete)
-Plan: 03 of 3 complete
-Status: Phase 17 Complete - v1.2 Milestone Ready
-Last activity: 2026-02-12 -- Completed 17-03 (Results Metrics + Tooltips)
+Phase: 18 - UI Polish & Feedback Items
+Plan: 02 of 3 complete
+Status: In Progress
+Last activity: 2026-02-20 -- Completed 18-02 (Advanced Mode Persistence & Statistical Callout)
 
-Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
+Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [===================== ] 92%
 
 ## Milestone History
 
@@ -22,7 +22,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
 |-----------|--------|--------|---------|
 | v1.0 MVP | 1-6 + 4.1, 6.1 | Complete | 2026-02-02 |
 | v1.1 Refine Stats Engine | 7-14 | Complete | 2026-02-03 |
-| v1.2 Observability & Design | 15-17 | Complete | 2026-02-12 |
+| v1.2 Observability & Design | 15-18 | In Progress | - |
 
 ## v1.2 Phase Overview
 
@@ -31,6 +31,7 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
 | 15 | Datadog Observability | 8 | Complete (3/3 plans) |
 | 16 | DRUIDS Foundation + Copy Audit | 4 | Complete (3/3 plans) |
 | 17 | Layout Updates | 5 | Complete (3/3 plans) |
+| 18 | UI Polish & Feedback Items | 5 | In Progress (2/3 plans) |
 
 ## Performance Metrics
 
@@ -45,8 +46,8 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
 - Total execution time: ~68 min (~1 hour)
 
 **v1.2 Velocity:**
-- Total plans completed: 9
-- Phases completed: 3/3
+- Total plans completed: 11
+- Phases completed: 3/4
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -59,6 +60,8 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [======================] 100%
 | 17-01 | Header + Baseline Grid | 2 min | 3 | 2 |
 | 17-02 | Uncertainty Model Layout | 3 min | 2 | 2 |
 | 17-03 | Results Metrics + Tooltips | 2 min | 3 | 3 |
+| 18-01 | Header & Form Polish | 2 min | 3 | 3 |
+| 18-02 | Advanced Mode Persistence | 3 min | 2 | 4 |
 
 ## Accumulated Context
 
@@ -114,6 +117,15 @@ v1.2 decisions (17-03):
 - Moved EVPI explanation context to blue statistical callout, simplified EVPI intuition section
 - divide-x pattern with wrapper container (not individual card borders)
 
+v1.2 decisions (18-01):
+- Shortened form labels for grid fit (Test duration, Daily traffic)
+- Removed breadcrumb pattern in favor of single descriptive title
+
+v1.2 decisions (18-02):
+- localStorage backup key 'wizard-advanced-backup' for persistence (not sessionStorage)
+- Merge restored backup with current state to preserve defaults
+- Statistical callout shows default decision with probability test changes it
+
 ### Pending Todos
 
 1. **Add Test Costs for declarative verdict** (calculations) - Backlog for v1.2+
@@ -129,11 +141,15 @@ v1.2 decisions (17-03):
 
 None.
 
+### Roadmap Evolution
+
+- Phase 18 added: UI Polish & Feedback Items (from Phase 17 UAT feedback)
+
 ## Session Continuity
 
-Last session: 2026-02-12
-Stopped at: Completed 17-03 (Results Metrics + Tooltips) - Phase 17 Complete
-Next action: v1.2 milestone wrap-up and deployment
+Last session: 2026-02-20
+Stopped at: Completed 18-02 (Advanced Mode Persistence & Statistical Callout)
+Next action: Execute 18-03 (About Section Enhancements)
 
 ## Archive Reference
 
@@ -157,4 +173,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-12 (17-03 complete, Phase 17 complete, v1.2 milestone complete)*
+*Updated: 2026-02-20 (18-02 complete)*

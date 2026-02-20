@@ -126,11 +126,12 @@ Plans:
 4. Advanced mode Results shows blue statistical interpretation callout (like Basic mode)
 5. Experiment Design inputs display in compact grid layout matching Baseline Metrics section
 
-**Plans:** 2 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] 18-01-PLAN.md — Header simplification + tooltip enhancement + form layout (POL-01, POL-02, POL-05)
-- [ ] 18-02-PLAN.md — Advanced input persistence + statistical callout (POL-03, POL-04)
+- [x] 18-01-PLAN.md — Header simplification + tooltip enhancement + form layout (POL-01, POL-02, POL-05)
+- [x] 18-02-PLAN.md — Advanced input persistence + statistical callout (POL-03, POL-04)
+- [ ] 18-03-PLAN.md — About section enhancements (if planned)
 
 ---
 
@@ -141,7 +142,7 @@ Plans:
 | 15 | Datadog Observability | OBS-01 through OBS-08 | Complete (2026-02-11) |
 | 16 | DRUIDS Foundation + Copy Audit | DES-01, DES-02, DES-08, DES-09 | Complete (2026-02-12) |
 | 17 | Layout Updates | DES-03, DES-04, DES-05, DES-06, DES-07 | Complete (2026-02-12) |
-| 18 | UI Polish & Feedback Items | POL-01 through POL-05 | Planned (2 plans) |
+| 18 | UI Polish & Feedback Items | POL-01 through POL-05 | In Progress (2/3 plans) |
 
 ## Coverage Validation
 
