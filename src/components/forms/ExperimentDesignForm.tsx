@@ -168,53 +168,56 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             </p>
           </div>
 
-          {/* Test Duration (required) */}
-          <NumberInput
-            name="testDurationDays"
-            label="How long will you run the test?"
-            placeholder="14"
-            tooltip="Enter duration in days. Longer tests = more data = less noise."
-            error={errors.testDurationDays?.message}
-            suffix="days"
-          />
+          {/* Primary inputs - 2-column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Test Duration (required) */}
+            <NumberInput
+              name="testDurationDays"
+              label="Test duration"
+              placeholder="14"
+              tooltip="Enter duration in days. Longer tests = more data = less noise."
+              error={errors.testDurationDays?.message}
+              suffix="days"
+            />
 
-          {/* Daily Traffic (required, with inline derive option) */}
-          <NumberInput
-            name="dailyTraffic"
-            label="Daily eligible traffic"
-            placeholder="5,000"
-            tooltip="Average daily visitors who can enter the experiment"
-            error={errors.dailyTraffic?.message}
-            labelSuffix={
-              canDeriveFromAnnual ? (
-                <button
-                  type="button"
-                  onClick={handleDeriveFromAnnual}
-                  className="text-xs text-primary hover:text-primary/80"
-                >
-                  (derive: {Math.round(sharedInputs.annualVisitors! / 365).toLocaleString()}/day)
-                </button>
-              ) : undefined
-            }
-          />
+            {/* Daily Traffic (required, with inline derive option) */}
+            <NumberInput
+              name="dailyTraffic"
+              label="Daily traffic"
+              placeholder="5,000"
+              tooltip="Average daily visitors who can enter the experiment"
+              error={errors.dailyTraffic?.message}
+              labelSuffix={
+                canDeriveFromAnnual ? (
+                  <button
+                    type="button"
+                    onClick={handleDeriveFromAnnual}
+                    className="text-xs text-primary hover:text-primary/80"
+                  >
+                    (derive: {Math.round(sharedInputs.annualVisitors! / 365).toLocaleString()}/day)
+                  </button>
+                ) : undefined
+              }
+            />
 
-          {/* Traffic Split (pre-filled 50%) */}
-          <PercentageInput
-            name="trafficSplit"
-            label="Variant allocation"
-            placeholder="50%"
-            tooltip="Percentage of traffic seeing the variant (50% = standard A/B)"
-            error={errors.trafficSplit?.message}
-          />
+            {/* Traffic Split (pre-filled 50%) */}
+            <PercentageInput
+              name="trafficSplit"
+              label="Variant allocation"
+              placeholder="50%"
+              tooltip="Percentage of traffic seeing the variant (50% = standard A/B)"
+              error={errors.trafficSplit?.message}
+            />
 
-          {/* Eligibility Fraction (pre-filled 100%) */}
-          <PercentageInput
-            name="eligibilityFraction"
-            label="Eligible traffic"
-            placeholder="100%"
-            tooltip="What fraction of all traffic is eligible for this experiment?"
-            error={errors.eligibilityFraction?.message}
-          />
+            {/* Eligibility Fraction (pre-filled 100%) */}
+            <PercentageInput
+              name="eligibilityFraction"
+              label="Eligible traffic"
+              placeholder="100%"
+              tooltip="What fraction of all traffic is eligible for this experiment?"
+              error={errors.eligibilityFraction?.message}
+            />
+          </div>
 
           {/* Latency fields - visually de-emphasized */}
           <div className="space-y-4 pt-4 border-t border-border/50">
