@@ -159,24 +159,121 @@ describe('wizardStore', () => {
       expect(state.inputs.advanced.eligibilityFraction).not.toBe(null);
     });
 
-    it('clears completedSections when switching modes', () => {
-      const { setMode, markSectionComplete } = useWizardStore.getState();
+    it('persists section state when switching A->B->A', () => {
+      const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
 
-      // Complete some sections in basic mode
+      // Clear any previous backups
+      localStorage.removeItem('wizard-advanced-backup');
+      localStorage.removeItem('wizard-basic-backup');
+
+      // Start in advanced mode
+      setMode('advanced');
+
+      // Mark sections 0,1,2 complete and set currentSection to 2
+      markSectionComplete(0);
+      markSectionComplete(1);
+      markSectionComplete(2);
+      setCurrentSection(2);
+
+      // Verify state before switch
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2]);
+      expect(useWizardStore.getState().currentSection).toBe(2);
+
+      // Switch to basic mode - advanced state should be backed up
       setMode('basic');
+
+      // Progress in basic mode
+      markSectionComplete(0);
+      markSectionComplete(1);
+      setCurrentSection(1);
+
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
+      expect(useWizardStore.getState().currentSection).toBe(1);
+
+      // Switch back to advanced - should restore advanced section state
+      setMode('advanced');
+
+      expect(useWizardStore.getState().currentSection).toBe(2);
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2]);
+    });
+
+    it('persists section state when switching B->A->B', () => {
+      const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
+
+      // Clear any previous backups
+      localStorage.removeItem('wizard-advanced-backup');
+      localStorage.removeItem('wizard-basic-backup');
+
+      // Start in basic mode (default)
+      // Mark sections 0,1 complete and set currentSection to 1
+      markSectionComplete(0);
+      markSectionComplete(1);
+      setCurrentSection(1);
+
+      // Verify state before switch
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
+      expect(useWizardStore.getState().currentSection).toBe(1);
+
+      // Switch to advanced mode - basic state should be backed up
+      setMode('advanced');
+
+      // Progress in advanced mode
+      markSectionComplete(0);
+      setCurrentSection(0);
+
+      expect(useWizardStore.getState().completedSections).toEqual([0]);
+      expect(useWizardStore.getState().currentSection).toBe(0);
+
+      // Switch back to basic - should restore basic section state
+      setMode('basic');
+
+      expect(useWizardStore.getState().currentSection).toBe(1);
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
+    });
+
+    it('handles missing backup gracefully with defaults', () => {
+      const { setMode } = useWizardStore.getState();
+
+      // Clear all backups
+      localStorage.removeItem('wizard-advanced-backup');
+      localStorage.removeItem('wizard-basic-backup');
+
+      // Switch to advanced (no backup exists)
+      setMode('advanced');
+
+      // Should use defaults
+      expect(useWizardStore.getState().currentSection).toBe(0);
+      expect(useWizardStore.getState().completedSections).toEqual([]);
+
+      // Switch to basic (no backup exists)
+      setMode('basic');
+
+      // Should use defaults
+      expect(useWizardStore.getState().currentSection).toBe(0);
+      expect(useWizardStore.getState().completedSections).toEqual([]);
+    });
+
+    it('resets section state when no backup exists for target mode', () => {
+      const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
+
+      // Clear any previous backups
+      localStorage.removeItem('wizard-advanced-backup');
+      localStorage.removeItem('wizard-basic-backup');
+
+      // Complete some sections in basic mode (default)
       markSectionComplete(0);
       markSectionComplete(1);
       markSectionComplete(2);
       markSectionComplete(3);
+      setCurrentSection(3);
 
       // Verify sections are completed
       expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2, 3]);
 
-      // Switch to advanced mode
+      // Switch to advanced mode (no backup exists for advanced)
       setMode('advanced');
 
-      // completedSections should be cleared because section indices don't align
-      // between Basic (4 sections) and Advanced (5 sections)
+      // Section state should reset to defaults because there's no advanced backup
       expect(useWizardStore.getState().completedSections).toEqual([]);
       expect(useWizardStore.getState().currentSection).toBe(0);
     });
