@@ -147,8 +147,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Phase 18 Complete - v1.2 Milestone Complete
+Last session: 2026-02-21
+Stopped at: Quick Task 10 complete (persist section state on mode switch)
 Next action: v1.2 milestone wrap-up and deployment
 
 ## Archive Reference
@@ -173,4 +173,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-20 (Phase 18 complete, v1.2 milestone complete)*
+*Updated: 2026-02-21 (Quick Task 10 complete)*
