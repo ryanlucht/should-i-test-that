@@ -55,15 +55,17 @@ export const useWizardStore = create<WizardStore>()(
 
       /**
        * Set the calculator mode
-       * When switching to 'basic', saves advanced inputs to localStorage backup
+       * When switching to 'basic', saves advanced inputs AND section state to localStorage backup
        * and clears them from state to prevent affecting Basic calculations.
-       * When switching to 'advanced', restores inputs from backup if available.
+       * When switching to 'advanced', restores inputs AND section state from backup if available.
        *
-       * Also clears completedSections when switching modes, because:
-       * - Basic mode has 4 sections: baseline(0), uncertainty(1), threshold(2), results(3)
-       * - Advanced mode has 5 sections: baseline(0), uncertainty(1), threshold(2), test-design(3), results(4)
-       * - Section indices don't align between modes (index 3 is results in Basic but test-design in Advanced)
-       * - Preserving completedSections would incorrectly mark test-design as complete when switching B->A
+       * Section state (currentSection, completedSections) is backed up per mode:
+       * - wizard-advanced-backup: stores advanced inputs + section state when leaving advanced
+       * - wizard-basic-backup: stores section state when leaving basic
+       *
+       * This allows users to resume where they left off when switching back to a mode.
+       * Each mode has independent section indices (Basic: 4 sections, Advanced: 5 sections),
+       * and each backup stores the correct indices for that mode.
        */
       setMode: (mode: Mode) => {
         set((state) => {
@@ -75,16 +77,34 @@ export const useWizardStore = create<WizardStore>()(
           // Track mode selection for analytics (OBS-06)
           trackModeSelected(mode);
 
-          // When switching to basic mode, backup and clear advanced inputs
+          // When switching to basic mode, backup advanced state and restore basic state
           if (mode === 'basic') {
-            // Backup advanced inputs to localStorage before clearing (POL-03)
+            // Backup advanced inputs AND section state to localStorage before clearing (POL-03)
             try {
               localStorage.setItem(
                 'wizard-advanced-backup',
-                JSON.stringify(state.inputs.advanced)
+                JSON.stringify({
+                  advanced: state.inputs.advanced,
+                  currentSection: state.currentSection,
+                  completedSections: state.completedSections,
+                })
               );
             } catch {
               // Ignore localStorage errors (private browsing, quota exceeded, etc.)
+            }
+
+            // Restore basic section state from backup if available
+            let restoredCurrentSection = 0;
+            let restoredCompletedSections: number[] = [];
+            try {
+              const basicBackup = localStorage.getItem('wizard-basic-backup');
+              if (basicBackup) {
+                const parsed = JSON.parse(basicBackup);
+                restoredCurrentSection = typeof parsed.currentSection === 'number' ? parsed.currentSection : 0;
+                restoredCompletedSections = Array.isArray(parsed.completedSections) ? parsed.completedSections : [];
+              }
+            } catch {
+              // Ignore parse errors, use defaults
             }
 
             return {
@@ -93,26 +113,44 @@ export const useWizardStore = create<WizardStore>()(
                 ...state.inputs,
                 advanced: initialAdvancedInputs,
               },
-              // Clear completedSections when switching modes
-              // Section indices don't align between Basic (4 sections) and Advanced (5 sections)
-              completedSections: [],
-              currentSection: 0,
+              currentSection: restoredCurrentSection,
+              completedSections: restoredCompletedSections,
             };
           }
 
-          // When switching to advanced, restore from backup if available (POL-03)
+          // When switching to advanced, backup basic section state and restore advanced state (POL-03)
+          // First, backup current basic section state
+          try {
+            localStorage.setItem(
+              'wizard-basic-backup',
+              JSON.stringify({
+                currentSection: state.currentSection,
+                completedSections: state.completedSections,
+              })
+            );
+          } catch {
+            // Ignore localStorage errors
+          }
+
+          // Restore advanced inputs AND section state from backup
           let restoredAdvanced = state.inputs.advanced;
+          let restoredCurrentSection = 0;
+          let restoredCompletedSections: number[] = [];
           try {
             const backup = localStorage.getItem('wizard-advanced-backup');
             if (backup) {
-              const parsed = JSON.parse(backup) as AdvancedInputs;
-              // Merge with current state, preferring backup values
+              const parsed = JSON.parse(backup);
+              // Restore advanced inputs (backward compatible: handle old format or new format)
+              const advancedInputs = parsed.advanced ?? parsed;
               restoredAdvanced = {
                 ...state.inputs.advanced,
-                ...parsed,
+                ...advancedInputs,
                 // Ensure priorShape has a default
-                priorShape: parsed.priorShape ?? state.inputs.advanced.priorShape ?? 'normal',
+                priorShape: advancedInputs.priorShape ?? state.inputs.advanced.priorShape ?? 'normal',
               };
+              // Restore section state (new fields, may not exist in old backups)
+              restoredCurrentSection = typeof parsed.currentSection === 'number' ? parsed.currentSection : 0;
+              restoredCompletedSections = Array.isArray(parsed.completedSections) ? parsed.completedSections : [];
             }
           } catch {
             // Ignore parse errors, use current state
@@ -127,10 +165,8 @@ export const useWizardStore = create<WizardStore>()(
                 priorShape: restoredAdvanced.priorShape ?? 'normal',
               },
             },
-            // Clear completedSections when switching modes
-            // Section indices don't align between Basic (4 sections) and Advanced (5 sections)
-            completedSections: [],
-            currentSection: 0,
+            currentSection: restoredCurrentSection,
+            completedSections: restoredCompletedSections,
           };
         });
       },
