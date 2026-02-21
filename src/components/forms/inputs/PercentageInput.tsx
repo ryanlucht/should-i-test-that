@@ -99,7 +99,7 @@ export function PercentageInput({
               {tooltip && <InfoTooltip content={tooltip} />}
             </div>
 
-            <div className="relative">
+            <div className="relative w-full">
               <Input
                 id={name}
                 type="text"
@@ -112,6 +112,7 @@ export function PercentageInput({
                 aria-invalid={!!error}
                 aria-describedby={error ? `${name}-error` : helpText ? `${name}-help` : undefined}
                 className={cn(
+                  'w-full',
                   error && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
                 )}
               />
