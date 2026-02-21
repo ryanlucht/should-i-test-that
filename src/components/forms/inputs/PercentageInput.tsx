@@ -28,6 +28,8 @@ export interface PercentageInputProps {
   tooltip?: React.ReactNode;
   /** Error message to display */
   error?: string;
+  /** Invisible spacer text to align with adjacent inputs that have suffixes (e.g., "days") */
+  alignWithSuffix?: string;
 }
 
 /**
@@ -41,6 +43,7 @@ export function PercentageInput({
   helpText,
   tooltip,
   error,
+  alignWithSuffix,
 }: PercentageInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
@@ -99,7 +102,7 @@ export function PercentageInput({
               {tooltip && <InfoTooltip content={tooltip} />}
             </div>
 
-            <div className="relative w-full">
+            <div className={cn('flex gap-2 items-center', !alignWithSuffix && 'w-full')}>
               <Input
                 id={name}
                 type="text"
@@ -112,10 +115,16 @@ export function PercentageInput({
                 aria-invalid={!!error}
                 aria-describedby={error ? `${name}-error` : helpText ? `${name}-help` : undefined}
                 className={cn(
-                  'w-full',
+                  alignWithSuffix ? 'flex-1' : 'w-full',
                   error && 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
                 )}
               />
+              {/* Invisible spacer to align with adjacent inputs that have suffixes */}
+              {alignWithSuffix && (
+                <span className="text-sm text-muted-foreground invisible" aria-hidden="true">
+                  {alignWithSuffix}
+                </span>
+              )}
             </div>
 
             {helpText && !error && (

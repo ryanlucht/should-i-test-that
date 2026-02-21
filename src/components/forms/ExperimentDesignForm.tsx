@@ -207,6 +207,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
               placeholder="50%"
               tooltip="Percentage of traffic seeing the variant (50% = standard A/B)"
               error={errors.trafficSplit?.message}
+              alignWithSuffix="days"
             />
 
             {/* Eligibility Fraction (pre-filled 100%) */}
