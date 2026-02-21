@@ -2,10 +2,10 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-03)
+See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** v1.2 Observability & Design Refresh
+**Current focus:** v1.2 Shipped — Planning next milestone
 
 ## Current Position
 
@@ -148,10 +148,14 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Quick Task 10 complete (persist section state on mode switch)
-Next action: v1.2 milestone wrap-up and deployment
+Stopped at: v1.2 milestone complete and deployed
+Next action: /gsd:new-milestone when ready for v1.3
 
 ## Archive Reference
+
+For v1.2 details, see:
+- `.planning/milestones/v1.2-ROADMAP.md`
+- `.planning/milestones/v1.2-REQUIREMENTS.md`
 
 For v1.1 details, see:
 - `.planning/milestones/v1.1-ROADMAP.md`
@@ -173,4 +177,4 @@ DRUIDS mockup tokens (from `.planning/mockups/code.html`):
 - Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-21 (Quick Task 10 complete)*
+*Updated: 2026-02-21 (v1.2 milestone complete and deployed)*
