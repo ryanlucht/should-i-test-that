@@ -55,7 +55,7 @@ export const useWizardStore = create<WizardStore>()(
 
       /**
        * Set the calculator mode
-       * When switching to 'basic', saves advanced inputs AND section state to localStorage backup
+       * When switching to 'basic', saves advanced inputs AND section state to sessionStorage backup
        * and clears them from state to prevent affecting Basic calculations.
        * When switching to 'advanced', restores inputs AND section state from backup if available.
        *
@@ -79,9 +79,9 @@ export const useWizardStore = create<WizardStore>()(
 
           // When switching to basic mode, backup advanced state and restore basic state
           if (mode === 'basic') {
-            // Backup advanced inputs AND section state to localStorage before clearing (POL-03)
+            // Backup advanced inputs AND section state to sessionStorage before clearing (POL-03)
             try {
-              localStorage.setItem(
+              sessionStorage.setItem(
                 'wizard-advanced-backup',
                 JSON.stringify({
                   advanced: state.inputs.advanced,
@@ -90,14 +90,14 @@ export const useWizardStore = create<WizardStore>()(
                 })
               );
             } catch {
-              // Ignore localStorage errors (private browsing, quota exceeded, etc.)
+              // Ignore sessionStorage errors (private browsing, quota exceeded, etc.)
             }
 
             // Restore basic section state from backup if available
             let restoredCurrentSection = 0;
             let restoredCompletedSections: number[] = [];
             try {
-              const basicBackup = localStorage.getItem('wizard-basic-backup');
+              const basicBackup = sessionStorage.getItem('wizard-basic-backup');
               if (basicBackup) {
                 const parsed = JSON.parse(basicBackup);
                 restoredCurrentSection = typeof parsed.currentSection === 'number' ? parsed.currentSection : 0;
@@ -121,7 +121,7 @@ export const useWizardStore = create<WizardStore>()(
           // When switching to advanced, backup basic section state and restore advanced state (POL-03)
           // First, backup current basic section state
           try {
-            localStorage.setItem(
+            sessionStorage.setItem(
               'wizard-basic-backup',
               JSON.stringify({
                 currentSection: state.currentSection,
@@ -129,7 +129,7 @@ export const useWizardStore = create<WizardStore>()(
               })
             );
           } catch {
-            // Ignore localStorage errors
+            // Ignore sessionStorage errors
           }
 
           // Restore advanced inputs AND section state from backup
@@ -137,7 +137,7 @@ export const useWizardStore = create<WizardStore>()(
           let restoredCurrentSection = 0;
           let restoredCompletedSections: number[] = [];
           try {
-            const backup = localStorage.getItem('wizard-advanced-backup');
+            const backup = sessionStorage.getItem('wizard-advanced-backup');
             if (backup) {
               const parsed = JSON.parse(backup);
               // Restore advanced inputs (backward compatible: handle old format or new format)
@@ -252,6 +252,13 @@ export const useWizardStore = create<WizardStore>()(
        * Used when user wants to start over
        */
       resetWizard: () => {
+        // Clear mode-switch backups so stale data doesn't repopulate after reset
+        try {
+          sessionStorage.removeItem('wizard-advanced-backup');
+          sessionStorage.removeItem('wizard-basic-backup');
+        } catch {
+          // Storage may be unavailable in some environments
+        }
         set({
           mode: 'basic',
           inputs: initialInputs,

@@ -390,23 +390,46 @@ describe('useEVSICalculations', () => {
 
         const { result } = renderHook(() => useEVSICalculations());
 
-        // Uniform requires Worker (async) but ComlinkWorker isn't available in JSDOM
-        // The hook will attempt to create a Worker, fail, and catch the error gracefully
-        // We test that:
-        // 1. Initial state triggers loading (validation passed)
-        // 2. After error handling, loading becomes false
-        // In a real browser, this would return results
+        // Uniform requires Worker (async) but ComlinkWorker isn't available in JSDOM.
+        // The Worker will fail, then the sync fallback computes results on the main thread.
         await waitFor(
           () => {
-            // After Worker error is caught, loading should be false
-            // This confirms validation passed and we attempted Worker computation
             expect(result.current.loading).toBe(false);
           },
-          { timeout: 2000 }
+          { timeout: 5000 }
         );
 
-        // Results will be null because ComlinkWorker isn't available in JSDOM
-        // This is expected - the real test is that validation didn't reject the uniform inputs
+        // With sync fallback, uniform prior should now produce results
+        expect(result.current.results).not.toBeNull();
+        expect(result.current.results!.evsi.evsiDollars).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    describe('Worker sync fallback', () => {
+      it('computes results via sync fallback when Worker is unavailable', async () => {
+        // Student-t prior requires Worker path (not fast path).
+        // In JSDOM, Worker creation fails → sync fallback runs on main thread.
+        act(() => {
+          setupSharedInputs();
+          setupAdvancedInputs();
+          const { setAdvancedInput } = useWizardStore.getState();
+          setAdvancedInput('priorShape', 'student-t');
+          setAdvancedInput('studentTDf', 5);
+        });
+
+        const { result } = renderHook(() => useEVSICalculations());
+
+        await waitFor(
+          () => {
+            expect(result.current.loading).toBe(false);
+          },
+          { timeout: 5000 }
+        );
+
+        // Sync fallback should produce valid results
+        expect(result.current.results).not.toBeNull();
+        expect(result.current.results!.evsi.evsiDollars).toBeGreaterThanOrEqual(0);
+        expect(result.current.results!.netValueDollars).toBeDefined();
       });
     });
   });

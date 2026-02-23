@@ -25,6 +25,7 @@ import {
   deriveK,
   normalizeThresholdToLift,
   calculateEVSINormalFastPath,
+  calculateEVSIMonteCarlo,
   calculateCostOfDelay,
   deriveSampleSizes,
 } from '@/lib/calculations';
@@ -374,10 +375,19 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
           setLoading(false);
         }
       } catch (error) {
-        console.error('EVSI Worker error:', error);
+        console.error('EVSI Worker error, falling back to sync:', error);
         if (currentRequestId === requestIdRef.current) {
-          setWorkerResults(null);
-          setNetValueResults(null);
+          try {
+            // Synchronous fallback: run Monte Carlo on main thread
+            const evsiResults = calculateEVSIMonteCarlo(evsiInputs, 5000);
+            const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000);
+            setWorkerResults(evsiResults);
+            setNetValueResults(netResults);
+          } catch (fallbackError) {
+            console.error('Sync fallback also failed:', fallbackError);
+            setWorkerResults(null);
+            setNetValueResults(null);
+          }
           setLoading(false);
         }
       } finally {
@@ -392,12 +402,14 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     runWorker();
 
     // Cleanup: terminate worker immediately on unmount, invalidate request
+    // Capture ref values before cleanup to avoid stale ref reads (react-hooks/exhaustive-deps)
+    const currentWorker = workerRef.current;
     return () => {
-      requestIdRef.current++;
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+      requestIdRef.current++; // eslint-disable-line react-hooks/exhaustive-deps -- intentional: invalidate stale requests on cleanup
+      if (currentWorker) {
+        currentWorker.terminate();
       }
+      workerRef.current = null;
     };
   }, [validatedInputs]);
 

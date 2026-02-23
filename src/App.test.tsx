@@ -41,7 +41,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
     expect(screen.getByLabelText('Calculator mode')).toBeInTheDocument();
     // Header title is clickable to go back
-    fireEvent.click(screen.getByRole('button', { name: 'Should I Test That?' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Experiment Value Calculator' }));
     // Should be back on welcome page
     expect(screen.getByRole('button', { name: 'Get Started' })).toBeInTheDocument();
   });

@@ -242,6 +242,7 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
     } = methods;
 
     // Watch the scenario to show/hide inline inputs
+    // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is the intended API
     const selectedScenario = watch('scenario') as ThresholdScenario | undefined;
 
     /**

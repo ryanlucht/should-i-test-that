@@ -7,16 +7,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { axe, type AxeMatchers } from 'vitest-axe';
+import { axe } from 'vitest-axe';
 import { ResultsSection } from './ResultsSection';
 import type { EVPIResults } from '@/lib/calculations/types';
-
-// Extend Vitest's expect with vitest-axe matchers for type checking
-// (Runtime extension happens in test setup, this is for TypeScript)
-declare module 'vitest' {
-  interface Assertion<T> extends AxeMatchers {}
-  interface AsymmetricMatchersContaining extends AxeMatchers {}
-}
 
 // Mock useEVPICalculations hook
 vi.mock('@/hooks/useEVPICalculations', () => ({
@@ -150,7 +143,7 @@ describe('ResultsSection accessibility', () => {
     render(<ResultsSection />);
 
     // Find the regret card - it should have highlight styling
-    const regretCard = screen.getByText('Chance you\'d regret not testing').closest('div');
+    const regretCard = screen.getByText('Regret Risk').closest('div');
     expect(regretCard).toBeInTheDocument();
   });
 });

@@ -100,11 +100,11 @@ describe('wizardStore', () => {
       expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(21);
     });
 
-    it('POL-03: A->B->A mode switch - advanced inputs should persist via localStorage backup', () => {
+    it('POL-03: A->B->A mode switch - advanced inputs should persist via sessionStorage backup', () => {
       const { setMode, setSharedInput, setAdvancedInput } = useWizardStore.getState();
 
       // Clear any previous backup
-      localStorage.removeItem('wizard-advanced-backup');
+      sessionStorage.removeItem('wizard-advanced-backup');
 
       // Step 1: Start in Advanced mode and fill inputs
       setMode('advanced');
@@ -131,8 +131,8 @@ describe('wizardStore', () => {
       expect(state.inputs.advanced.dailyTraffic).toBe(null);
       expect(state.inputs.advanced.priorShape).toBe(null);
 
-      // But backup should exist in localStorage
-      expect(localStorage.getItem('wizard-advanced-backup')).not.toBe(null);
+      // But backup should exist in sessionStorage
+      expect(sessionStorage.getItem('wizard-advanced-backup')).not.toBe(null);
 
       // Shared inputs should be preserved
       expect(state.inputs.shared.baselineConversionRate).toBe(0.05);
@@ -163,8 +163,8 @@ describe('wizardStore', () => {
       const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
 
       // Clear any previous backups
-      localStorage.removeItem('wizard-advanced-backup');
-      localStorage.removeItem('wizard-basic-backup');
+      sessionStorage.removeItem('wizard-advanced-backup');
+      sessionStorage.removeItem('wizard-basic-backup');
 
       // Start in advanced mode
       setMode('advanced');
@@ -201,8 +201,8 @@ describe('wizardStore', () => {
       const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
 
       // Clear any previous backups
-      localStorage.removeItem('wizard-advanced-backup');
-      localStorage.removeItem('wizard-basic-backup');
+      sessionStorage.removeItem('wizard-advanced-backup');
+      sessionStorage.removeItem('wizard-basic-backup');
 
       // Start in basic mode (default)
       // Mark sections 0,1 complete and set currentSection to 1
@@ -235,8 +235,8 @@ describe('wizardStore', () => {
       const { setMode } = useWizardStore.getState();
 
       // Clear all backups
-      localStorage.removeItem('wizard-advanced-backup');
-      localStorage.removeItem('wizard-basic-backup');
+      sessionStorage.removeItem('wizard-advanced-backup');
+      sessionStorage.removeItem('wizard-basic-backup');
 
       // Switch to advanced (no backup exists)
       setMode('advanced');
@@ -257,8 +257,8 @@ describe('wizardStore', () => {
       const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
 
       // Clear any previous backups
-      localStorage.removeItem('wizard-advanced-backup');
-      localStorage.removeItem('wizard-basic-backup');
+      sessionStorage.removeItem('wizard-advanced-backup');
+      sessionStorage.removeItem('wizard-basic-backup');
 
       // Complete some sections in basic mode (default)
       markSectionComplete(0);
@@ -417,6 +417,29 @@ describe('wizardStore', () => {
       expect(state.inputs.advanced.testDurationDays).toBe(null);
       expect(state.completedSections).toHaveLength(0);
       expect(state.currentSection).toBe(0);
+    });
+
+    it('clears mode-switch backups so stale data does not repopulate after reset', () => {
+      const { setMode, setSharedInput, setAdvancedInput, resetWizard } =
+        useWizardStore.getState();
+
+      // Build up state in advanced mode
+      setMode('advanced');
+      setSharedInput('baselineConversionRate', 5);
+      setAdvancedInput('testDurationDays', 14);
+
+      // Switch to basic — this creates a backup of advanced state
+      setMode('basic');
+
+      // Reset the wizard (should clear backups)
+      resetWizard();
+
+      // Now switch back to advanced — stale backup should NOT repopulate
+      setMode('advanced');
+
+      const state = useWizardStore.getState();
+      expect(state.inputs.shared.baselineConversionRate).toBe(null);
+      expect(state.inputs.advanced.testDurationDays).toBe(null);
     });
   });
 });

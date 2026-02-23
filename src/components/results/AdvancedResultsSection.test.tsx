@@ -7,17 +7,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { axe, type AxeMatchers } from 'vitest-axe';
+import { axe } from 'vitest-axe';
 import { AdvancedResultsSection } from './AdvancedResultsSection';
 import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
 import type { CoDResults } from '@/lib/calculations/cost-of-delay';
-
-// Extend Vitest's expect with vitest-axe matchers for type checking
-// (Runtime extension happens in test setup, this is for TypeScript)
-declare module 'vitest' {
-  interface Assertion<T> extends AxeMatchers {}
-  interface AsymmetricMatchersContaining extends AxeMatchers {}
-}
 
 // Mock useEVSICalculations hook
 vi.mock('@/hooks/useEVSICalculations', () => ({

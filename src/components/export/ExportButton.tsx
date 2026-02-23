@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { ExportCard } from './ExportCard';
 import { useExportPng } from '@/hooks/useExportPng';
 import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
+import { deriveK, normalizeThresholdToLift } from '@/lib/calculations';
 import type { EVPIResults, PriorDistribution } from '@/lib/calculations/types';
 import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
 
@@ -39,6 +40,8 @@ interface SharedInputs {
   priorIntervalHigh: number | null;
   thresholdScenario: 'any-positive' | 'minimum-lift' | 'accept-loss' | null;
   thresholdValue: number | null;
+  /** Unit of the threshold value — 'dollars', 'lift' (percentage), or null if not set */
+  thresholdUnit: 'dollars' | 'lift' | null;
 }
 
 /**
@@ -139,21 +142,29 @@ export function ExportButton(props: ExportButtonProps) {
     return { type: 'normal' as const, mu_L, sigma_L };
   }, [mode, sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh, props]);
 
-  // Get K and threshold_L for chart
-  const chartK = mode === 'basic' ? props.evpiResults.K : props.evsiResults.evsi.evsiDollars > 0
-    // For Advanced mode, we need K - derive from net value and prior
-    // Use a reasonable fallback K since EVSI results don't expose K directly
-    ? 100000 // Fallback K value
-    : 100000;
+  // Derive K: annual dollars per unit lift = N * p * V
+  // Basic mode reads K from EVPI results; Advanced mode derives from shared inputs
+  const chartK = mode === 'basic'
+    ? props.evpiResults.K
+    : deriveK(
+        sharedInputs.annualVisitors ?? 0,
+        sharedInputs.baselineConversionRate ?? 0,
+        sharedInputs.valuePerConversion ?? 0
+      );
 
+  // Derive threshold_L: threshold as decimal lift
+  // Uses normalizeThresholdToLift which handles both dollar and lift units
   const threshold_L = mode === 'basic'
     ? props.evpiResults.threshold_L
     : sharedInputs.thresholdScenario === 'any-positive'
       ? 0
-      : (sharedInputs.thresholdValue ?? 0) / 100; // Convert percent to decimal
+      : normalizeThresholdToLift(
+          sharedInputs.thresholdValue ?? 0,
+          sharedInputs.thresholdUnit ?? 'lift',
+          chartK
+        );
 
-  // Get K from EVPI results in basic mode, or derive in advanced mode
-  const actualK = mode === 'basic' ? props.evpiResults.K : chartK;
+  const actualK = chartK;
 
   // Derive verdict value based on mode
   const verdictValue = mode === 'basic'

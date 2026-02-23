@@ -70,6 +70,7 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
     } = methods;
 
     // Watch the unit label for the label text
+    // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is the intended API
     const unitLabel = watch('visitorUnitLabel');
 
     /**
