@@ -1,355 +1,135 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useWizardStore } from './wizardStore';
-import { initialAdvancedInputs } from '@/types/wizard';
+import { initialInputs } from '@/types/wizard';
 
 describe('wizardStore', () => {
   beforeEach(() => {
     // Clear sessionStorage and reset store before each test
     sessionStorage.clear();
     useWizardStore.setState({
-      mode: 'basic',
-      inputs: {
-        shared: {
-          baselineConversionRate: null,
-          annualVisitors: null,
-          visitorUnitLabel: 'visitors',
-          valuePerConversion: null,
-          priorType: null,
-          priorIntervalLow: null,
-          priorIntervalHigh: null,
-          thresholdScenario: null,
-          thresholdUnit: null,
-          thresholdValue: null,
-        },
-        advanced: { ...initialAdvancedInputs },
-      },
+      inputs: { ...initialInputs },
       currentSection: 0,
       completedSections: [],
     });
   });
 
-  describe('mode switching', () => {
-    it('starts in basic mode', () => {
-      const { mode } = useWizardStore.getState();
-      expect(mode).toBe('basic');
-    });
-
-    it('can switch to advanced mode', () => {
-      const { setMode } = useWizardStore.getState();
-      setMode('advanced');
-      expect(useWizardStore.getState().mode).toBe('advanced');
-    });
-
-    it('preserves shared inputs when switching modes', () => {
-      const { setSharedInput, setMode } = useWizardStore.getState();
-
-      // Set some shared inputs
-      setSharedInput('baselineConversionRate', 5);
-      setSharedInput('annualVisitors', 100000);
-
-      // Switch to advanced
-      setMode('advanced');
-      expect(useWizardStore.getState().inputs.shared.baselineConversionRate).toBe(5);
-      expect(useWizardStore.getState().inputs.shared.annualVisitors).toBe(100000);
-
-      // Switch back to basic
-      setMode('basic');
-      expect(useWizardStore.getState().inputs.shared.baselineConversionRate).toBe(5);
-      expect(useWizardStore.getState().inputs.shared.annualVisitors).toBe(100000);
-    });
-
-    it('clears advanced inputs when switching to basic mode', () => {
-      const { setMode, setAdvancedInput } = useWizardStore.getState();
-
-      // Switch to advanced and set some inputs
-      setMode('advanced');
-      setAdvancedInput('testDurationDays', 14);
-      setAdvancedInput('dailyTraffic', 5000);
-      setAdvancedInput('conversionLatencyDays', 7);
-
-      // Verify advanced inputs are set
-      expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(14);
-      expect(useWizardStore.getState().inputs.advanced.dailyTraffic).toBe(5000);
-      expect(useWizardStore.getState().inputs.advanced.conversionLatencyDays).toBe(7);
-
-      // Switch to basic - should clear advanced inputs
-      setMode('basic');
+  describe('inputs', () => {
+    it('starts with initial input values', () => {
       const { inputs } = useWizardStore.getState();
-      expect(inputs.advanced.testDurationDays).toBe(null);
-      expect(inputs.advanced.dailyTraffic).toBe(null);
-      expect(inputs.advanced.conversionLatencyDays).toBe(0);
-      // trafficSplit has a default value (0.5 = 50%)
-      expect(inputs.advanced.trafficSplit).toBe(0.5);
+      expect(inputs.baselineConversionRate).toBe(null);
+      expect(inputs.annualVisitors).toBe(null);
+      expect(inputs.visitorUnitLabel).toBe('visitors');
+      expect(inputs.valuePerConversion).toBe(null);
+      expect(inputs.priorType).toBe(null);
+      expect(inputs.priorShape).toBe('normal');
+      expect(inputs.testDurationDays).toBe(null);
+      expect(inputs.trafficSplit).toBe(0.5);
+      expect(inputs.eligibilityFraction).toBe(1.0);
+      expect(inputs.conversionLatencyDays).toBe(0);
+      expect(inputs.decisionLatencyDays).toBe(0);
     });
 
-    it('keeps advanced inputs when switching to advanced mode', () => {
-      const { setMode, setAdvancedInput } = useWizardStore.getState();
+    it('can set baseline inputs via setInput', () => {
+      const { setInput } = useWizardStore.getState();
 
-      // Switch to advanced and set some inputs
-      setMode('advanced');
-      setAdvancedInput('testDurationDays', 14);
+      setInput('baselineConversionRate', 0.05);
+      expect(useWizardStore.getState().inputs.baselineConversionRate).toBe(0.05);
 
-      // Switch to basic (clears advanced inputs)
-      setMode('basic');
+      setInput('annualVisitors', 1000000);
+      expect(useWizardStore.getState().inputs.annualVisitors).toBe(1000000);
 
-      // Set new advanced inputs
-      setMode('advanced');
-      setAdvancedInput('testDurationDays', 21);
+      setInput('valuePerConversion', 100);
+      expect(useWizardStore.getState().inputs.valuePerConversion).toBe(100);
 
-      // Verify inputs are preserved when staying in advanced
-      expect(useWizardStore.getState().inputs.advanced.testDurationDays).toBe(21);
+      setInput('visitorUnitLabel', 'sessions');
+      expect(useWizardStore.getState().inputs.visitorUnitLabel).toBe('sessions');
     });
 
-    it('POL-03: A->B->A mode switch - advanced inputs should persist via sessionStorage backup', () => {
-      const { setMode, setSharedInput, setAdvancedInput } = useWizardStore.getState();
+    it('can set prior inputs via setInput', () => {
+      const { setInput } = useWizardStore.getState();
 
-      // Clear any previous backup
-      sessionStorage.removeItem('wizard-advanced-backup');
+      setInput('priorType', 'custom');
+      expect(useWizardStore.getState().inputs.priorType).toBe('custom');
 
-      // Step 1: Start in Advanced mode and fill inputs
-      setMode('advanced');
-      setSharedInput('baselineConversionRate', 0.05);
-      setSharedInput('annualVisitors', 1000000);
-      setSharedInput('valuePerConversion', 100);
-      setSharedInput('thresholdScenario', 'any-positive');
-      setAdvancedInput('priorShape', 'normal');
-      setAdvancedInput('testDurationDays', 14);
-      setAdvancedInput('dailyTraffic', 2740);
+      setInput('priorIntervalLow', -3);
+      expect(useWizardStore.getState().inputs.priorIntervalLow).toBe(-3);
 
-      // Verify all inputs are set
-      let state = useWizardStore.getState();
-      expect(state.inputs.advanced.priorShape).toBe('normal');
-      expect(state.inputs.advanced.testDurationDays).toBe(14);
-      expect(state.inputs.advanced.dailyTraffic).toBe(2740);
-
-      // Step 2: Switch to Basic mode
-      setMode('basic');
-      state = useWizardStore.getState();
-
-      // Advanced inputs should be cleared from state
-      expect(state.inputs.advanced.testDurationDays).toBe(null);
-      expect(state.inputs.advanced.dailyTraffic).toBe(null);
-      expect(state.inputs.advanced.priorShape).toBe(null);
-
-      // But backup should exist in sessionStorage
-      expect(sessionStorage.getItem('wizard-advanced-backup')).not.toBe(null);
-
-      // Shared inputs should be preserved
-      expect(state.inputs.shared.baselineConversionRate).toBe(0.05);
-      expect(state.inputs.shared.annualVisitors).toBe(1000000);
-
-      // Step 3: Switch back to Advanced mode - inputs should be RESTORED (POL-03)
-      setMode('advanced');
-      state = useWizardStore.getState();
-
-      // priorShape should be restored to 'normal'
-      expect(state.inputs.advanced.priorShape).toBe('normal');
-      // Other advanced inputs should be restored from backup
-      expect(state.inputs.advanced.testDurationDays).toBe(14);
-      expect(state.inputs.advanced.dailyTraffic).toBe(2740);
-      // Default values should be preserved
-      expect(state.inputs.advanced.trafficSplit).toBe(0.5);
-      expect(state.inputs.advanced.eligibilityFraction).toBe(1.0);
-
-      // All inputs needed for EVSI calculation should be non-null
-      expect(state.inputs.advanced.priorShape).not.toBe(null);
-      expect(state.inputs.advanced.testDurationDays).not.toBe(null);
-      expect(state.inputs.advanced.dailyTraffic).not.toBe(null);
-      expect(state.inputs.advanced.trafficSplit).not.toBe(null);
-      expect(state.inputs.advanced.eligibilityFraction).not.toBe(null);
+      setInput('priorIntervalHigh', 8);
+      expect(useWizardStore.getState().inputs.priorIntervalHigh).toBe(8);
     });
 
-    it('persists section state when switching A->B->A', () => {
-      const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
+    it('can set threshold inputs via setInput', () => {
+      const { setInput } = useWizardStore.getState();
 
-      // Clear any previous backups
-      sessionStorage.removeItem('wizard-advanced-backup');
-      sessionStorage.removeItem('wizard-basic-backup');
+      setInput('thresholdScenario', 'minimum-lift');
+      expect(useWizardStore.getState().inputs.thresholdScenario).toBe('minimum-lift');
 
-      // Start in advanced mode
-      setMode('advanced');
+      setInput('thresholdUnit', 'lift');
+      expect(useWizardStore.getState().inputs.thresholdUnit).toBe('lift');
 
-      // Mark sections 0,1,2 complete and set currentSection to 2
-      markSectionComplete(0);
-      markSectionComplete(1);
-      markSectionComplete(2);
-      setCurrentSection(2);
-
-      // Verify state before switch
-      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2]);
-      expect(useWizardStore.getState().currentSection).toBe(2);
-
-      // Switch to basic mode - advanced state should be backed up
-      setMode('basic');
-
-      // Progress in basic mode
-      markSectionComplete(0);
-      markSectionComplete(1);
-      setCurrentSection(1);
-
-      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
-      expect(useWizardStore.getState().currentSection).toBe(1);
-
-      // Switch back to advanced - should restore advanced section state
-      setMode('advanced');
-
-      expect(useWizardStore.getState().currentSection).toBe(2);
-      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2]);
+      setInput('thresholdValue', 2);
+      expect(useWizardStore.getState().inputs.thresholdValue).toBe(2);
     });
 
-    it('persists section state when switching B->A->B', () => {
-      const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
+    it('can set experiment design inputs via setInput', () => {
+      const { setInput } = useWizardStore.getState();
 
-      // Clear any previous backups
-      sessionStorage.removeItem('wizard-advanced-backup');
-      sessionStorage.removeItem('wizard-basic-backup');
+      setInput('testDurationDays', 14);
+      expect(useWizardStore.getState().inputs.testDurationDays).toBe(14);
 
-      // Start in basic mode (default)
-      // Mark sections 0,1 complete and set currentSection to 1
-      markSectionComplete(0);
-      markSectionComplete(1);
-      setCurrentSection(1);
+      setInput('dailyTraffic', 5000);
+      expect(useWizardStore.getState().inputs.dailyTraffic).toBe(5000);
 
-      // Verify state before switch
-      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
-      expect(useWizardStore.getState().currentSection).toBe(1);
+      setInput('trafficSplit', 0.7);
+      expect(useWizardStore.getState().inputs.trafficSplit).toBe(0.7);
 
-      // Switch to advanced mode - basic state should be backed up
-      setMode('advanced');
+      setInput('eligibilityFraction', 0.8);
+      expect(useWizardStore.getState().inputs.eligibilityFraction).toBe(0.8);
 
-      // Progress in advanced mode
-      markSectionComplete(0);
-      setCurrentSection(0);
+      setInput('conversionLatencyDays', 7);
+      expect(useWizardStore.getState().inputs.conversionLatencyDays).toBe(7);
 
-      expect(useWizardStore.getState().completedSections).toEqual([0]);
-      expect(useWizardStore.getState().currentSection).toBe(0);
-
-      // Switch back to basic - should restore basic section state
-      setMode('basic');
-
-      expect(useWizardStore.getState().currentSection).toBe(1);
-      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
-    });
-
-    it('handles missing backup gracefully with defaults', () => {
-      const { setMode } = useWizardStore.getState();
-
-      // Clear all backups
-      sessionStorage.removeItem('wizard-advanced-backup');
-      sessionStorage.removeItem('wizard-basic-backup');
-
-      // Switch to advanced (no backup exists)
-      setMode('advanced');
-
-      // Should use defaults
-      expect(useWizardStore.getState().currentSection).toBe(0);
-      expect(useWizardStore.getState().completedSections).toEqual([]);
-
-      // Switch to basic (no backup exists)
-      setMode('basic');
-
-      // Should use defaults
-      expect(useWizardStore.getState().currentSection).toBe(0);
-      expect(useWizardStore.getState().completedSections).toEqual([]);
-    });
-
-    it('resets section state when no backup exists for target mode', () => {
-      const { setMode, markSectionComplete, setCurrentSection } = useWizardStore.getState();
-
-      // Clear any previous backups
-      sessionStorage.removeItem('wizard-advanced-backup');
-      sessionStorage.removeItem('wizard-basic-backup');
-
-      // Complete some sections in basic mode (default)
-      markSectionComplete(0);
-      markSectionComplete(1);
-      markSectionComplete(2);
-      markSectionComplete(3);
-      setCurrentSection(3);
-
-      // Verify sections are completed
-      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2, 3]);
-
-      // Switch to advanced mode (no backup exists for advanced)
-      setMode('advanced');
-
-      // Section state should reset to defaults because there's no advanced backup
-      expect(useWizardStore.getState().completedSections).toEqual([]);
-      expect(useWizardStore.getState().currentSection).toBe(0);
-    });
-
-    it('does not change state when switching to same mode', () => {
-      const { setMode, markSectionComplete, setAdvancedInput } = useWizardStore.getState();
-
-      // Set up state in advanced mode
-      setMode('advanced');
-      markSectionComplete(0);
-      markSectionComplete(1);
-      setAdvancedInput('testDurationDays', 14);
-
-      const stateBeforeSwitch = useWizardStore.getState();
-
-      // Try to switch to advanced again
-      setMode('advanced');
-
-      const stateAfterSwitch = useWizardStore.getState();
-
-      // State should be unchanged
-      expect(stateAfterSwitch.completedSections).toEqual(stateBeforeSwitch.completedSections);
-      expect(stateAfterSwitch.currentSection).toBe(stateBeforeSwitch.currentSection);
-      expect(stateAfterSwitch.inputs.advanced.testDurationDays).toBe(14);
+      setInput('decisionLatencyDays', 3);
+      expect(useWizardStore.getState().inputs.decisionLatencyDays).toBe(3);
     });
   });
 
-  describe('advanced inputs for prior shape', () => {
+  describe('prior shape inputs', () => {
     it('can set priorShape to normal, student-t, or uniform', () => {
-      const { setAdvancedInput } = useWizardStore.getState();
+      const { setInput } = useWizardStore.getState();
 
       // Normal
-      setAdvancedInput('priorShape', 'normal');
-      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('normal');
+      setInput('priorShape', 'normal');
+      expect(useWizardStore.getState().inputs.priorShape).toBe('normal');
 
       // Student-t
-      setAdvancedInput('priorShape', 'student-t');
-      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('student-t');
+      setInput('priorShape', 'student-t');
+      expect(useWizardStore.getState().inputs.priorShape).toBe('student-t');
 
       // Uniform
-      setAdvancedInput('priorShape', 'uniform');
-      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('uniform');
+      setInput('priorShape', 'uniform');
+      expect(useWizardStore.getState().inputs.priorShape).toBe('uniform');
     });
 
     it('can set studentTDf preset values', () => {
-      const { setAdvancedInput } = useWizardStore.getState();
+      const { setInput } = useWizardStore.getState();
 
       // df=3 (heavy tails)
-      setAdvancedInput('studentTDf', 3);
-      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(3);
+      setInput('studentTDf', 3);
+      expect(useWizardStore.getState().inputs.studentTDf).toBe(3);
 
       // df=5 (moderate)
-      setAdvancedInput('studentTDf', 5);
-      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(5);
+      setInput('studentTDf', 5);
+      expect(useWizardStore.getState().inputs.studentTDf).toBe(5);
 
       // df=10 (near-normal)
-      setAdvancedInput('studentTDf', 10);
-      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(10);
+      setInput('studentTDf', 10);
+      expect(useWizardStore.getState().inputs.studentTDf).toBe(10);
     });
 
-    it('clears prior shape inputs when switching to basic mode', () => {
-      const { setMode, setAdvancedInput } = useWizardStore.getState();
-
-      // Set prior shape inputs in advanced mode
-      setMode('advanced');
-      setAdvancedInput('priorShape', 'student-t');
-      setAdvancedInput('studentTDf', 5);
-
-      // Verify they're set
-      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe('student-t');
-      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(5);
-
-      // Switch to basic - should clear
-      setMode('basic');
-      expect(useWizardStore.getState().inputs.advanced.priorShape).toBe(null);
-      expect(useWizardStore.getState().inputs.advanced.studentTDf).toBe(null);
+    it('defaults priorShape to normal', () => {
+      const { inputs } = useWizardStore.getState();
+      expect(inputs.priorShape).toBe('normal');
     });
   });
 
@@ -399,47 +179,24 @@ describe('wizardStore', () => {
 
   describe('reset', () => {
     it('resets all state to initial values', () => {
-      const { setMode, setSharedInput, setAdvancedInput, markSectionComplete, resetWizard } =
+      const { setInput, markSectionComplete, resetWizard } =
         useWizardStore.getState();
 
       // Set various state
-      setMode('advanced');
-      setSharedInput('baselineConversionRate', 5);
-      setAdvancedInput('testDurationDays', 14);
+      setInput('baselineConversionRate', 0.05);
+      setInput('testDurationDays', 14);
+      setInput('priorShape', 'student-t');
       markSectionComplete(0);
 
       // Reset
       resetWizard();
 
       const state = useWizardStore.getState();
-      expect(state.mode).toBe('basic');
-      expect(state.inputs.shared.baselineConversionRate).toBe(null);
-      expect(state.inputs.advanced.testDurationDays).toBe(null);
+      expect(state.inputs.baselineConversionRate).toBe(null);
+      expect(state.inputs.testDurationDays).toBe(null);
+      expect(state.inputs.priorShape).toBe('normal');
       expect(state.completedSections).toHaveLength(0);
       expect(state.currentSection).toBe(0);
-    });
-
-    it('clears mode-switch backups so stale data does not repopulate after reset', () => {
-      const { setMode, setSharedInput, setAdvancedInput, resetWizard } =
-        useWizardStore.getState();
-
-      // Build up state in advanced mode
-      setMode('advanced');
-      setSharedInput('baselineConversionRate', 5);
-      setAdvancedInput('testDurationDays', 14);
-
-      // Switch to basic — this creates a backup of advanced state
-      setMode('basic');
-
-      // Reset the wizard (should clear backups)
-      resetWizard();
-
-      // Now switch back to advanced — stale backup should NOT repopulate
-      setMode('advanced');
-
-      const state = useWizardStore.getState();
-      expect(state.inputs.shared.baselineConversionRate).toBe(null);
-      expect(state.inputs.advanced.testDurationDays).toBe(null);
     });
   });
 });
