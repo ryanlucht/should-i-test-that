@@ -25,7 +25,7 @@ interface UseExportPngReturn {
   /** Ref to attach to the export target element */
   exportRef: React.RefObject<HTMLDivElement | null>;
   /** Async function to trigger PNG export */
-  exportPng: (mode: 'basic' | 'advanced', customTitle?: string) => Promise<void>;
+  exportPng: (customTitle?: string) => Promise<void>;
   /** Whether export is currently in progress */
   isExporting: boolean;
 }
@@ -46,27 +46,22 @@ function sanitizeFilename(title: string): string {
 }
 
 /**
- * Generate export filename based on mode and custom title
+ * Generate export filename based on custom title
  *
- * Filename patterns (no timestamps per requirements):
- * - Basic mode: "Expected Value of Perfect Information for {title}.png"
- * - Advanced mode: "Expected Value of Test - {title}.png"
- * - If no title provided, use default "My Test"
+ * Filename pattern: "should-i-test-that-{sanitized-title}.png"
+ * If no title provided, use default "analysis"
  *
- * @param mode - 'basic' or 'advanced'
  * @param customTitle - Optional user-provided title
  * @returns Complete filename with .png extension
  */
-function generateFilename(mode: 'basic' | 'advanced', customTitle?: string): string {
-  const title = customTitle?.trim() || 'My Test';
-  const sanitized = sanitizeFilename(title);
-  const safeTitle = sanitized || 'my-test';
-
-  if (mode === 'basic') {
-    return `Expected Value of Perfect Information for ${safeTitle}.png`;
-  } else {
-    return `Expected Value of Test - ${safeTitle}.png`;
+function generateFilename(customTitle?: string): string {
+  const title = customTitle?.trim();
+  if (title) {
+    const sanitized = sanitizeFilename(title);
+    const safeTitle = sanitized || 'analysis';
+    return `should-i-test-that-${safeTitle}.png`;
   }
+  return 'should-i-test-that-analysis.png';
 }
 
 /**
@@ -103,10 +98,9 @@ export function useExportPng(): UseExportPngReturn {
    * Triggers download using native <a download> pattern
    * (no file-saver dependency needed per 06-RESEARCH.md)
    *
-   * @param mode - 'basic' or 'advanced' for filename pattern
    * @param customTitle - Optional custom title for filename
    */
-  const exportPng = useCallback(async (mode: 'basic' | 'advanced', customTitle?: string) => {
+  const exportPng = useCallback(async (customTitle?: string) => {
     if (!exportRef.current) {
       console.warn('Export ref not attached to any element');
       return;
@@ -127,10 +121,10 @@ export function useExportPng(): UseExportPngReturn {
       // Track successful export for analytics (OBS-08)
       // Track AFTER successful toPng() to only count successful exports
       // Track BEFORE link.click() to ensure event fires even if download has issues
-      trackExportPng(mode, Boolean(customTitle?.trim()));
+      trackExportPng(Boolean(customTitle?.trim()));
 
-      // Generate filename based on mode and custom title
-      const filename = generateFilename(mode, customTitle);
+      // Generate filename based on custom title
+      const filename = generateFilename(customTitle);
 
       // Trigger download using native <a download> pattern
       // Per 06-RESEARCH.md: This works for data URLs without file-saver

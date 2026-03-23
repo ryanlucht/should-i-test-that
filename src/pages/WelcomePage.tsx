@@ -1,15 +1,13 @@
 /**
  * Welcome Page
  *
- * Entry point for the calculator. Users select between Basic and Advanced
- * modes before proceeding to the calculator.
+ * Entry point for the calculator. Users proceed directly to
+ * the EVSI calculator via the Get Started button.
  *
  * Design reference: .planning/phases/01-foundation-wizard-infrastructure/designs/welcome-screen.md
  */
 
 import { Button } from '@/components/ui/button';
-import { ModeSelection } from '@/components/welcome/ModeCard';
-import { useWizardStore } from '@/stores/wizardStore';
 
 interface WelcomePageProps {
   /** Callback when user clicks "Get Started" */
@@ -19,12 +17,10 @@ interface WelcomePageProps {
 /**
  * Welcome Page Component
  *
- * Displays the hero section with title/description and mode selection cards.
- * Users must select a mode (Basic or Advanced) before proceeding.
+ * Displays the hero section with title/description and a CTA button.
+ * No mode selection -- single EVSI-based calculator experience.
  */
 export function WelcomePage({ onGetStarted }: WelcomePageProps) {
-  const { mode, setMode } = useWizardStore();
-
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       {/* Main content - centered vertically and horizontally */}
@@ -41,11 +37,6 @@ export function WelcomePage({ onGetStarted }: WelcomePageProps) {
               &ldquo;If you can test this for less than $X, it&apos;s worth
               it.&rdquo;
             </p>
-          </div>
-
-          {/* Mode Selection */}
-          <div className="mb-12">
-            <ModeSelection selectedMode={mode} onModeSelect={setMode} />
           </div>
 
           {/* CTA Button - Design spec: min-width 200px, height 48px, purple bg */}
