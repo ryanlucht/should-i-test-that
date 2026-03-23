@@ -17,7 +17,7 @@
  * - mu_L = (L_low + L_high) / 2
  * - sigma_L = (L_high - L_low) / (2 * z_0.95)
  *
- * Advanced Mode (05-CONTEXT.md):
+ * Additional features:
  * - Shows PriorShapeForm above interval inputs for shape selection
  * - For Uniform prior, interval inputs become distribution bounds
  */
@@ -38,8 +38,8 @@ import {
 } from '@/lib/validation';
 import { DEFAULT_INTERVAL, computePriorFromInterval } from '@/lib/prior';
 import { useWizardStore } from '@/stores/wizardStore';
-import { deriveK, normalizeThresholdToLift } from '@/lib/calculations';
-import { PriorDistributionChart, PriorDistributionChartLegacy } from '@/components/charts';
+import { deriveK } from '@/lib/calculations';
+import { PriorDistributionChart } from '@/components/charts';
 import type { PriorDistribution } from '@/lib/calculations';
 import { PriorShapeForm, type PriorShapeFormHandle } from './PriorShapeForm';
 import { InfoTooltip } from './inputs/InfoTooltip';
@@ -91,7 +91,7 @@ function getAsymmetryMessage(impliedMeanPercent: number): string | null {
 /**
  * Build a PriorDistribution object based on the selected shape
  *
- * Used in Advanced mode to provide the chart with the full prior specification.
+ * Used to provide the chart with the full prior specification.
  *
  * @param shape - Selected prior shape ('normal', 'student-t', 'uniform')
  * @param normalParams - Normal distribution parameters (mu_L, sigma_L)
@@ -146,45 +146,36 @@ function buildPriorDistribution(
 export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
   function UncertaintyPriorForm(_props, ref) {
     // Get store values and setters
-    const mode = useWizardStore((state) => state.mode);
-    const sharedInputs = useWizardStore((state) => state.inputs.shared);
-    const advancedInputs = useWizardStore((state) => state.inputs.advanced);
-    const setSharedInput = useWizardStore((state) => state.setSharedInput);
+    const inputs = useWizardStore((state) => state.inputs);
+    const setInput = useWizardStore((state) => state.setInput);
 
-    // Ref for PriorShapeForm validation (Advanced mode only)
+    // Ref for PriorShapeForm validation
     const priorShapeFormRef = useRef<PriorShapeFormHandle>(null);
 
-    // Check if Uniform prior is selected (Advanced mode)
-    const isUniformPrior =
-      mode === 'advanced' && advancedInputs.priorShape === 'uniform';
+    // Check if Uniform prior is selected
+    const isUniformPrior = inputs.priorShape === 'uniform';
 
-    // Derive K from baseline inputs if available (for chart display)
+    // Derive K from baseline inputs if available (for chart)
     // K = N_year * CR0 * V (dollars per unit lift)
     const derivedK =
-      sharedInputs.annualVisitors !== null &&
-      sharedInputs.baselineConversionRate !== null &&
-      sharedInputs.valuePerConversion !== null
+      inputs.annualVisitors !== null &&
+      inputs.baselineConversionRate !== null &&
+      inputs.valuePerConversion !== null
         ? deriveK(
-            sharedInputs.annualVisitors,
-            sharedInputs.baselineConversionRate,
-            sharedInputs.valuePerConversion
+            inputs.annualVisitors,
+            inputs.baselineConversionRate,
+            inputs.valuePerConversion
           )
         : null;
 
-    // Derive threshold_L for chart display (same logic as EVPI/EVSI hooks)
-    const chartThresholdL = (() => {
-      if (sharedInputs.thresholdScenario === 'any-positive') return 0;
-      if (
-        sharedInputs.thresholdScenario === null ||
-        sharedInputs.thresholdValue === null ||
-        sharedInputs.thresholdUnit === null ||
-        derivedK === null
-      ) return 0;
-      return normalizeThresholdToLift(
-        sharedInputs.thresholdValue,
-        sharedInputs.thresholdUnit,
-        derivedK
-      );
+    // Compute threshold in lift space for chart visualization
+    // threshold_L = threshold / K (when in dollars) or threshold / 100 (when in lift %)
+    const K = derivedK ?? 100000;
+    const computedThreshold_L = (() => {
+      if (inputs.thresholdValue === null) return 0;
+      if (inputs.thresholdUnit === 'lift') return inputs.thresholdValue / 100;
+      // dollars: convert to lift space
+      return derivedK ? inputs.thresholdValue / derivedK : 0;
     })();
 
     // Initialize form with react-hook-form and Zod validation
@@ -193,9 +184,9 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
       mode: 'onBlur', // Validate on blur per CONTEXT.md
       reValidateMode: 'onBlur', // Re-validate on blur, not while typing
       defaultValues: {
-        priorType: sharedInputs.priorType ?? 'default',
-        intervalLow: sharedInputs.priorIntervalLow ?? DEFAULT_INTERVAL.low,
-        intervalHigh: sharedInputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high,
+        priorType: inputs.priorType ?? 'default',
+        intervalLow: inputs.priorIntervalLow ?? DEFAULT_INTERVAL.low,
+        intervalHigh: inputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high,
       },
     });
 
@@ -212,13 +203,13 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     // This allows holding partial input like "-" or "." without parseFloat coercing to NaN
     // The raw string is stored while editing; parsing to number happens on blur
     const [intervalLowDisplay, setIntervalLowDisplay] = useState<string>(
-      sharedInputs.priorIntervalLow !== null
-        ? String(sharedInputs.priorIntervalLow)
+      inputs.priorIntervalLow !== null
+        ? String(inputs.priorIntervalLow)
         : String(DEFAULT_INTERVAL.low)
     );
     const [intervalHighDisplay, setIntervalHighDisplay] = useState<string>(
-      sharedInputs.priorIntervalHigh !== null
-        ? String(sharedInputs.priorIntervalHigh)
+      inputs.priorIntervalHigh !== null
+        ? String(inputs.priorIntervalHigh)
         : String(DEFAULT_INTERVAL.high)
     );
 
@@ -259,25 +250,25 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
 
         const derivedPriorType = isDefault ? 'default' : 'custom';
 
-        setSharedInput('priorType', derivedPriorType);
-        setSharedInput('priorIntervalLow', data.intervalLow);
-        setSharedInput('priorIntervalHigh', data.intervalHigh);
+        setInput('priorType', derivedPriorType);
+        setInput('priorIntervalLow', data.intervalLow);
+        setInput('priorIntervalHigh', data.intervalHigh);
       },
-      [setSharedInput]
+      [setInput]
     );
 
     /**
      * Expose validate method to parent via ref
      * Returns true if form is valid and data is stored
      *
-     * In Advanced mode, also validates the PriorShapeForm
+     * Also validates the PriorShapeForm
      */
     useImperativeHandle(
       ref,
       () => ({
         validate: async () => {
-          // In Advanced mode, validate shape form first
-          if (mode === 'advanced' && priorShapeFormRef.current) {
+          // Validate shape form first
+          if (priorShapeFormRef.current) {
             const shapeValid = await priorShapeFormRef.current.validate();
             if (!shapeValid) {
               return false;
@@ -292,7 +283,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
           return isValid;
         },
       }),
-      [trigger, handleSubmit, onSubmit, mode]
+      [trigger, handleSubmit, onSubmit]
     );
 
     /**
@@ -307,10 +298,10 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
       setIntervalLowDisplay(String(DEFAULT_INTERVAL.low));
       setIntervalHighDisplay(String(DEFAULT_INTERVAL.high));
       // Also store immediately
-      setSharedInput('priorType', 'default');
-      setSharedInput('priorIntervalLow', DEFAULT_INTERVAL.low);
-      setSharedInput('priorIntervalHigh', DEFAULT_INTERVAL.high);
-    }, [setValue, setSharedInput]);
+      setInput('priorType', 'default');
+      setInput('priorIntervalLow', DEFAULT_INTERVAL.low);
+      setInput('priorIntervalHigh', DEFAULT_INTERVAL.high);
+    }, [setValue, setInput]);
 
     /**
      * When interval fields change, set priorType to 'custom'
@@ -329,95 +320,50 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     // This effect should ONLY run when the store values actually change (from external
     // sources like "Fill with Recommended Default" button or navigation).
     useEffect(() => {
-      if (sharedInputs.priorIntervalLow !== null) {
-        setValue('intervalLow', sharedInputs.priorIntervalLow);
-        setIntervalLowDisplay(String(sharedInputs.priorIntervalLow));
+      if (inputs.priorIntervalLow !== null) {
+        setValue('intervalLow', inputs.priorIntervalLow);
+        setIntervalLowDisplay(String(inputs.priorIntervalLow));
       }
-      if (sharedInputs.priorIntervalHigh !== null) {
-        setValue('intervalHigh', sharedInputs.priorIntervalHigh);
-        setIntervalHighDisplay(String(sharedInputs.priorIntervalHigh));
+      if (inputs.priorIntervalHigh !== null) {
+        setValue('intervalHigh', inputs.priorIntervalHigh);
+        setIntervalHighDisplay(String(inputs.priorIntervalHigh));
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh]);
+    }, [inputs.priorIntervalLow, inputs.priorIntervalHigh]);
 
     return (
       <FormProvider {...methods}>
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-          {/* Section intro - varies by mode */}
+          {/* Section intro */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <p className="text-foreground font-medium">
-                {mode === 'advanced'
-                  ? 'What shape describes your uncertainty?'
-                  : 'How uncertain are you about whether this change will help or hurt?'}
+                What shape describes your uncertainty?
               </p>
               <InfoTooltip content="A 'prior' is your belief about the effect before running a test. A wider range means more uncertainty." />
             </div>
             <p className="text-sm text-muted-foreground">
-              {mode === 'advanced'
-                ? 'Choose a distribution shape, then specify your 90% interval.'
-                : 'A normal distribution is a solid first-pass model for effect sizes. Advanced mode can use other shapes.'}
+              Choose a distribution shape, then specify your 90% interval.
             </p>
           </div>
 
-          {/* Prior Shape Form (Advanced mode only) */}
-          {mode === 'advanced' && (
-            <>
-              <PriorShapeForm ref={priorShapeFormRef} onUseDefaultPrior={handleUseDefault} />
-              {/* Divider between shape selector and interval inputs */}
-              <div className="border-t border-border pt-6">
-                <p className="text-sm font-medium text-foreground mb-4">
-                  {isUniformPrior
-                    ? 'Define the bounds of your uniform distribution:'
-                    : 'Specify your 90% credible interval:'}
-                </p>
-              </div>
-            </>
-          )}
+          {/* Prior Shape Form */}
+          <PriorShapeForm ref={priorShapeFormRef} onUseDefaultPrior={handleUseDefault} />
+          {/* Divider between shape selector and interval inputs */}
+          <div className="border-t border-border pt-6">
+            <p className="text-sm font-medium text-foreground mb-4">
+              {isUniformPrior
+                ? 'Define the bounds of your uniform distribution:'
+                : 'Specify your 90% credible interval:'}
+            </p>
+          </div>
 
-          {/* Default Prior Option (action button, no selected state) */}
-          {/* Only show in Basic mode */}
-          {mode === 'basic' && (
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={handleUseDefault}
-                className={cn(
-                  'w-full rounded-xl border-2 p-4 text-left transition-all',
-                  'hover:border-primary/50 hover:shadow-sm',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                  'border-border bg-card hover:bg-muted/50'
-                )}
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">
-                    Fill with Recommended Default
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    I&apos;m 90% sure the relative lift is between -8% and +8%
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    This is a reasonable starting point if you&apos;re unsure.
-                    It assumes most changes have small effects.
-                  </p>
-                </div>
-              </button>
-            </div>
-          )}
+          {/* Default Prior Option (action button, no selected state) - always shown */}
 
           {/* Prior selection options */}
           <div className="space-y-4">
-              {/* Only show the header label in Basic mode (Advanced mode has its own header above) */}
-              {mode === 'basic' && (
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-foreground">
-                    Or specify your own 90% credible interval:
-                  </Label>
-                  <InfoTooltip content="This means you're 90% confident the true effect falls within this range." />
-                </div>
-              )}
 
-              {/* Helper text for Uniform prior in Advanced mode */}
+              {/* Helper text for Uniform prior */}
               {isUniformPrior && (
                 <p className="text-xs text-muted-foreground">
                   These bounds define the edges of your uniform distribution.
@@ -596,11 +542,10 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                         {impliedMeanPercent > 0 ? '+' : ''}
                         {impliedMeanPercent.toFixed(1)}%
                       </span>
-                      {/* Only show dispersion in Advanced mode, hidden in Basic mode */}
                       {/* For Normal: "std dev", for Student-t: "σ" (scale param, not SD) */}
-                      {priorParams && !isUniformPrior && mode === 'advanced' && (
+                      {priorParams && !isUniformPrior && (
                         <span className="text-muted-foreground">
-                          ({advancedInputs.priorShape === 'student-t' ? 'σ' : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
+                          ({inputs.priorShape === 'student-t' ? 'σ' : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
                         </span>
                       )}
                     </div>
@@ -623,31 +568,18 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
               <p className="text-sm font-medium text-foreground">
                 Your belief distribution:
               </p>
-                  {/* Per 04-CONTEXT.md: Chart lives in Prior section because it visualizes uncertainty input */}
-                  {/* Shows when priorParams are valid; uses EVPI results when available, else derives */}
-                  {/* Per 05-CONTEXT.md: In Advanced mode, chart reflects selected prior shape */}
-                  {mode === 'advanced' ? (
-                    // Advanced mode: build full PriorDistribution based on selected shape
-                    <PriorDistributionChart
-                      prior={buildPriorDistribution(
-                        advancedInputs.priorShape ?? 'normal',
-                        priorParams,
-                        advancedInputs.studentTDf,
-                        sharedInputs.priorIntervalLow,
-                        sharedInputs.priorIntervalHigh
-                      )}
-                      threshold_L={chartThresholdL}
-                      K={derivedK ?? 100000}
-                    />
-                  ) : (
-                    // Basic mode: use legacy chart (always Normal)
-                    <PriorDistributionChartLegacy
-                      mu_L={priorParams.mu_L}
-                      sigma_L={priorParams.sigma_L}
-                      threshold_L={chartThresholdL}
-                      K={derivedK ?? 100000}
-                    />
-                  )}
+                  {/* Chart reflects selected prior shape */}
+                  <PriorDistributionChart
+                    prior={buildPriorDistribution(
+                      inputs.priorShape ?? 'normal',
+                      priorParams,
+                      inputs.studentTDf,
+                      inputs.priorIntervalLow,
+                      inputs.priorIntervalHigh
+                    )}
+                    threshold_L={computedThreshold_L}
+                    K={K}
+                  />
             </div>
           )}
         </form>

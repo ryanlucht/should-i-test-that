@@ -210,18 +210,18 @@ function ThresholdInlineInput({
 export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
   function ThresholdScenarioForm(_props, ref) {
     // Get store values and setters
-    const sharedInputs = useWizardStore((state) => state.inputs.shared);
-    const setSharedInput = useWizardStore((state) => state.setSharedInput);
+    const inputs = useWizardStore((state) => state.inputs);
+    const setInput = useWizardStore((state) => state.setInput);
 
     // Local state for unit selection (needed for conditional rendering)
     const [minimumLiftUnit, setMinimumLiftUnit] = useState<ThresholdUnit>(
-      sharedInputs.thresholdScenario === 'minimum-lift' && sharedInputs.thresholdUnit
-        ? sharedInputs.thresholdUnit
+      inputs.thresholdScenario === 'minimum-lift' && inputs.thresholdUnit
+        ? inputs.thresholdUnit
         : 'dollars'
     );
     const [acceptLossUnit, setAcceptLossUnit] = useState<ThresholdUnit>(
-      sharedInputs.thresholdScenario === 'accept-loss' && sharedInputs.thresholdUnit
-        ? sharedInputs.thresholdUnit
+      inputs.thresholdScenario === 'accept-loss' && inputs.thresholdUnit
+        ? inputs.thresholdUnit
         : 'dollars'
     );
 
@@ -230,7 +230,7 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
       resolver: zodResolver(thresholdScenarioSchema),
       mode: 'onBlur', // Validate on blur per CONTEXT.md
       reValidateMode: 'onBlur', // Re-validate on blur, not while typing
-      defaultValues: getDefaultValues(sharedInputs),
+      defaultValues: getDefaultValues(inputs),
     });
 
     const {
@@ -298,24 +298,24 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
      */
     const onSubmit = useCallback(
       (data: ThresholdScenarioFormData) => {
-        setSharedInput('thresholdScenario', data.scenario);
+        setInput('thresholdScenario', data.scenario);
 
         if (data.scenario === 'any-positive') {
           // T = 0 for "ship any positive"
-          setSharedInput('thresholdUnit', null);
-          setSharedInput('thresholdValue', 0);
+          setInput('thresholdUnit', null);
+          setInput('thresholdValue', 0);
         } else if (data.scenario === 'minimum-lift') {
           // T > 0, store as-is
-          setSharedInput('thresholdUnit', data.thresholdUnit);
-          setSharedInput('thresholdValue', data.thresholdValue);
+          setInput('thresholdUnit', data.thresholdUnit);
+          setInput('thresholdValue', data.thresholdValue);
         } else if (data.scenario === 'accept-loss') {
           // Per SPEC.md Section 7.3: set T_$ = -Loss_$ for scenario 3
           // User enters positive "5", we store as -5 (negative threshold)
-          setSharedInput('thresholdUnit', data.thresholdUnit);
-          setSharedInput('thresholdValue', -data.acceptableLoss);
+          setInput('thresholdUnit', data.thresholdUnit);
+          setInput('thresholdValue', -data.acceptableLoss);
         }
       },
-      [setSharedInput]
+      [setInput]
     );
 
     /**
@@ -339,28 +339,28 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
 
     // Sync form with store changes (e.g., if store is reset)
     useEffect(() => {
-      if (sharedInputs.thresholdScenario) {
-        setValue('scenario', sharedInputs.thresholdScenario);
+      if (inputs.thresholdScenario) {
+        setValue('scenario', inputs.thresholdScenario);
       }
-      if (sharedInputs.thresholdScenario === 'minimum-lift' && sharedInputs.thresholdValue !== null) {
-        setValue('thresholdUnit', sharedInputs.thresholdUnit ?? 'dollars');
-        setValue('thresholdValue', sharedInputs.thresholdValue);
-        if (sharedInputs.thresholdUnit) {
-          setMinimumLiftUnit(sharedInputs.thresholdUnit);
+      if (inputs.thresholdScenario === 'minimum-lift' && inputs.thresholdValue !== null) {
+        setValue('thresholdUnit', inputs.thresholdUnit ?? 'dollars');
+        setValue('thresholdValue', inputs.thresholdValue);
+        if (inputs.thresholdUnit) {
+          setMinimumLiftUnit(inputs.thresholdUnit);
         }
       }
-      if (sharedInputs.thresholdScenario === 'accept-loss' && sharedInputs.thresholdValue !== null) {
-        setValue('thresholdUnit', sharedInputs.thresholdUnit ?? 'dollars');
+      if (inputs.thresholdScenario === 'accept-loss' && inputs.thresholdValue !== null) {
+        setValue('thresholdUnit', inputs.thresholdUnit ?? 'dollars');
         // Convert stored negative back to positive for display
-        setValue('acceptableLoss', Math.abs(sharedInputs.thresholdValue));
-        if (sharedInputs.thresholdUnit) {
-          setAcceptLossUnit(sharedInputs.thresholdUnit);
+        setValue('acceptableLoss', Math.abs(inputs.thresholdValue));
+        if (inputs.thresholdUnit) {
+          setAcceptLossUnit(inputs.thresholdUnit);
         }
       }
     }, [
-      sharedInputs.thresholdScenario,
-      sharedInputs.thresholdUnit,
-      sharedInputs.thresholdValue,
+      inputs.thresholdScenario,
+      inputs.thresholdUnit,
+      inputs.thresholdValue,
       setValue,
     ]);
 
@@ -453,9 +453,9 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle>(
  * Get default form values from store state
  */
 function getDefaultValues(
-  sharedInputs: ReturnType<typeof useWizardStore.getState>['inputs']['shared']
+  inputs: ReturnType<typeof useWizardStore.getState>['inputs']
 ): ThresholdScenarioFormData {
-  const scenario = sharedInputs.thresholdScenario ?? 'any-positive';
+  const scenario = inputs.thresholdScenario ?? 'any-positive';
 
   if (scenario === 'any-positive') {
     return { scenario: 'any-positive' };
@@ -464,18 +464,18 @@ function getDefaultValues(
   if (scenario === 'minimum-lift') {
     return {
       scenario: 'minimum-lift',
-      thresholdUnit: sharedInputs.thresholdUnit ?? 'dollars',
-      thresholdValue: sharedInputs.thresholdValue ?? undefined,
+      thresholdUnit: inputs.thresholdUnit ?? 'dollars',
+      thresholdValue: inputs.thresholdValue ?? undefined,
     } as ThresholdScenarioFormData;
   }
 
   if (scenario === 'accept-loss') {
     // Convert stored negative back to positive for display
     const displayValue =
-      sharedInputs.thresholdValue !== null ? Math.abs(sharedInputs.thresholdValue) : undefined;
+      inputs.thresholdValue !== null ? Math.abs(inputs.thresholdValue) : undefined;
     return {
       scenario: 'accept-loss',
-      thresholdUnit: sharedInputs.thresholdUnit ?? 'dollars',
+      thresholdUnit: inputs.thresholdUnit ?? 'dollars',
       acceptableLoss: displayValue,
     } as ThresholdScenarioFormData;
   }
