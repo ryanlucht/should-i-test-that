@@ -24,13 +24,66 @@ import {
   normalizeThresholdToLift,
   calculateEVSINormalFastPath,
   calculateEVSIMonteCarlo,
-  calculateCostOfDelay,
   deriveSampleSizes,
 } from '@/lib/calculations';
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
-import type { CoDResults } from '@/lib/calculations/cost-of-delay';
+
+/**
+ * Results from Cost of Delay calculation
+ * (Inlined here after standalone cost-of-delay.ts was removed in DEPR-02)
+ */
+export interface CoDResults {
+  /** Total Cost of Delay in dollars */
+  codDollars: number;
+  /** Daily opportunity cost (EV_ship_day) in dollars */
+  dailyOpportunityCost: number;
+  /** Whether CoD applies (true if default decision is Ship) */
+  codApplies: boolean;
+}
+
+/**
+ * Calculate Cost of Delay for an A/B test
+ *
+ * Per SPEC.md Section A6:
+ *   EV_ship_annual = K * (mu_L - T_L)
+ *   EV_ship_day = EV_ship_annual / 365
+ *   If default is Ship (mu_L >= T_L):
+ *     CoD = (1 - f_var) * EV_ship_day * D_test + EV_ship_day * D_latency
+ *   If default is Don't Ship: CoD = 0
+ *
+ * (Inlined here after standalone cost-of-delay.ts was removed in DEPR-02)
+ */
+function calculateCostOfDelay(inputs: {
+  K: number;
+  mu_L: number;
+  threshold_L: number;
+  testDurationDays: number;
+  variantFraction: number;
+  decisionLatencyDays: number;
+}): CoDResults {
+  const { K, mu_L, threshold_L, testDurationDays, variantFraction, decisionLatencyDays } = inputs;
+
+  // EV_ship_annual = K * (mu_L - T_L)
+  const EV_ship_annual = K * (mu_L - threshold_L);
+
+  // CoD only applies when default decision is Ship (EV_ship_annual > 0)
+  const codApplies = EV_ship_annual > 0;
+
+  if (!codApplies) {
+    return { codDollars: 0, dailyOpportunityCost: 0, codApplies: false };
+  }
+
+  // EV_ship_day = EV_ship_annual / 365
+  const EV_ship_day = EV_ship_annual / 365;
+
+  // CoD = (1 - f_var) * EV_ship_day * D_test + EV_ship_day * D_latency
+  const controlFraction = 1 - variantFraction;
+  const codDollars = controlFraction * EV_ship_day * testDurationDays + EV_ship_day * decisionLatencyDays;
+
+  return { codDollars, dailyOpportunityCost: EV_ship_day, codApplies: true };
+}
 
 /**
  * Combined results from EVSI and Cost of Delay calculations
