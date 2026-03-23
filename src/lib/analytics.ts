@@ -6,8 +6,7 @@
  *
  * Events tracked:
  * - step_completed: User completes a wizard step (OBS-05)
- * - mode_selected: User selects Basic/Advanced mode (OBS-06)
- * - calculation_completed: EVPI or EVSI calculation renders (OBS-07)
+ * - calculation_completed: EVSI calculation renders (OBS-07)
  * - export_png: User exports results as PNG (OBS-08)
  */
 
@@ -27,24 +26,13 @@ export function trackStepCompleted(stepName: string, stepIndex: number): void {
 }
 
 /**
- * Track mode selection (OBS-06)
- *
- * @param mode - The selected mode ('basic' or 'advanced')
- */
-export function trackModeSelected(mode: 'basic' | 'advanced'): void {
-  datadogRum.addAction('mode_selected', {
-    mode: mode,
-  });
-}
-
-/**
  * Track calculation completion (OBS-07)
  *
- * @param calculationType - The type of calculation ('EVPI' for Basic, 'EVSI' for Advanced)
- * @param valueDollars - The calculated value in dollars (EVPI or net value)
+ * @param calculationType - The type of calculation (always 'EVSI' now)
+ * @param valueDollars - The calculated value in dollars (net value)
  */
 export function trackCalculationCompleted(
-  calculationType: 'EVPI' | 'EVSI',
+  calculationType: 'EVSI',
   valueDollars: number
 ): void {
   datadogRum.addAction('calculation_completed', {
@@ -56,12 +44,10 @@ export function trackCalculationCompleted(
 /**
  * Track PNG export (OBS-08)
  *
- * @param mode - The mode at time of export ('basic' or 'advanced')
  * @param hasCustomTitle - Whether user provided a custom title
  */
-export function trackExportPng(mode: 'basic' | 'advanced', hasCustomTitle: boolean): void {
+export function trackExportPng(hasCustomTitle: boolean): void {
   datadogRum.addAction('export_png', {
-    mode: mode,
     has_custom_title: hasCustomTitle,
   });
 }
