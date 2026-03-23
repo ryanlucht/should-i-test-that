@@ -16,7 +16,6 @@ import {
   truncatedNormalMeanTwoSided,
   computeEffectivePriorMetrics,
 } from './evsi';
-import { calculateEVPI } from './evpi';
 import type { PriorDistribution } from './distributions';
 
 /**
@@ -136,42 +135,8 @@ describe('calculateEVSIMonteCarlo', () => {
     });
   });
 
-  // ===========================================
-  // 3. EVSI <= EVPI
-  // ===========================================
-
-  describe('EVSI <= EVPI bound', () => {
-    it('EVSI is bounded by EVPI for Normal prior', () => {
-      const normalPrior: PriorDistribution = {
-        type: 'normal',
-        mu_L: 0,
-        sigma_L: 0.05,
-      };
-
-      const evsiResult = calculateEVSIMonteCarlo({
-        K: 5000000,
-        baselineConversionRate: 0.05,
-        threshold_L: 0,
-        prior: normalPrior,
-        n_control: 5000,
-        n_variant: 5000,
-      }, 5000);
-
-      // Calculate EVPI for same prior
-      const evpiResult = calculateEVPI({
-        baselineConversionRate: 0.05,
-        annualVisitors: 1000000, // Doesn't affect K directly here
-        valuePerConversion: 100, // Doesn't affect K directly here
-        prior: { mu_L: 0, sigma_L: 0.05 },
-        threshold_L: 0,
-      });
-
-      // Scale EVPI to same K (K from EVPI = 5M)
-      // EVSI should be less than or equal to EVPI
-      // Allow 10% tolerance for Monte Carlo variance
-      expect(evsiResult.evsiDollars).toBeLessThanOrEqual(evpiResult.evpiDollars * 1.1);
-    });
-  });
+  // Note: EVSI <= EVPI bound test removed — EVPI calculation code was
+  // deleted as part of Basic mode deprecation (DEPR-02)
 
   // ===========================================
   // 4. Zero sample size edge case
