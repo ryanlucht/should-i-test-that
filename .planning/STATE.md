@@ -1,20 +1,30 @@
+---
+gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: milestone
+status: Ready to execute
+stopped_at: Completed 19-01-PLAN.md (EVPI & Basic Results Removal)
+last_updated: "2026-03-23T23:28:38.524Z"
+progress:
+  total_phases: 8
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 0
+---
+
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-21)
+See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** v1.2 Shipped — Planning next milestone
+**Current focus:** Phase 19 — Basic Mode Deprecation
 
 ## Current Position
 
-Phase: 18 - UI Polish & Feedback Items (complete)
-Plan: 02 of 2 complete
-Status: Phase 18 Complete - v1.2 Milestone Complete
-Last activity: 2026-02-20 -- Completed Phase 18 (UI Polish & Feedback Items)
-
-Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [========================] 100%
+Phase: 19 (Basic Mode Deprecation) — EXECUTING
+Plan: 2 of 3
 
 ## Milestone History
 
@@ -23,158 +33,81 @@ Progress: v1.0 [DONE] | v1.1 [DONE] | v1.2 [========================] 100%
 | v1.0 MVP | 1-6 + 4.1, 6.1 | Complete | 2026-02-02 |
 | v1.1 Refine Stats Engine | 7-14 | Complete | 2026-02-03 |
 | v1.2 Observability & Design | 15-18 | Complete | 2026-02-20 |
+| v2.0 Learning Bits | 19-26 | In Progress | -- |
 
-## v1.2 Phase Overview
+## v2.0 Phase Overview
 
 | Phase | Name | Requirements | Status |
-|-------|------|--------------|--------|
-| 15 | Datadog Observability | 8 | Complete (3/3 plans) |
-| 16 | DRUIDS Foundation + Copy Audit | 4 | Complete (3/3 plans) |
-| 17 | Layout Updates | 5 | Complete (3/3 plans) |
-| 18 | UI Polish & Feedback Items | 5 | Complete (2/2 plans) |
+|-------|------|-------------|--------|
+| 19 | Basic Mode Deprecation | DEPR-01, DEPR-02, DEPR-03 | Not started |
+| 20 | Engine Accuracy Fixes | ENG-01 through ENG-13 | Not started |
+| 21 | Engine Cleanup | ENG-14 through ENG-19 | Not started |
+| 22 | Learning Bits Guide Infrastructure | GUIDE-01, GUIDE-02, GUIDE-03 | Not started |
+| 23 | Homepage & Welcome Experience | HOME-01 through HOME-04 | Not started |
+| 24 | Shareable Walkthrough URLs | SHARE-01 through SHARE-04 | Not started |
+| 25 | Polish, Accessibility & Export | POL-01-04, A11Y-01-02, EXPORT-01-02, DD-01 | Not started |
+| 26 | AWS Deployment | DEPLOY-01 | Not started |
 
 ## Performance Metrics
 
-**v1.0 Velocity:**
-- Total plans completed: 31
-- Average duration: 6 min/plan
-- Total execution time: ~190 min (~3 hours)
+**v1.0 Velocity:** 31 plans, ~6 min/plan, ~3 hours total
+**v1.1 Velocity:** 16 plans + 5 quick tasks, ~4 min/plan, ~1 hour total
+**v1.2 Velocity:** 11 plans, 4 phases, ~2 min/plan
 
-**v1.1 Velocity:**
-- Total plans completed: 16 + 5 quick tasks
-- Average duration: 4 min/plan
-- Total execution time: ~68 min (~1 hour)
-
-**v1.2 Velocity:**
-- Total plans completed: 11
-- Phases completed: 4/4
-
-| Phase | Plan | Duration | Tasks | Files |
-|-------|------|----------|-------|-------|
-| 15-01 | Datadog RUM SDK | 1 min | 2 | 3 |
-| 15-02 | Wizard Navigation Tracking | 2 min | 3 | 3 |
-| 15-03 | Event Instrumentation | 2 min | 3 | 3 |
-| 16-01 | DRUIDS Color Tokens & Inter Font | 2 min | 3 | 2 |
-| 16-02 | Card Shadows + Input Styling | 2 min | 3 | 3 |
-| 16-03 | Copy Audit | 2 min | 2 | 1 |
-| 17-01 | Header + Baseline Grid | 2 min | 3 | 2 |
-| 17-02 | Uncertainty Model Layout | 3 min | 2 | 2 |
-| 17-03 | Results Metrics + Tooltips | 2 min | 3 | 3 |
-| 18-01 | Header & Form Polish | 2 min | 3 | 3 |
-| 18-02 | Advanced Mode Persistence | 3 min | 2 | 4 |
+**v2.0 Velocity:** Not yet started
 
 ## Accumulated Context
 
 ### Decisions
 
 Key decisions logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
 
-Summary of v1.1 decisions:
-- Bayesian posterior-mean decision rule for EVSI Monte Carlo
-- Truncated EVPI (Method B) with P(L<-1) > 0.001 threshold
-- Integrated Cost of Delay simulation (not subtraction)
-- 10% rejection warning threshold
-- Monte Carlo for effective prior metrics
-
-v1.2 decisions (15-01):
-- 100% session sampling for full user visibility
-- 20% session replay sampling (balance insight vs cost)
-- mask-user-input privacy level for form data in replays
-
-v1.2 decisions (15-02):
-- Centralized analytics module isolates Datadog dependency from feature code
-- Track mode changes only on actual switches (skip redundant selections)
-
-v1.2 decisions (15-03):
-- useRef deduplication for idempotent event firing on re-renders
-- Track export after toPng() success, before link.click() to ensure capture
-
-v1.2 decisions (16-01):
-- Exact hex values for DRUIDS tokens instead of oklch approximations
-- Inter font via Google Fonts CDN with preconnect for performance
-- text-secondary class (#4B5563) distinct from muted-foreground (#6B7280)
-
-v1.2 decisions (16-02):
-- shadow-card over shadow-sm: custom class provides exact DRUIDS mockup values
-- Input focus states verified to use dd-grape via --ring token
-
-v1.2 decisions (16-03):
-- Hybrid tooltip approach: move Baseline (3) and Experiment Design (5) helpText to tooltips
-- Student-t df helper requires special handling - keep visible or add "What's this?" cue for discoverability
-
-v1.2 decisions (17-01):
-- Keep h-14 (56px) header height rather than mockup's h-16 for consistency
-- Shorten "Baseline conversion rate" to "Conversion rate" for compact grid fit
-- Tooltip infrastructure already existed in input components - no changes needed
-
-v1.2 decisions (17-02):
-- Side-by-side layout uses flex-col lg:flex-row for mobile-first responsive stacking
-- Chart wrapped in bordered container matching DRUIDS mockup pattern
-- "What's this?" text link chosen over icon-only tooltip for proactive discoverability
-
-v1.2 decisions (17-03):
-- Shortened card titles for compact 4-column display ("Prior Belief", "Threshold", etc.)
-- Moved EVPI explanation context to blue statistical callout, simplified EVPI intuition section
-- divide-x pattern with wrapper container (not individual card borders)
-
-v1.2 decisions (18-01):
-- Shortened form labels for grid fit (Test duration, Daily traffic)
-- Removed breadcrumb pattern in favor of single descriptive title
-
-v1.2 decisions (18-02):
-- localStorage backup key 'wizard-advanced-backup' for persistence (not sessionStorage)
-- Merge restored backup with current state to preserve defaults
-- Statistical callout shows default decision with probability test changes it
+- localStorage backup for mode switches (v1.2) -- will be removed in Phase 19 deprecation
+- Centralized analytics module (v1.2) -- Datadog dependency isolated, DD-01 extends it
+- [Phase 19]: Inlined calculateCostOfDelay into useEVSICalculations hook after removing standalone cost-of-delay.ts
 
 ### Pending Todos
 
-1. **Add Test Costs for declarative verdict** (calculations) - Backlog for v1.2+
-2. **Add branding to PNG export** (ui) - Deferred to future version
-3. **Design exploration via Stitch MCP** (ui) - Deferred to v2
-4. **Improve EVPI intuition explanation clarity** (ui) - Explain WHY default decision is Ship/Don't ship
-5. **Implement binomial simulation (Exact) mode** (calculations) - For low-count/rare-event scenarios
-6. **EVPI ceiling comparison display** (ui) - Backlog for v1.2+
-7. **Shareable URL with encoded state** (ui) - Backlog for v1.2+
-8. **Extract rare-events warning helper** (calculations) - DRY up duplicated logic in evsi.ts/net-value.ts
+1. **Add Test Costs for declarative verdict** (calculations) -- Backlog v2.1+
+2. **Implement binomial simulation (Exact) mode** (calculations) -- Deferred v2.1+
 
 ### Blockers/Concerns
 
-None.
-
-### Roadmap Evolution
-
-- Phase 18 added: UI Polish & Feedback Items (from Phase 17 UAT feedback)
+- **GUIDE content blocker**: Phase 22 (Learning Bits Guide Infrastructure) can build component shell, hooks, and toggle, but actual dialogue text content requires PM input before content integration.
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: v1.2 milestone complete and deployed
-Next action: /gsd:new-milestone when ready for v1.3
+Last session: 2026-03-23T23:28:38.521Z
+Stopped at: Completed 19-01-PLAN.md (EVPI & Basic Results Removal)
+Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference
 
 For v1.2 details, see:
+
 - `.planning/milestones/v1.2-ROADMAP.md`
 - `.planning/milestones/v1.2-REQUIREMENTS.md`
 
 For v1.1 details, see:
+
 - `.planning/milestones/v1.1-ROADMAP.md`
 - `.planning/milestones/v1.1-REQUIREMENTS.md`
-- `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
 
 For v1.0 details, see:
+
 - `.planning/milestones/v1.0-ROADMAP.md`
 
 ## Design Reference
 
 DRUIDS mockup tokens (from `.planning/mockups/code.html`):
+
 - Primary: dd-grape (#7C3AED), dd-grapeDark (#6D28D9), dd-grapeLight (#F3E8FF)
 - Background: dd-bg (#F9FAFB), dd-card (#FFFFFF)
 - Borders: dd-border (#E5E7EB), dd-borderHover (#D1D5DB)
 - Text: dd-text (#111827), dd-textSecondary (#4B5563), dd-muted (#6B7280)
 - Status: dd-success (#10B981), dd-info (#3B82F6)
 - Font: Inter (400, 500, 600, 700)
-- Shadows: shadow-sm, shadow-card, shadow-floating
 
 ---
-*Updated: 2026-02-21 (v1.2 milestone complete and deployed)*
+*Updated: 2026-03-23 (v2.0 roadmap created)*

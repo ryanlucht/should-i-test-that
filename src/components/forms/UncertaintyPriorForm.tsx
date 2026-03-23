@@ -38,8 +38,7 @@ import {
 } from '@/lib/validation';
 import { DEFAULT_INTERVAL, computePriorFromInterval } from '@/lib/prior';
 import { useWizardStore } from '@/stores/wizardStore';
-import { useEVPICalculations } from '@/hooks/useEVPICalculations';
-import { deriveK } from '@/lib/calculations';
+import { deriveK, normalizeThresholdToLift } from '@/lib/calculations';
 import { PriorDistributionChart, PriorDistributionChartLegacy } from '@/components/charts';
 import type { PriorDistribution } from '@/lib/calculations';
 import { PriorShapeForm, type PriorShapeFormHandle } from './PriorShapeForm';
@@ -159,11 +158,7 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     const isUniformPrior =
       mode === 'advanced' && advancedInputs.priorShape === 'uniform';
 
-    // Get EVPI results for chart props (null if inputs incomplete)
-    // This provides threshold_L and K when user has completed all sections
-    const evpiResults = useEVPICalculations();
-
-    // Derive K from baseline inputs if available (for chart before EVPI completes)
+    // Derive K from baseline inputs if available (for chart display)
     // K = N_year * CR0 * V (dollars per unit lift)
     const derivedK =
       sharedInputs.annualVisitors !== null &&
@@ -175,6 +170,22 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
             sharedInputs.valuePerConversion
           )
         : null;
+
+    // Derive threshold_L for chart display (same logic as EVPI/EVSI hooks)
+    const chartThresholdL = (() => {
+      if (sharedInputs.thresholdScenario === 'any-positive') return 0;
+      if (
+        sharedInputs.thresholdScenario === null ||
+        sharedInputs.thresholdValue === null ||
+        sharedInputs.thresholdUnit === null ||
+        derivedK === null
+      ) return 0;
+      return normalizeThresholdToLift(
+        sharedInputs.thresholdValue,
+        sharedInputs.thresholdUnit,
+        derivedK
+      );
+    })();
 
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<PriorSelectionFormData>({
@@ -625,24 +636,16 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                         sharedInputs.priorIntervalLow,
                         sharedInputs.priorIntervalHigh
                       )}
-                      threshold_L={
-                        evpiResults
-                          ? evpiResults.threshold_dollars / evpiResults.K
-                          : 0
-                      }
-                      K={evpiResults?.K ?? derivedK ?? 100000}
+                      threshold_L={chartThresholdL}
+                      K={derivedK ?? 100000}
                     />
                   ) : (
                     // Basic mode: use legacy chart (always Normal)
                     <PriorDistributionChartLegacy
                       mu_L={priorParams.mu_L}
                       sigma_L={priorParams.sigma_L}
-                      threshold_L={
-                        evpiResults
-                          ? evpiResults.threshold_dollars / evpiResults.K
-                          : 0
-                      }
-                      K={evpiResults?.K ?? derivedK ?? 100000}
+                      threshold_L={chartThresholdL}
+                      K={derivedK ?? 100000}
                     />
                   )}
             </div>
