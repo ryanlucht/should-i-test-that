@@ -19,15 +19,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ExportCard } from './ExportCard';
 import { useExportPng } from '@/hooks/useExportPng';
-import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
+import { DEFAULT_INTERVAL } from '@/lib/prior';
 import { deriveK, normalizeThresholdToLift } from '@/lib/calculations';
-import type { EVPIResults, PriorDistribution } from '@/lib/calculations/types';
+import type { PriorDistribution } from '@/lib/calculations/types';
 import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
 
 /**
- * Shared input values needed for display in export card
+ * Input values needed for display in export card
  */
-interface SharedInputs {
+interface ExportSharedInputs {
   /** Baseline conversion rate as a decimal (e.g., 0.05 for 5%) */
   baselineConversionRate: number | null;
   /** Annual visitors/traffic */
@@ -40,35 +40,21 @@ interface SharedInputs {
   priorIntervalHigh: number | null;
   thresholdScenario: 'any-positive' | 'minimum-lift' | 'accept-loss' | null;
   thresholdValue: number | null;
-  /** Unit of the threshold value — 'dollars', 'lift' (percentage), or null if not set */
+  /** Unit of the threshold value -- 'dollars', 'lift' (percentage), or null if not set */
   thresholdUnit: 'dollars' | 'lift' | null;
 }
 
 /**
- * Props for Basic mode export
+ * Props for EVSI export
  */
-interface BasicModeProps {
-  mode: 'basic';
-  evpiResults: EVPIResults;
-  sharedInputs: SharedInputs;
-  /** Prior distribution for chart (constructed from interval in Basic mode) */
-  prior?: never;
-}
-
-/**
- * Props for Advanced mode export
- */
-interface AdvancedModeProps {
-  mode: 'advanced';
+interface ExportButtonProps {
   evsiResults: EVSICalculationResults;
-  sharedInputs: SharedInputs;
-  /** Prior distribution object for chart (includes shape for Advanced mode) */
+  sharedInputs: ExportSharedInputs;
+  /** Prior distribution object for chart (includes shape) */
   prior: PriorDistribution;
   /** Test duration in days for CoD explanation */
   testDurationDays?: number;
 }
-
-type ExportButtonProps = BasicModeProps | AdvancedModeProps;
 
 /**
  * Export button component with title input
@@ -82,7 +68,7 @@ type ExportButtonProps = BasicModeProps | AdvancedModeProps;
  * in the DOM for html-to-image to capture.
  */
 export function ExportButton(props: ExportButtonProps) {
-  const { mode, sharedInputs } = props;
+  const { sharedInputs, evsiResults, prior, testDurationDays } = props;
 
   // Custom title state
   const [customTitle, setCustomTitle] = useState('');
@@ -113,50 +99,16 @@ export function ExportButton(props: ExportButtonProps) {
     };
   }, [sharedInputs.thresholdScenario, sharedInputs.thresholdValue]);
 
-  // Build prior distribution for chart
-  const chartPrior: PriorDistribution = useMemo(() => {
-    if (mode === 'advanced') {
-      // Advanced mode: use the passed prior (includes shape)
-      return props.prior;
-    }
-
-    // Basic mode: construct Normal prior from interval
-    const isDefaultPrior =
-      sharedInputs.priorIntervalLow !== null &&
-      sharedInputs.priorIntervalHigh !== null &&
-      Math.abs(sharedInputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(sharedInputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
-
-    if (
-      isDefaultPrior ||
-      sharedInputs.priorIntervalLow === null ||
-      sharedInputs.priorIntervalHigh === null
-    ) {
-      return { type: 'normal' as const, ...DEFAULT_PRIOR };
-    }
-
-    const { mu_L, sigma_L } = computePriorFromInterval(
-      sharedInputs.priorIntervalLow,
-      sharedInputs.priorIntervalHigh
-    );
-    return { type: 'normal' as const, mu_L, sigma_L };
-  }, [mode, sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh, props]);
-
   // Derive K: annual dollars per unit lift = N * p * V
-  // Basic mode reads K from EVPI results; Advanced mode derives from shared inputs
-  const chartK = mode === 'basic'
-    ? props.evpiResults.K
-    : deriveK(
-        sharedInputs.annualVisitors ?? 0,
-        sharedInputs.baselineConversionRate ?? 0,
-        sharedInputs.valuePerConversion ?? 0
-      );
+  const chartK = deriveK(
+    sharedInputs.annualVisitors ?? 0,
+    sharedInputs.baselineConversionRate ?? 0,
+    sharedInputs.valuePerConversion ?? 0
+  );
 
   // Derive threshold_L: threshold as decimal lift
-  // Uses normalizeThresholdToLift which handles both dollar and lift units
-  const threshold_L = mode === 'basic'
-    ? props.evpiResults.threshold_L
-    : sharedInputs.thresholdScenario === 'any-positive'
+  const threshold_L =
+    sharedInputs.thresholdScenario === 'any-positive'
       ? 0
       : normalizeThresholdToLift(
           sharedInputs.thresholdValue ?? 0,
@@ -164,37 +116,28 @@ export function ExportButton(props: ExportButtonProps) {
           chartK
         );
 
-  const actualK = chartK;
+  // Derive verdict value (net value, clamped to 0)
+  const verdictValue = Math.max(0, evsiResults.netValueDollars);
 
-  // Derive verdict value based on mode
-  const verdictValue = mode === 'basic'
-    ? props.evpiResults.evpiDollars
-    : Math.max(0, props.evsiResults.netValueDollars);
-
-  // Derive prior shape description for Advanced mode
+  // Derive prior shape description
   const priorShapeDescription = useMemo(() => {
-    if (mode !== 'advanced') return undefined;
-
-    const priorType = chartPrior.type;
+    const priorType = prior.type;
     switch (priorType) {
       case 'normal':
         return 'Normal';
       case 'student-t':
-        return `Student-t (df=${(chartPrior as { df: number }).df})`;
+        return `Student-t (df=${(prior as { df: number }).df})`;
       case 'uniform':
         return 'Uniform';
       default:
         return undefined;
     }
-  }, [mode, chartPrior]);
-
-  // Get test duration for Advanced mode
-  const testDurationDays = mode === 'advanced' ? props.testDurationDays : undefined;
+  }, [prior]);
 
   // Handle export click
   const handleExport = async () => {
     try {
-      await exportPng(mode, customTitle || undefined);
+      await exportPng(customTitle || undefined);
     } catch (error) {
       console.error('Export failed:', error);
     }
@@ -243,7 +186,6 @@ export function ExportButton(props: ExportButtonProps) {
       >
         <ExportCard
           ref={exportRef}
-          mode={mode}
           title={customTitle || 'Should I Test That?'}
           verdictValue={verdictValue}
           baselineConversionRate={sharedInputs.baselineConversionRate ?? 0}
@@ -251,17 +193,14 @@ export function ExportButton(props: ExportButtonProps) {
           visitorUnitLabel={sharedInputs.visitorUnitLabel}
           valuePerConversion={sharedInputs.valuePerConversion ?? 0}
           prior={priorDisplay}
-          threshold={{
-            ...thresholdDisplay,
-            valueDollars: mode === 'basic' ? props.evpiResults.threshold_dollars : undefined,
-          }}
-          miniChartPrior={chartPrior}
+          threshold={thresholdDisplay}
+          miniChartPrior={prior}
           miniChartThreshold_L={threshold_L}
-          miniChartK={actualK}
+          miniChartK={chartK}
           priorShapeDescription={priorShapeDescription}
-          evsi={mode === 'advanced' ? props.evsiResults.evsi.evsiDollars : undefined}
-          cod={mode === 'advanced' ? props.evsiResults.cod.codDollars : undefined}
-          netValue={mode === 'advanced' ? props.evsiResults.netValueDollars : undefined}
+          evsi={evsiResults.evsi.evsiDollars}
+          cod={evsiResults.cod.codDollars}
+          netValue={evsiResults.netValueDollars}
           testDurationDays={testDurationDays}
         />
       </div>

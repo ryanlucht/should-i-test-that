@@ -13,12 +13,6 @@ describe('App', () => {
     expect(screen.getByText('Should I Test That?')).toBeInTheDocument();
   });
 
-  it('renders mode selection cards', () => {
-    render(<App />);
-    expect(screen.getByText('Basic Mode')).toBeInTheDocument();
-    expect(screen.getByText('Advanced Mode')).toBeInTheDocument();
-  });
-
   it('renders Get Started button', () => {
     render(<App />);
     expect(screen.getByRole('button', { name: 'Get Started' })).toBeInTheDocument();
@@ -28,8 +22,7 @@ describe('App', () => {
     render(<App />);
     const button = screen.getByRole('button', { name: 'Get Started' });
     fireEvent.click(button);
-    // Calculator page has the mode toggle and progress indicator
-    expect(screen.getByLabelText('Calculator mode')).toBeInTheDocument();
+    // Calculator page has the progress indicator
     expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
     // First section should be visible
     expect(screen.getByText('Baseline Metrics')).toBeInTheDocument();
@@ -39,7 +32,7 @@ describe('App', () => {
     render(<App />);
     // Go to calculator
     fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
-    expect(screen.getByLabelText('Calculator mode')).toBeInTheDocument();
+    expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
     // Header title is clickable to go back
     fireEvent.click(screen.getByRole('button', { name: 'Experiment Value Calculator' }));
     // Should be back on welcome page

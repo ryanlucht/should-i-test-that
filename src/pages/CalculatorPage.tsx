@@ -1,17 +1,16 @@
 /**
  * Calculator Page
  *
- * Main wizard page with dynamic sections based on mode:
- * - Basic mode: 4 sections (Baseline, Uncertainty, Threshold, Results)
- * - Advanced mode: 5 sections (adds Test Design between Threshold and Results)
+ * Main wizard page with 5 sections:
+ * Baseline, Uncertainty, Threshold, Test Design, Results
  *
  * Implements progressive disclosure - future sections are dramatically disabled
  * until prior sections are completed.
  *
  * Page structure:
- * - Sticky header with title and mode toggle
+ * - Sticky header with title
  * - Sticky progress indicator with scroll tracking
- * - Dynamic sections based on mode
+ * - Dynamic sections
  *
  * Navigation:
  * - Back/Next buttons within each section
@@ -19,8 +18,8 @@
  * - Clicking progress indicator jumps to accessible sections
  *
  * State management:
- * - Uses Zustand store for mode, inputs, and navigation
- * - Session persistence for inputs and mode (not navigation)
+ * - Uses Zustand store for inputs and navigation
+ * - Session persistence for inputs (not navigation)
  */
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -28,7 +27,6 @@ import { Calculator } from 'lucide-react';
 import { SectionWrapper } from '@/components/wizard/SectionWrapper';
 import { NavigationButtons } from '@/components/wizard/NavigationButtons';
 import { StickyProgressIndicator } from '@/components/wizard/StickyProgressIndicator';
-import { ModeToggle } from '@/components/wizard/ModeToggle';
 import {
   BaselineMetricsForm,
   type BaselineMetricsFormHandle,
@@ -52,8 +50,7 @@ import { trackStepCompleted } from '@/lib/analytics';
 
 /**
  * Section configuration for the wizard
- * Basic mode: 4 sections (Baseline, Uncertainty, Threshold, Results)
- * Advanced mode: 5 sections (adds Test Design between Threshold and Results)
+ * 5 sections: Baseline, Uncertainty, Threshold, Test Design, Results
  */
 interface SectionConfig {
   id: string;
@@ -61,14 +58,7 @@ interface SectionConfig {
   title: string;
 }
 
-const BASIC_SECTIONS: SectionConfig[] = [
-  { id: 'baseline', label: 'Baseline', title: 'Baseline Metrics' },
-  { id: 'uncertainty', label: 'Uncertainty', title: 'Uncertainty (Prior)' },
-  { id: 'threshold', label: 'Threshold', title: 'Shipping Threshold' },
-  { id: 'results', label: 'Results', title: 'Results' },
-];
-
-const ADVANCED_SECTIONS: SectionConfig[] = [
+const SECTIONS: SectionConfig[] = [
   { id: 'baseline', label: 'Baseline', title: 'Baseline Metrics' },
   { id: 'uncertainty', label: 'Uncertainty', title: 'Uncertainty (Prior)' },
   { id: 'threshold', label: 'Threshold', title: 'Shipping Threshold' },
@@ -82,12 +72,10 @@ interface CalculatorPageProps {
 }
 
 /**
- * Calculator wizard page with dynamic sections based on mode
- * Basic mode: 4 sections, Advanced mode: 5 sections
+ * Calculator wizard page with 5 sections for EVSI-based analysis
  */
 export function CalculatorPage({ onBack }: CalculatorPageProps) {
   // Store state and actions
-  const mode = useWizardStore((state) => state.mode);
   const currentSection = useWizardStore((state) => state.currentSection);
   const completedSections = useWizardStore((state) => state.completedSections);
   const setCurrentSection = useWizardStore((state) => state.setCurrentSection);
@@ -96,11 +84,8 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
   const canAccessSection = useWizardStore((state) => state.canAccessSection);
 
-  // Determine sections based on mode
-  const sections = useMemo(
-    () => (mode === 'advanced' ? ADVANCED_SECTIONS : BASIC_SECTIONS),
-    [mode]
-  );
+  // Single section list
+  const sections = SECTIONS;
   const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
 
   // Scroll spy tracks which section is visible
@@ -202,12 +187,12 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
    * Navigate to next section (with validation for form sections)
    * Per CONTEXT.md: Continue button always enabled; clicking with invalid inputs shows errors
    *
-   * Validation is section-ID based (not index based) to handle mode switching correctly:
-   * - baseline: index 0 in both modes
-   * - uncertainty: index 1 in both modes
-   * - threshold: index 2 in both modes
-   * - test-design: index 3 in Advanced only
-   * - results: index 3 in Basic, index 4 in Advanced
+   * Validation is section-ID based:
+   * - baseline: index 0
+   * - uncertainty: index 1
+   * - threshold: index 2
+   * - test-design: index 3
+   * - results: index 4
    */
   const handleNext = useCallback(
     async (sectionIndex: number) => {
@@ -237,7 +222,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
         }
       }
 
-      // Validate experiment design section before proceeding (Advanced mode only)
+      // Validate experiment design section before proceeding
       if (sectionId === 'test-design' && experimentDesignFormRef.current) {
         const isValid = await experimentDesignFormRef.current.validate();
         if (!isValid) {
@@ -277,7 +262,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
       {/*
        * Sticky Header
        * Design spec: height 56px, white bg, border-bottom, shadow when scrolled
-       * DRUIDS pattern: Logo icon + "Experimentation" title with breadcrumb below
+       * DRUIDS pattern: Logo icon + "Experimentation" title
        */}
       <header className="sticky top-0 z-50 border-b bg-card shadow-sm">
         <div className="max-w-[800px] mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
@@ -295,7 +280,6 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
               Experiment Value Calculator
             </button>
           </div>
-          <ModeToggle />
         </div>
       </header>
 
@@ -346,16 +330,13 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                   <ThresholdScenarioForm ref={thresholdFormRef} />
                 )}
 
-                {/* Test Design section - experiment parameters (Advanced mode only) */}
+                {/* Test Design section - experiment parameters */}
                 {section.id === 'test-design' && (
                   <ExperimentDesignForm ref={experimentDesignFormRef} />
                 )}
 
-                {/* Results section - Advanced mode EVSI verdict with CoD breakdown */}
-                {/* Basic mode ResultsSection removed (DEPR-02) — Plan 02 will clean up mode infrastructure */}
-                {section.id === 'results' && mode === 'advanced' && (
-                  <AdvancedResultsSection />
-                )}
+                {/* Results section - EVSI verdict with CoD breakdown */}
+                {section.id === 'results' && <AdvancedResultsSection />}
               </div>
 
               {/* Navigation buttons */}
@@ -385,13 +366,6 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
           </a>
           {' '}and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
         </p>
-        {mode === 'basic' && (
-          <p>
-            EVPI calculation based on{' '}
-            <span className="font-medium">&ldquo;How to Measure Anything&rdquo;</span>{' '}
-            by Douglas Hubbard
-          </p>
-        )}
       </footer>
     </div>
   );

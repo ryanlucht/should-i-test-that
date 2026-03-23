@@ -34,13 +34,10 @@ import type { PriorDistribution } from '@/lib/calculations';
  * to avoid duplicating business logic in the export card.
  */
 interface ExportCardProps {
-  /** Basic or Advanced mode */
-  mode: 'basic' | 'advanced';
-
   /** Custom title from user input, defaults to "Should I Test That?" */
   title?: string;
 
-  /** Primary value to display (EVPI for basic, Net Value for advanced) */
+  /** Primary value to display (Net Value) */
   verdictValue: number;
 
   /** Baseline conversion rate as a decimal (e.g., 0.025 for 2.5%) */
@@ -66,7 +63,6 @@ interface ExportCardProps {
   threshold: {
     scenario: string;
     valuePercent?: number;
-    valueDollars?: number;
   };
 
   /** Prior distribution object for mini chart rendering */
@@ -78,19 +74,19 @@ interface ExportCardProps {
   /** K value (dollars per unit lift) for chart tooltip */
   miniChartK: number;
 
-  /** Prior shape name for Advanced mode (e.g., "Normal", "Student-t (df=5)", "Uniform") */
+  /** Prior shape name (e.g., "Normal", "Student-t (df=5)", "Uniform") */
   priorShapeDescription?: string;
 
-  /** EVSI value (only for advanced mode) */
+  /** EVSI value */
   evsi?: number;
 
-  /** Cost of Delay (only for advanced mode) */
+  /** Cost of Delay */
   cod?: number;
 
-  /** Net value (only for advanced mode) */
+  /** Net value */
   netValue?: number;
 
-  /** Test duration in days (only for advanced mode) */
+  /** Test duration in days */
   testDurationDays?: number;
 }
 
@@ -105,7 +101,6 @@ interface ExportCardProps {
 export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
   function ExportCard(
     {
-      mode,
       title = 'Should I Test That?',
       verdictValue,
       baselineConversionRate,
@@ -124,13 +119,10 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     },
     ref
   ) {
-    // Mode badge display text
-    const modeBadge = mode === 'basic' ? 'Basic Mode' : 'Advanced Mode';
-
     // Format the primary verdict value
     const formattedValue = formatSmartCurrency(verdictValue);
 
-    // Format prior display with shape for Advanced mode
+    // Format prior display with shape
     const priorShapeText = priorShapeDescription ? ` (${priorShapeDescription})` : '';
     const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% expected lift${priorShapeText}`;
     const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
@@ -174,7 +166,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         }}
       >
-        {/* Header: Title + Mode Badge */}
+        {/* Header: Title */}
         <div
           style={{
             display: 'flex',
@@ -195,19 +187,6 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
           >
             {title}
           </h1>
-          <span
-            style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#7C3AED', // Purple accent
-              backgroundColor: '#F3E8FF', // Purple-50
-              padding: '6px 12px',
-              borderRadius: '9999px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {modeBadge}
-          </span>
         </div>
 
         {/* Verdict Section */}
@@ -229,19 +208,9 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
               lineHeight: '1.4',
             }}
           >
-            {mode === 'basic' ? (
-              <>
-                If you can A/B test this idea for less than{' '}
-                <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
-                it's worth testing.
-              </>
-            ) : (
-              <>
-                If you can run this test for up to{' '}
-                <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
-                test it.
-              </>
-            )}
+            If you can run this test for up to{' '}
+            <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
+            test it.
           </p>
           {/* Explanation text */}
           <p
@@ -252,24 +221,14 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
               lineHeight: '1.6',
             }}
           >
-            {mode === 'basic' ? (
+            This is <strong>EVSI minus Cost of Delay</strong> -- the realistic value of running
+            this specific test. EVSI (Expected Value of Sample Information) is{' '}
+            {evsi !== undefined ? formatSmartCurrency(evsi) : 'N/A'}, accounting for the test
+            being imperfect.
+            {cod !== undefined && cod > 0 && testDurationDays !== undefined && (
               <>
-                This is <strong>EVPI</strong> (Expected Value of Perfect Information) — the value
-                of having perfect foresight about whether this change helps. Real A/B tests are
-                imperfect, so this is an optimistic ceiling on what testing is worth.
-              </>
-            ) : (
-              <>
-                This is <strong>EVSI minus Cost of Delay</strong> — the realistic value of running
-                this specific test. EVSI (Expected Value of Sample Information) is{' '}
-                {evsi !== undefined ? formatSmartCurrency(evsi) : 'N/A'}, accounting for the test
-                being imperfect.
-                {cod !== undefined && cod > 0 && testDurationDays !== undefined && (
-                  <>
-                    {' '}Running the test for {testDurationDays} days delays rollout, costing{' '}
-                    {formatSmartCurrency(cod)} in expected opportunity cost.
-                  </>
-                )}
+                {' '}Running the test for {testDurationDays} days delays rollout, costing{' '}
+                {formatSmartCurrency(cod)} in expected opportunity cost.
               </>
             )}
           </p>
@@ -279,7 +238,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: mode === 'advanced' ? '1fr 1fr 1fr 1fr' : '1fr 1fr',
+            gridTemplateColumns: '1fr 1fr 1fr 1fr',
             gap: '16px',
             marginBottom: '24px',
           }}
@@ -399,21 +358,10 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             >
               {thresholdDisplay}
             </p>
-            {threshold.valueDollars !== undefined && (
-              <p
-                style={{
-                  fontSize: '13px',
-                  color: '#9CA3AF',
-                  margin: 0,
-                }}
-              >
-                ~{formatSmartCurrency(threshold.valueDollars)}/year
-              </p>
-            )}
           </div>
 
-          {/* EVSI (Advanced mode only) - spell out full name */}
-          {mode === 'advanced' && evsi !== undefined && (
+          {/* EVSI */}
+          {evsi !== undefined && (
             <div
               style={{
                 backgroundColor: '#F9FAFB',
@@ -444,8 +392,8 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             </div>
           )}
 
-          {/* Cost of Delay (Advanced mode only) */}
-          {mode === 'advanced' && cod !== undefined && (
+          {/* Cost of Delay */}
+          {cod !== undefined && (
             <div
               style={{
                 backgroundColor: '#F9FAFB',
