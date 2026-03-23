@@ -9,9 +9,9 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 ### Deprecation — Basic Mode Removal
 
-- [ ] **DEPR-01**: Basic Mode option removed from welcome screen; calculator loads directly into single EVSI mode
+- [x] **DEPR-01**: Basic Mode option removed from welcome screen; calculator loads directly into single EVSI mode
 - [x] **DEPR-02**: EVPI calculation code, components (CostOfDelayCard, etc.), and related tests removed from codebase
-- [ ] **DEPR-03**: All mode-switching UI copy, localStorage backup for mode switches, and dual-mode infrastructure removed
+- [x] **DEPR-03**: All mode-switching UI copy, localStorage backup for mode switches, and dual-mode infrastructure removed
 
 ### Engine — Statistical Accuracy (High Priority)
 
@@ -119,9 +119,9 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEPR-01 | Phase 19 | Pending |
+| DEPR-01 | Phase 19 | Complete |
 | DEPR-02 | Phase 19 | Complete |
-| DEPR-03 | Phase 19 | Pending |
+| DEPR-03 | Phase 19 | Complete |
 | ENG-01 | Phase 20 | Pending |
 | ENG-02 | Phase 20 | Pending |
 | ENG-03 | Phase 20 | Pending |

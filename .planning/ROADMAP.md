@@ -129,7 +129,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 19. Basic Mode Deprecation | 0/3 | Planned    |  |
+| 19. Basic Mode Deprecation | 2/3 | In Progress |  |
 | 20. Engine Accuracy Fixes | 0/TBD | Not started | - |
 | 21. Engine Cleanup | 0/TBD | Not started | - |
 | 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
