@@ -30,6 +30,7 @@ import {
   deriveSampleSizes,
 } from '@/lib/calculations';
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
+import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from '@/lib/calculations/feasibility';
 import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
 import type { CoDResults } from '@/lib/calculations/cost-of-delay';
@@ -321,21 +322,31 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
     const { prior, evsiInputs, netValueInputs } = validatedInputs;
 
-    // For Normal priors, compute synchronously:
-    // - EVSI uses fast path (closed-form, for UI decomposition)
-    // - Net Value uses Monte Carlo (for timing-integrated headline)
+    // For Normal priors, gate fast path by infeasible tail mass (per ENG-05)
+    // When truncation is material, the untruncated closed-form EVSI diverges
+    // from the truncated MC net value. Fall back to MC for consistency.
     if (prior.type === 'normal') {
-      // Fast path EVSI for display
-      const evsiResults = calculateEVSINormalFastPath(evsiInputs);
-      setWorkerResults(evsiResults);
+      const infeasibleMass = computeInfeasibleTailMass(
+        prior,
+        evsiInputs.baselineConversionRate
+      );
 
-      // Integrated net value for headline (COD-03)
-      // Must use Monte Carlo to integrate timing effects
-      const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000);
-      setNetValueResults(netResults);
+      if (infeasibleMass <= TRUNCATION_THRESHOLD) {
+        // Safe to use fast path -- truncation is negligible
+        const evsiResults = calculateEVSINormalFastPath(evsiInputs);
+        setWorkerResults(evsiResults);
 
-      setLoading(false);
-      return;
+        // Integrated net value for headline (COD-03)
+        // Must use Monte Carlo to integrate timing effects
+        const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000);
+        setNetValueResults(netResults);
+
+        setLoading(false);
+        return;
+      }
+      // Truncation material for Normal prior -- fall through to MC path below
+      // This ensures EVSI, net value, and default decision all operate
+      // in the same truncated statistical world
     }
 
     // For Student-t and Uniform, use Web Worker (async)
