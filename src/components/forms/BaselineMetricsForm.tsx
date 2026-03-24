@@ -7,7 +7,7 @@
  * - Value per conversion (V)
  *
  * These derive K = N_year * CR0 * V (annual dollars per unit lift)
- * which is used throughout EVPI/EVSI calculations.
+ * which is used throughout EVSI calculations.
  *
  * Per CONTEXT.md:
  * - Validation errors appear on blur only (not while typing)
@@ -41,8 +41,8 @@ export interface BaselineMetricsFormHandle {
 export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
   function BaselineMetricsForm(_props, ref) {
     // Get store values and setters
-    const sharedInputs = useWizardStore((state) => state.inputs.shared);
-    const setSharedInput = useWizardStore((state) => state.setSharedInput);
+    const inputs = useWizardStore((state) => state.inputs);
+    const setInput = useWizardStore((state) => state.setInput);
 
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<BaselineMetricsFormData>({
@@ -52,12 +52,12 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
       defaultValues: {
         // Convert stored decimal to percentage for display
         baselineConversionRate:
-          sharedInputs.baselineConversionRate !== null
-            ? decimalToPercent(sharedInputs.baselineConversionRate)
+          inputs.baselineConversionRate !== null
+            ? decimalToPercent(inputs.baselineConversionRate)
             : undefined,
-        annualVisitors: sharedInputs.annualVisitors ?? undefined,
-        visitorUnitLabel: sharedInputs.visitorUnitLabel || 'visitors',
-        valuePerConversion: sharedInputs.valuePerConversion ?? undefined,
+        annualVisitors: inputs.annualVisitors ?? undefined,
+        visitorUnitLabel: inputs.visitorUnitLabel || 'visitors',
+        valuePerConversion: inputs.valuePerConversion ?? undefined,
       },
     });
 
@@ -80,15 +80,15 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
     const onSubmit = useCallback(
       (data: BaselineMetricsFormData) => {
         // Convert percentage (e.g., 5.0) to decimal (e.g., 0.05) before storing
-        setSharedInput(
+        setInput(
           'baselineConversionRate',
           percentToDecimal(data.baselineConversionRate)
         );
-        setSharedInput('annualVisitors', data.annualVisitors);
-        setSharedInput('visitorUnitLabel', data.visitorUnitLabel);
-        setSharedInput('valuePerConversion', data.valuePerConversion);
+        setInput('annualVisitors', data.annualVisitors);
+        setInput('visitorUnitLabel', data.visitorUnitLabel);
+        setInput('valuePerConversion', data.valuePerConversion);
       },
-      [setSharedInput]
+      [setInput]
     );
 
     /**
@@ -117,33 +117,33 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
     const handleUnitLabelChange = useCallback(
       (value: string) => {
         setValue('visitorUnitLabel', value || 'visitors');
-        setSharedInput('visitorUnitLabel', value || 'visitors');
+        setInput('visitorUnitLabel', value || 'visitors');
       },
-      [setValue, setSharedInput]
+      [setValue, setInput]
     );
 
     // Sync form with store changes (e.g., if store is reset)
     useEffect(() => {
-      if (sharedInputs.baselineConversionRate !== null) {
+      if (inputs.baselineConversionRate !== null) {
         setValue(
           'baselineConversionRate',
-          decimalToPercent(sharedInputs.baselineConversionRate)
+          decimalToPercent(inputs.baselineConversionRate)
         );
       }
-      if (sharedInputs.annualVisitors !== null) {
-        setValue('annualVisitors', sharedInputs.annualVisitors);
+      if (inputs.annualVisitors !== null) {
+        setValue('annualVisitors', inputs.annualVisitors);
       }
-      if (sharedInputs.visitorUnitLabel) {
-        setValue('visitorUnitLabel', sharedInputs.visitorUnitLabel);
+      if (inputs.visitorUnitLabel) {
+        setValue('visitorUnitLabel', inputs.visitorUnitLabel);
       }
-      if (sharedInputs.valuePerConversion !== null) {
-        setValue('valuePerConversion', sharedInputs.valuePerConversion);
+      if (inputs.valuePerConversion !== null) {
+        setValue('valuePerConversion', inputs.valuePerConversion);
       }
     }, [
-      sharedInputs.baselineConversionRate,
-      sharedInputs.annualVisitors,
-      sharedInputs.visitorUnitLabel,
-      sharedInputs.valuePerConversion,
+      inputs.baselineConversionRate,
+      inputs.annualVisitors,
+      inputs.visitorUnitLabel,
+      inputs.valuePerConversion,
       setValue,
     ]);
 

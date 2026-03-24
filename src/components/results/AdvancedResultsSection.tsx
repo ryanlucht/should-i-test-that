@@ -1,5 +1,5 @@
 /**
- * Advanced Results Section - Complete Advanced mode results display
+ * Results Section - EVSI results display
  *
  * Requirements covered:
  * - ADV-OUT-01: Primary verdict "up to $Y"
@@ -10,10 +10,7 @@
  * - ADV-OUT-07: Probability test changes decision
  * - EXPORT-01 through EXPORT-04: PNG export functionality
  *
- * Per 05-CONTEXT.md:
- * - EVSI only: Don't show EVPI comparison in Advanced mode
- * - Chart reflects selected prior shape
- * - Supporting cards adapt from Basic mode
+ * Chart reflects selected prior shape.
  */
 
 import { useMemo, useEffect, useRef } from 'react';
@@ -33,31 +30,30 @@ import { trackCalculationCompleted } from '@/lib/analytics';
 import { DEFAULT_INTERVAL, DEFAULT_PRIOR, computePriorFromInterval } from '@/lib/prior';
 import type { PriorDistribution } from '@/lib/calculations/types';
 
-export function AdvancedResultsSection() {
+export function ResultsSection() {
   const { loading, results } = useEVSICalculations();
-  const sharedInputs = useWizardStore((state) => state.inputs.shared);
-  const advancedInputs = useWizardStore((state) => state.inputs.advanced);
+  const inputs = useWizardStore((state) => state.inputs);
 
   // Build prior distribution for export (mirrors useEVSICalculations logic)
   // Must be before early return to satisfy React hooks rules
   const prior: PriorDistribution = useMemo(() => {
     const isDefaultPrior =
-      sharedInputs.priorIntervalLow !== null &&
-      sharedInputs.priorIntervalHigh !== null &&
-      Math.abs(sharedInputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(sharedInputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
+      inputs.priorIntervalLow !== null &&
+      inputs.priorIntervalHigh !== null &&
+      Math.abs(inputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
+      Math.abs(inputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
 
     const normalParams =
       isDefaultPrior ||
-      sharedInputs.priorIntervalLow === null ||
-      sharedInputs.priorIntervalHigh === null
+      inputs.priorIntervalLow === null ||
+      inputs.priorIntervalHigh === null
         ? DEFAULT_PRIOR
         : computePriorFromInterval(
-            sharedInputs.priorIntervalLow,
-            sharedInputs.priorIntervalHigh
+            inputs.priorIntervalLow,
+            inputs.priorIntervalHigh
           );
 
-    const shape = advancedInputs.priorShape ?? 'normal';
+    const shape = inputs.priorShape ?? 'normal';
 
     switch (shape) {
       case 'normal':
@@ -72,17 +68,17 @@ export function AdvancedResultsSection() {
           type: 'student-t' as const,
           mu_L: normalParams.mu_L,
           sigma_L: normalParams.sigma_L,
-          df: advancedInputs.studentTDf ?? 5,
+          df: inputs.studentTDf ?? 5,
         };
 
       case 'uniform': {
         const lowBound =
-          sharedInputs.priorIntervalLow !== null
-            ? sharedInputs.priorIntervalLow / 100
+          inputs.priorIntervalLow !== null
+            ? inputs.priorIntervalLow / 100
             : DEFAULT_INTERVAL.low / 100;
         const highBound =
-          sharedInputs.priorIntervalHigh !== null
-            ? sharedInputs.priorIntervalHigh / 100
+          inputs.priorIntervalHigh !== null
+            ? inputs.priorIntervalHigh / 100
             : DEFAULT_INTERVAL.high / 100;
         return {
           type: 'uniform' as const,
@@ -99,10 +95,10 @@ export function AdvancedResultsSection() {
         };
     }
   }, [
-    sharedInputs.priorIntervalLow,
-    sharedInputs.priorIntervalHigh,
-    advancedInputs.priorShape,
-    advancedInputs.studentTDf,
+    inputs.priorIntervalLow,
+    inputs.priorIntervalHigh,
+    inputs.priorShape,
+    inputs.studentTDf,
   ]);
 
   // Track when EVSI calculation completes (OBS-07)
@@ -130,15 +126,15 @@ export function AdvancedResultsSection() {
   }
 
   // Get prior interval for display
-  const priorLow = sharedInputs.priorIntervalLow ?? DEFAULT_INTERVAL.low;
-  const priorHigh = sharedInputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high;
+  const priorLow = inputs.priorIntervalLow ?? DEFAULT_INTERVAL.low;
+  const priorHigh = inputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high;
   const priorMean = (priorLow + priorHigh) / 2;
 
   // Get threshold for display
   const thresholdLift =
-    sharedInputs.thresholdScenario === 'any-positive'
+    inputs.thresholdScenario === 'any-positive'
       ? 0
-      : sharedInputs.thresholdValue ?? 0;
+      : inputs.thresholdValue ?? 0;
 
   return (
     <div className="space-y-6">
@@ -171,9 +167,9 @@ export function AdvancedResultsSection() {
           <ValueBreakdownCard
             evsiDollars={results.evsi.evsiDollars}
             netValueDollars={results.netValueDollars}
-            testDurationDays={advancedInputs.testDurationDays ?? 14}
-            variantFraction={advancedInputs.trafficSplit ?? 0.5}
-            decisionLatencyDays={advancedInputs.decisionLatencyDays ?? 0}
+            testDurationDays={inputs.testDurationDays ?? 14}
+            variantFraction={inputs.trafficSplit ?? 0.5}
+            decisionLatencyDays={inputs.decisionLatencyDays ?? 0}
           />
 
           {/* Supporting Cards Grid - matches Basic mode DRUIDS pattern */}
@@ -190,12 +186,12 @@ export function AdvancedResultsSection() {
               <SupportingCard
                 title="Threshold"
                 value={
-                  sharedInputs.thresholdScenario === 'any-positive'
+                  inputs.thresholdScenario === 'any-positive'
                     ? 'Any positive'
                     : `${thresholdLift > 0 ? '+' : ''}${thresholdLift}%`
                 }
                 description={
-                  sharedInputs.thresholdScenario !== 'any-positive'
+                  inputs.thresholdScenario !== 'any-positive'
                     ? `Your minimum bar to ship`
                     : 'Ship if it helps'
                 }
@@ -265,11 +261,10 @@ export function AdvancedResultsSection() {
               Share your analysis
             </p>
             <ExportButton
-              mode="advanced"
               evsiResults={results}
-              sharedInputs={sharedInputs}
+              sharedInputs={inputs}
               prior={prior}
-              testDurationDays={advancedInputs.testDurationDays ?? undefined}
+              testDurationDays={inputs.testDurationDays ?? undefined}
             />
           </div>
         </>

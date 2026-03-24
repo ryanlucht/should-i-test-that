@@ -1,7 +1,7 @@
 /**
  * Prior Shape Form
  *
- * Allows users to select alternative prior shapes in Advanced mode.
+ * Allows users to select alternative prior shapes.
  * Three options per 05-CONTEXT.md and ADV-IN-01, ADV-IN-02, ADV-IN-10:
  * 1. Normal distribution (default) - Standard bell curve
  * 2. Student-t (fat-tailed) - Heavy tails with preset df values
@@ -10,7 +10,7 @@
  * Design patterns:
  * - Uses RadioCard/RadioCardGroup like ThresholdScenarioForm
  * - Student-t shows df preset buttons via ToggleGroup when selected
- * - Store integration via setAdvancedInput
+ * - Store integration via setInput
  */
 
 import { useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
@@ -145,21 +145,20 @@ function DfPresetSelector({
 
 /**
  * Prior shape form with three radio cards for shape selection
- * Only renders in Advanced mode
+ * Prior shape selector with radio cards
  */
 export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormProps>(
   function PriorShapeForm({ onUseDefaultPrior }, ref) {
     // Get store values and setters
-    const mode = useWizardStore((state) => state.mode);
-    const advancedInputs = useWizardStore((state) => state.inputs.advanced);
-    const setAdvancedInput = useWizardStore((state) => state.setAdvancedInput);
+    const inputs = useWizardStore((state) => state.inputs);
+    const setInput = useWizardStore((state) => state.setInput);
 
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<PriorShapeFormData>({
       resolver: zodResolver(priorShapeSchema),
       mode: 'onBlur',
       reValidateMode: 'onBlur',
-      defaultValues: getDefaultValues(advancedInputs),
+      defaultValues: getDefaultValues(inputs),
     });
 
     const {
@@ -184,21 +183,21 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
         setValue('shape', shape);
 
         // Update store immediately
-        setAdvancedInput('priorShape', shape);
+        setInput('priorShape', shape);
 
         // Clear df when switching away from Student-t
         if (shape !== 'student-t') {
-          setAdvancedInput('studentTDf', null);
+          setInput('studentTDf', null);
           // Clear form df value (though it won't be used for validation)
         } else {
           // When switching to Student-t, set default df if none selected
-          if (!advancedInputs.studentTDf) {
+          if (!inputs.studentTDf) {
             setValue('df', 5); // Default to moderate
-            setAdvancedInput('studentTDf', 5);
+            setInput('studentTDf', 5);
           }
         }
       },
-      [setValue, setAdvancedInput, advancedInputs.studentTDf]
+      [setValue, setInput, inputs.studentTDf]
     );
 
     /**
@@ -207,9 +206,9 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
     const handleDfChange = useCallback(
       (df: StudentTDf) => {
         setValue('df', df);
-        setAdvancedInput('studentTDf', df);
+        setInput('studentTDf', df);
       },
-      [setValue, setAdvancedInput]
+      [setValue, setInput]
     );
 
     /**
@@ -217,14 +216,14 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
      */
     const onSubmit = useCallback(
       (data: PriorShapeFormData) => {
-        setAdvancedInput('priorShape', data.shape);
+        setInput('priorShape', data.shape);
         if (data.shape === 'student-t') {
-          setAdvancedInput('studentTDf', data.df);
+          setInput('studentTDf', data.df);
         } else {
-          setAdvancedInput('studentTDf', null);
+          setInput('studentTDf', null);
         }
       },
-      [setAdvancedInput]
+      [setInput]
     );
 
     /**
@@ -248,19 +247,14 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
 
     // Sync form with store changes (e.g., if store is reset)
     useEffect(() => {
-      if (advancedInputs.priorShape) {
-        setValue('shape', advancedInputs.priorShape);
+      if (inputs.priorShape) {
+        setValue('shape', inputs.priorShape);
       }
-      if (advancedInputs.priorShape === 'student-t' && advancedInputs.studentTDf) {
-        setValue('df', advancedInputs.studentTDf);
+      if (inputs.priorShape === 'student-t' && inputs.studentTDf) {
+        setValue('df', inputs.studentTDf);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advancedInputs.priorShape, advancedInputs.studentTDf]);
-
-    // Don't render in Basic mode
-    if (mode !== 'advanced') {
-      return null;
-    }
+    }, [inputs.priorShape, inputs.studentTDf]);
 
     // Get df error if Student-t selected but no df
     // TypeScript doesn't narrow discriminated union errors automatically,
@@ -276,7 +270,7 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
     return (
       <FormProvider {...methods}>
         <div className="space-y-4">
-          {/* Default Prior Option - mirror of Basic mode */}
+          {/* Default Prior Option */}
           <div className="space-y-4 pb-4 border-b border-border/50">
             <button
               type="button"
@@ -344,7 +338,7 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
                 control={methods.control}
                 render={() => (
                   <DfPresetSelector
-                    value={selectedDf ?? advancedInputs.studentTDf}
+                    value={selectedDf ?? inputs.studentTDf}
                     onChange={handleDfChange}
                   />
                 )}
@@ -380,14 +374,14 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
  * Get default form values from store state
  */
 function getDefaultValues(
-  advancedInputs: ReturnType<typeof useWizardStore.getState>['inputs']['advanced']
+  inputs: ReturnType<typeof useWizardStore.getState>['inputs']
 ): PriorShapeFormData {
-  const shape = advancedInputs.priorShape ?? 'normal';
+  const shape = inputs.priorShape ?? 'normal';
 
   if (shape === 'student-t') {
     return {
       shape: 'student-t',
-      df: advancedInputs.studentTDf ?? 5, // Default to moderate if not set
+      df: inputs.studentTDf ?? 5, // Default to moderate if not set
     };
   }
 
