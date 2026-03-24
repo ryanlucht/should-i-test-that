@@ -29,6 +29,7 @@ import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { studentTQuantileBounds } from './student-t-helpers';
 import { determineDefaultDecision } from './derived';
+import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from './feasibility';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
 /**
@@ -62,7 +63,9 @@ export function computeEffectivePriorMetrics(
   let sumL = 0;
   let countExceedsThreshold = 0;
   let accepted = 0;
-  const maxIterations = numSamples * 10;
+  // Adaptive cap: 50x instead of 10x to allow more attempts when rejection rate
+  // is high (e.g., high-CR0 cases where L_max is tight). Per ENG-12.
+  const maxIterations = numSamples * 50;
   let iterations = 0;
 
   while (accepted < numSamples && iterations < maxIterations) {
@@ -481,24 +484,27 @@ export function calculateEVSIMonteCarlo(
   // ===========================================
   // Step 3.5: Compute effective prior metrics under feasibility truncation
   // ===========================================
-  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
-  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
-  // on a truncated prior. For consistency, we should display metrics
-  // (mean, probClearsThreshold) from the same truncated prior.
+  // Per ENG-03/ENG-04: Use actual tail mass (both bounds) to detect truncation.
+  // The old heuristic (sigma > |mu + 1|) only checked the lower bound and missed
+  // upper-bound truncation (which matters when CR0 is large, e.g., CR0=0.90).
   //
-  // Only compute effective metrics when truncation is likely to matter:
-  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
-  // - Normal priors with wide sigma relative to distance to L=-1
-  // This adds ~2000 samples overhead, so skip for tight Normal priors
+  // When truncation is material (infeasible mass > TRUNCATION_THRESHOLD):
+  // - Use effective truncated metrics for probability and default decision
+  // - The default decision must reflect the truncated mean, not the untruncated mean
   let effectiveProbClears = 1 - cdf(threshold_L, prior);
 
-  const needsEffectiveMetrics =
-    prior.type !== 'normal' ||
-    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
+  const infeasibleMass = computeInfeasibleTailMass(prior, CR0);
+  const needsEffectiveMetrics = infeasibleMass > TRUNCATION_THRESHOLD;
+
+  // Default decision starts from untruncated mean, may be overridden
+  let effectiveDefaultDecision = defaultDecision;
 
   if (needsEffectiveMetrics) {
     const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
     effectiveProbClears = effective.effectiveProbClears;
+    // Use truncated mean for default decision (per ENG-03)
+    // This ensures the default decision reflects the truncated prior
+    effectiveDefaultDecision = determineDefaultDecision(effective.effectivePriorMean, threshold_L);
   }
 
   // Use effective probClears for the returned metric
@@ -520,7 +526,9 @@ export function calculateEVSIMonteCarlo(
   let rejectedSamples = 0;
   let decisionChanges = 0;
 
-  const maxIterations = numSamples * 10; // Cap to prevent infinite loops
+  // Adaptive cap: 50x instead of 10x to allow more attempts when rejection rate
+  // is high (e.g., high-CR0 cases where L_max is tight). Per ENG-12.
+  const maxIterations = numSamples * 50;
   let iterations = 0;
 
   while (validSamples < numSamples && iterations < maxIterations) {
@@ -538,15 +546,16 @@ export function calculateEVSIMonteCarlo(
     validSamples++;
 
     // ===========================================
-    // Value WITHOUT test (use default decision)
+    // Value WITHOUT test (use effective default decision)
     // ===========================================
     // Value is measured relative to the threshold because:
     // - Shipping when L_true > T_L gives positive value (correct decision)
     // - Shipping when L_true < T_L gives negative value (regret)
     // - Not shipping always gives 0 (threshold is our baseline)
     // This aligns with the EVPI formula which uses threshold-relative calculations.
+    // Per ENG-03: uses effectiveDefaultDecision (truncated mean) when truncation material
     let valueWithoutTest: number;
-    if (defaultDecision === 'ship') {
+    if (effectiveDefaultDecision === 'ship') {
       // We ship, get value relative to threshold baseline
       // Value = K * (L_true - T_L) represents excess value above threshold
       valueWithoutTest = K * (L_true - threshold_L);
@@ -577,8 +586,8 @@ export function calculateEVSIMonteCarlo(
     // E[L|L_hat] >= T is the correct Bayesian decision rule
     const posteriorDecision = posteriorMean >= threshold_L ? 'ship' : 'dont-ship';
 
-    // Track decision changes
-    if (posteriorDecision !== defaultDecision) {
+    // Track decision changes (relative to effective default, which may use truncated mean)
+    if (posteriorDecision !== effectiveDefaultDecision) {
       decisionChanges++;
     }
 
@@ -600,10 +609,19 @@ export function calculateEVSIMonteCarlo(
   }
 
   // ===========================================
-  // Step 5.5: Check for high rejection rate warning (Edge Case 6)
+  // Step 5.5: Check for low acceptance and high rejection rate warnings
   // ===========================================
-  // High rejection indicates prior places substantial mass outside feasible bounds.
-  // This can lead to metrics that don't reflect the full prior distribution.
+
+  // Low acceptance warning (ENG-12): when accepted fraction < 50%
+  // Per Codex review: actionable advice, not "reduce baseline conversion rate"
+  if (validSamples < numSamples * 0.5) {
+    warnings.push({
+      code: 'low_acceptance',
+      message: `Only ${validSamples} of ${numSamples} requested samples were accepted after feasibility filtering. Results may be less precise. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
+    });
+  }
+
+  // High rejection rate warning (Edge Case 6)
   // Threshold: >10% rejection rate triggers warning.
   const totalAttempted = validSamples + rejectedSamples;
   if (totalAttempted > 0) {
@@ -611,7 +629,7 @@ export function calculateEVSIMonteCarlo(
     if (rejectionRate > 0.10) {
       warnings.push({
         code: 'high_rejection',
-        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing prior or adjusting baseline rate.`,
+        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
       });
     }
   }
@@ -624,7 +642,7 @@ export function calculateEVSIMonteCarlo(
   if (validSamples === 0) {
     return {
       evsiDollars: 0,
-      defaultDecision,
+      defaultDecision: effectiveDefaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
       numSamples: 0,
@@ -650,7 +668,7 @@ export function calculateEVSIMonteCarlo(
 
   return {
     evsiDollars,
-    defaultDecision,
+    defaultDecision: effectiveDefaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
     numSamples: validSamples,
