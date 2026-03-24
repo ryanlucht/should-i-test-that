@@ -1911,3 +1911,98 @@ describe('Student-t posterior grid bounds (ENG-11)', () => {
     expect(newBounds.high).toBeGreaterThan(oldMax);
   });
 });
+
+// ===========================================
+// ENG-19: Edge-case safety tests
+// Consolidated verification that degenerate inputs produce valid numeric output
+// ===========================================
+
+describe('ENG-19: edge-case safety', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // --- sigma_L=0 (point mass prior) in Monte Carlo path ---
+
+  it('MC EVSI with Normal sigma_L=0 returns evsiDollars=0 (no NaN)', () => {
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0.01,
+      prior: { type: 'normal', mu_L: 0.02, sigma_L: 0 },
+      n_control: 5000,
+      n_variant: 5000,
+    }, 1000);
+
+    // Point mass prior = no uncertainty = EVSI should be 0
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+    expect(result.defaultDecision).toBeDefined();
+    expect(result.probabilityClearsThreshold).toBeGreaterThanOrEqual(0);
+    expect(result.probabilityClearsThreshold).toBeLessThanOrEqual(1);
+  });
+
+  it('MC EVSI with Student-t sigma_L=0 returns evsiDollars=0 (no NaN)', () => {
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'student-t', mu_L: 0.03, sigma_L: 0, df: 5 },
+      n_control: 5000,
+      n_variant: 5000,
+    }, 1000);
+
+    // Point mass prior = no uncertainty = EVSI should be 0
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+    expect(result.defaultDecision).toBeDefined();
+  });
+
+  // --- Invalid Uniform bounds (low >= high) in Monte Carlo EVSI ---
+
+  it('MC EVSI with Uniform low >= high returns evsiDollars=0 (no NaN)', () => {
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      // Inverted bounds: low > high
+      prior: { type: 'uniform', low_L: 0.10, high_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    }, 1000);
+
+    // Invalid Uniform = degenerate prior = EVSI should be 0
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+    expect(result.defaultDecision).toBeDefined();
+  });
+
+  it('MC EVSI with Uniform low == high returns evsiDollars=0 (no NaN)', () => {
+    randomSeed = 12345;
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      // Equal bounds: point mass
+      prior: { type: 'uniform', low_L: 0.05, high_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+    }, 1000);
+
+    // Equal bounds Uniform = point mass = EVSI should be 0
+    expect(result.evsiDollars).toBe(0);
+    expect(Number.isNaN(result.evsiDollars)).toBe(false);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+  });
+});

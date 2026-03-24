@@ -748,3 +748,95 @@ describe('end-to-end pipeline: Student-t + truncation + net value', () => {
     expect(isFinite(result.maxTestBudgetDollars)).toBe(true);
   });
 });
+
+// ===========================================
+// ENG-19: Edge-case safety tests for net value
+// ===========================================
+
+describe('ENG-19: NetValue edge-case safety', () => {
+  it('Normal sigma_L=0 produces finite netValueDollars (no NaN)', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0.01,
+      prior: { type: 'normal', mu_L: 0.02, sigma_L: 0 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 0,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    // Point mass prior = no uncertainty = net value should be finite
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(Number.isFinite(result.netValueDollars)).toBe(true);
+    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
+    expect(result.defaultDecision).toBeDefined();
+  });
+
+  it('Student-t sigma_L=0 produces finite netValueDollars (no NaN)', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      prior: { type: 'student-t', mu_L: 0.03, sigma_L: 0, df: 5 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 0,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(Number.isFinite(result.netValueDollars)).toBe(true);
+    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
+    expect(result.defaultDecision).toBeDefined();
+  });
+
+  it('Uniform low >= high produces netValueDollars=0 (no NaN)', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      // Inverted bounds
+      prior: { type: 'uniform', low_L: 0.10, high_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 0,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    // Invalid Uniform = degenerate = no meaningful simulation
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(Number.isFinite(result.netValueDollars)).toBe(true);
+    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
+  });
+
+  it('Uniform low == high produces finite netValueDollars (no NaN)', () => {
+    const inputs: NetValueInputs = {
+      K: 100000,
+      baselineConversionRate: 0.05,
+      threshold_L: 0,
+      // Equal bounds = point mass
+      prior: { type: 'uniform', low_L: 0.05, high_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 0,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 1000);
+
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(Number.isFinite(result.netValueDollars)).toBe(true);
+    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
+  });
+});
