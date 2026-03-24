@@ -11,7 +11,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 
 ## Phases
 
-- [ ] **Phase 19: Basic Mode Deprecation** - Remove EVPI calculations, dual-mode UI, and mode-switching infrastructure
+- [x] **Phase 19: Basic Mode Deprecation** - Remove EVPI calculations, dual-mode UI, and mode-switching infrastructure (completed 2026-03-24)
 - [ ] **Phase 20: Engine Accuracy Fixes** - Fix Student-t calibration, feasibility/truncation, traffic semantics, negative net value, and horizon validation
 - [ ] **Phase 21: Engine Cleanup** - Extract shared helpers, fix comments, remove dead code, harden edge cases
 - [ ] **Phase 22: Learning Bits Guide Infrastructure** - Build dialogue component, typewriter hook, toggle, and section-aware state (BLOCKED on PM content for dialogue text)
@@ -31,7 +31,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
   2. No EVPI calculation code, components (CostOfDelayCard, etc.), or EVPI-related tests remain in the codebase
   3. All mode-switching UI copy, localStorage backup for mode switches, and dual-mode conditional rendering are gone
   4. Existing Advanced mode inputs and calculations still work correctly after removal
-**Plans:** 1/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 19-01-PLAN.md -- Delete EVPI calculation code, Basic results components, and related tests
@@ -48,7 +48,13 @@ Plans:
   3. Traffic input semantics are unambiguous -- either dailyTraffic means total visitors (eligibilityFraction applies) or already-eligible visitors (no eligibilityFraction), with no contradictory paths
   4. Negative net value displays honestly as a negative dollar amount with "test not worth running" messaging (not clamped to $0)
   5. Test duration + decision latency cannot silently exceed a 365-day horizon without explicit validation or capping
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 20-01-PLAN.md -- Student-t calibration via t-quantile, chart shading, plotting range, and posterior grid bounds
+- [ ] 20-02-PLAN.md -- Traffic label/tooltip fixes, conversionLatencyDays removal, and 365-day horizon validation
+- [ ] 20-03-PLAN.md -- Feasibility/truncation consistency: tail-mass detection, truncated default decision, fast-path gating, rejection sampling
+- [ ] 20-04-PLAN.md -- Negative net value display and legacy Cost of Delay retirement from exports
 
 ### Phase 21: Engine Cleanup
 **Goal**: Engine codebase is DRY, comments are accurate, dead code is removed, and edge cases produce no NaN or contradictory outputs
@@ -129,8 +135,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 19. Basic Mode Deprecation | 1/3 | In Progress|  |
-| 20. Engine Accuracy Fixes | 0/TBD | Not started | - |
+| 19. Basic Mode Deprecation | 1/3 | Complete    | 2026-03-24 |
+| 20. Engine Accuracy Fixes | 0/4 | Not started | - |
 | 21. Engine Cleanup | 0/TBD | Not started | - |
 | 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
