@@ -9,7 +9,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from './feasibility';
+import {
+  computeInfeasibleTailMass,
+  TRUNCATION_THRESHOLD,
+  checkRareEventsWarning,
+  checkLowAcceptanceWarning,
+  checkHighRejectionWarning,
+} from './feasibility';
 import { calculateEVSIMonteCarlo } from './evsi';
 import { calculateNetValueMonteCarlo } from './net-value';
 import type { PriorDistribution } from './distributions';
@@ -120,6 +126,89 @@ describe('ENG-03: Default decision uses truncated mean when truncation is materi
 // ===========================================
 // Rejection sampling cap increase (ENG-12)
 // ===========================================
+
+// ===========================================
+// Shared warning helper tests (ENG-14)
+// ===========================================
+
+describe('checkRareEventsWarning', () => {
+  it('returns warning when min expected conversions < 20', () => {
+    // n_control=100, n_variant=100, CR0=0.05: min expected = 100*0.05 = 5 < 20
+    const warning = checkRareEventsWarning(100, 100, 0.05);
+    expect(warning).not.toBeNull();
+    expect(warning!.code).toBe('rare_events');
+    expect(warning!.message).toContain('low');
+  });
+
+  it('returns null when min expected conversions >= 20', () => {
+    // n_control=10000, n_variant=10000, CR0=0.05: min expected = 500 >= 20
+    const warning = checkRareEventsWarning(10000, 10000, 0.05);
+    expect(warning).toBeNull();
+  });
+
+  it('uses the smaller arm for the check', () => {
+    // n_control=100, n_variant=10000, CR0=0.05: min expected = 100*0.05 = 5 < 20
+    const warning = checkRareEventsWarning(100, 10000, 0.05);
+    expect(warning).not.toBeNull();
+  });
+
+  it('returns null exactly at threshold (min expected = 20)', () => {
+    // n_control=400, n_variant=400, CR0=0.05: min expected = 400*0.05 = 20 (not < 20)
+    const warning = checkRareEventsWarning(400, 400, 0.05);
+    expect(warning).toBeNull();
+  });
+});
+
+describe('checkLowAcceptanceWarning', () => {
+  it('returns warning when accepted < 50% of requested', () => {
+    // 200 valid out of 1000 requested = 20% < 50%
+    const warning = checkLowAcceptanceWarning(200, 1000);
+    expect(warning).not.toBeNull();
+    expect(warning!.code).toBe('low_acceptance');
+    expect(warning!.message).toContain('200');
+    expect(warning!.message).toContain('1000');
+  });
+
+  it('returns null when accepted >= 50% of requested', () => {
+    // 600 valid out of 1000 requested = 60% >= 50%
+    const warning = checkLowAcceptanceWarning(600, 1000);
+    expect(warning).toBeNull();
+  });
+
+  it('returns null exactly at threshold (50%)', () => {
+    // 500 valid out of 1000 requested = exactly 50% (not < 50%)
+    const warning = checkLowAcceptanceWarning(500, 1000);
+    expect(warning).toBeNull();
+  });
+});
+
+describe('checkHighRejectionWarning', () => {
+  it('returns warning when rejection rate > 10%', () => {
+    // 900 valid, 200 rejected: rejection rate = 200/1100 = 18.2% > 10%
+    const warning = checkHighRejectionWarning(900, 200);
+    expect(warning).not.toBeNull();
+    expect(warning!.code).toBe('high_rejection');
+    expect(warning!.message).toContain('18%');
+  });
+
+  it('returns null when rejection rate <= 10%', () => {
+    // 1000 valid, 50 rejected: rejection rate = 50/1050 = 4.8% <= 10%
+    const warning = checkHighRejectionWarning(1000, 50);
+    expect(warning).toBeNull();
+  });
+
+  it('returns null when no samples attempted', () => {
+    // 0 valid, 0 rejected: totalAttempted = 0
+    const warning = checkHighRejectionWarning(0, 0);
+    expect(warning).toBeNull();
+  });
+
+  it('returns null exactly at threshold (10%)', () => {
+    // 900 valid, 100 rejected: rejection rate = 100/1000 = exactly 10% (not > 10%)
+    const warning = checkHighRejectionWarning(900, 100);
+    expect(warning).toBeNull();
+  });
+});
 
 describe('ENG-12: Rejection sampling cap and low_acceptance warning', () => {
   beforeEach(() => {
