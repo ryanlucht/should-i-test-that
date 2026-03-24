@@ -13,6 +13,7 @@
  */
 
 import { pdf, type PriorDistribution } from './distributions';
+import { studentTQuantileBounds } from './student-t-helpers';
 
 /**
  * Data point for chart rendering
@@ -70,7 +71,7 @@ export function generateDistributionData(
     return points;
   }
 
-  // Normal or Student-t: use mu +/- 4*sigma range
+  // Normal or Student-t: determine plotting range
   const mu_L = prior.mu_L!;
   const sigma_L = prior.sigma_L!;
 
@@ -85,8 +86,23 @@ export function generateDistributionData(
     ];
   }
 
-  const minLift = mu_L - 4 * sigma_L;
-  const maxLift = mu_L + 4 * sigma_L;
+  let minLift: number;
+  let maxLift: number;
+
+  if (prior.type === 'student-t') {
+    // Use quantile-based bounds for Student-t (per ENG-10)
+    // 0.5th to 99.5th percentile captures fat tails accurately
+    // The old code used mu +/- 4*sigma which underestimates Student-t tails
+    const bounds = studentTQuantileBounds(
+      mu_L, sigma_L, prior.df!, 0.005, 0.995
+    );
+    minLift = bounds.low;
+    maxLift = bounds.high;
+  } else {
+    // Normal: mu +/- 4*sigma (covers 99.99%)
+    minLift = mu_L - 4 * sigma_L;
+    maxLift = mu_L + 4 * sigma_L;
+  }
   const step = (maxLift - minLift) / (numPoints - 1);
 
   const points: ChartDataPoint[] = [];

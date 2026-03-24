@@ -27,6 +27,7 @@ import { sample, cdf, getPriorMean, pdf } from './distributions';
 import type { PriorDistribution } from './distributions';
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
+import { studentTQuantileBounds } from './student-t-helpers';
 import { determineDefaultDecision } from './derived';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
@@ -191,15 +192,15 @@ function computePosteriorMeanGrid(
     L_min = Math.max(-1, prior.low_L!);
     L_max = Math.min(prior.high_L!, feasibleMax);
   } else if (prior.type === 'student-t') {
-    // Student-t is unbounded but we use practical bounds
-    // Center around prior mean, extend by 6 scale parameters
-    // This provides practical coverage for numerical integration
-    // (exact coverage depends on df; heavier tails = less coverage)
-    // Per Accuracy-07: Clamp upper bound to feasibility constraint
-    const mu = prior.mu_L!;
-    const sigma = prior.sigma_L!;
-    L_min = Math.max(-1, mu - 6 * sigma);
-    L_max = Math.min(mu + 6 * sigma, feasibleMax);
+    // Use quantile-based bounds for Student-t posterior grid (per ENG-11)
+    // 0.1th to 99.9th percentile provides better coverage of heavy tails
+    // than the old mu +/- 6*sigma approach, which underestimated tails for low df.
+    // Per Accuracy-07: Clamp to feasibility constraint
+    const bounds = studentTQuantileBounds(
+      prior.mu_L!, prior.sigma_L!, prior.df!, 0.001, 0.999
+    );
+    L_min = Math.max(-1, bounds.low);
+    L_max = Math.min(bounds.high, feasibleMax);
   } else {
     // Fallback for any other type (shouldn't reach here)
     L_min = -1;

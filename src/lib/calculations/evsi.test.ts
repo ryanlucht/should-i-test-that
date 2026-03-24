@@ -16,6 +16,8 @@ import {
   truncatedNormalMeanTwoSided,
   computeEffectivePriorMetrics,
 } from './evsi';
+import { calculateEVPI } from './evpi';
+import { studentTQuantileBounds } from './student-t-helpers';
 import type { PriorDistribution } from './distributions';
 
 /**
@@ -135,8 +137,42 @@ describe('calculateEVSIMonteCarlo', () => {
     });
   });
 
-  // Note: EVSI <= EVPI bound test removed — EVPI calculation code was
-  // deleted as part of Basic mode deprecation (DEPR-02)
+  // ===========================================
+  // 3. EVSI <= EVPI
+  // ===========================================
+
+  describe('EVSI <= EVPI bound', () => {
+    it('EVSI is bounded by EVPI for Normal prior', () => {
+      const normalPrior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0,
+        sigma_L: 0.05,
+      };
+
+      const evsiResult = calculateEVSIMonteCarlo({
+        K: 5000000,
+        baselineConversionRate: 0.05,
+        threshold_L: 0,
+        prior: normalPrior,
+        n_control: 5000,
+        n_variant: 5000,
+      }, 5000);
+
+      // Calculate EVPI for same prior
+      const evpiResult = calculateEVPI({
+        baselineConversionRate: 0.05,
+        annualVisitors: 1000000, // Doesn't affect K directly here
+        valuePerConversion: 100, // Doesn't affect K directly here
+        prior: { mu_L: 0, sigma_L: 0.05 },
+        threshold_L: 0,
+      });
+
+      // Scale EVPI to same K (K from EVPI = 5M)
+      // EVSI should be less than or equal to EVPI
+      // Allow 10% tolerance for Monte Carlo variance
+      expect(evsiResult.evsiDollars).toBeLessThanOrEqual(evpiResult.evpiDollars * 1.1);
+    });
+  });
 
   // ===========================================
   // 4. Zero sample size edge case
@@ -1813,5 +1849,71 @@ describe('computeEffectivePriorMetrics', () => {
       // Effective mean should be close to prior mean (most mass within bounds)
       expect(result.effectivePriorMean).toBeCloseTo(0, 1);
     });
+  });
+});
+
+/**
+ * Tests for Student-t posterior grid bounds (ENG-11)
+ *
+ * Verifies that the posterior grid uses quantile-based bounds
+ * instead of the old mu +/- 6*sigma approach.
+ */
+describe('Student-t posterior grid bounds (ENG-11)', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Student-t EVSI produces valid results with quantile-based grid', () => {
+    const prior: PriorDistribution = {
+      type: 'student-t',
+      mu_L: 0,
+      sigma_L: 0.035,
+      df: 3,
+    };
+
+    const result = calculateEVSIMonteCarlo(
+      {
+        K: 100000,
+        baselineConversionRate: 0.1,
+        threshold_L: 0,
+        prior,
+        n_control: 5000,
+        n_variant: 5000,
+      },
+      1000
+    );
+
+    // Should produce a valid EVSI value
+    expect(result.evsiDollars).toBeGreaterThanOrEqual(0);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+    expect(result.numSamples).toBeGreaterThan(0);
+  });
+
+  it('regression: old 6*sigma grid gives different (narrower) bounds than quantile approach for df=3', () => {
+    // For Student-t with df=3 and scale=0.05:
+    // Old approach: mu +/- 6*sigma = 0 +/- 0.3 = [-0.3, 0.3]
+    // New approach: quantile-based 0.1th-99.9th percentile
+    // For df=3, t_inv(0.999, 3) ~= 10.21, so bounds ~= 0 +/- 0.05 * 10.21 = +/- 0.51
+    // The quantile-based bounds should be wider for heavy-tailed Student-t
+
+    const mu = 0;
+    const sigma = 0.05;
+    const df = 3;
+
+    // Old bounds (mu +/- 6*sigma)
+    const oldMin = mu - 6 * sigma;
+    const oldMax = mu + 6 * sigma;
+
+    // New bounds (quantile-based) - uses imported shared helper
+    const newBounds = studentTQuantileBounds(mu, sigma, df, 0.001, 0.999);
+
+    // Quantile-based bounds should be wider than 6*sigma for df=3
+    expect(newBounds.low).toBeLessThan(oldMin);
+    expect(newBounds.high).toBeGreaterThan(oldMax);
   });
 });

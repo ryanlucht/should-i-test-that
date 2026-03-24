@@ -37,12 +37,13 @@ import {
   getDensityAtLiftForPrior,
 } from '@/lib/calculations/chart-data';
 import { getPriorMean, type PriorDistribution } from '@/lib/calculations';
+import { studentTInterval } from '@/lib/calculations/student-t-helpers';
 import { formatLiftPercent } from '@/lib/formatting';
 import { ChartTooltip } from './ChartTooltip';
 
 /**
  * Z-score for 95th percentile of standard normal distribution
- * Used to calculate 90% credible interval bounds for Normal and Student-t
+ * Used to calculate 90% credible interval bounds for Normal prior
  */
 const Z_95 = 1.6448536;
 
@@ -79,7 +80,8 @@ function getThresholdLabel(thresholdPercent: number): string {
 /**
  * Calculate 90% credible interval bounds for display
  *
- * For Normal/Student-t: mu +/- Z_95 * sigma (approximate for t)
+ * For Normal: mu +/- Z_95 * sigma (exact)
+ * For Student-t: uses t-quantile via shared helper (per ENG-02, D-10)
  * For Uniform: exact bounds [low, high] represent 100%, show full range
  */
 function getIntervalBounds(prior: PriorDistribution): {
@@ -92,8 +94,14 @@ function getIntervalBounds(prior: PriorDistribution): {
     return { low: prior.low_L!, high: prior.high_L! };
   }
 
-  // Normal and Student-t: use z-score approximation
-  // (This is exact for Normal, approximate for Student-t)
+  if (prior.type === 'student-t') {
+    // Use t-quantile for accurate 90% interval (per ENG-02, D-10)
+    // The old code used Z_95 * sigma which is only correct for Normal,
+    // producing an incorrect interval width for Student-t distributions.
+    return studentTInterval(prior.mu_L!, prior.sigma_L!, prior.df!);
+  }
+
+  // Normal: use z-score (exact for Normal distribution)
   const mu_L = prior.mu_L!;
   const sigma_L = prior.sigma_L!;
   return {

@@ -205,6 +205,33 @@ describe('generateDistributionData', () => {
       // Student-t has lower peak (mass spread to tails)
       expect(studentTPeak).toBeLessThan(normalPeak);
     });
+
+    it('uses wider plotting range than Normal with same mu/sigma for df=3 (ENG-10)', () => {
+      const normalPrior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0,
+        sigma_L: 0.05,
+      };
+      const studentTPrior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0,
+        sigma_L: 0.05,
+        df: 3,
+      };
+
+      const normalData = generateDistributionData(normalPrior);
+      const studentTData = generateDistributionData(studentTPrior);
+
+      // Student-t with quantile-based range should extend further than Normal
+      const normalMin = normalData[0].liftPercent;
+      const normalMax = normalData[normalData.length - 1].liftPercent;
+      const studentTMin = studentTData[0].liftPercent;
+      const studentTMax = studentTData[studentTData.length - 1].liftPercent;
+
+      // Student-t range should be wider than Normal range
+      expect(studentTMin).toBeLessThan(normalMin);
+      expect(studentTMax).toBeGreaterThan(normalMax);
+    });
   });
 
   describe('Uniform distribution', () => {
