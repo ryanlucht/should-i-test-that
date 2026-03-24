@@ -31,10 +31,10 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
   2. No EVPI calculation code, components (CostOfDelayCard, etc.), or EVPI-related tests remain in the codebase
   3. All mode-switching UI copy, localStorage backup for mode switches, and dual-mode conditional rendering are gone
   4. Existing Advanced mode inputs and calculations still work correctly after removal
-**Plans:** 0/3 plans executed
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 19-01-PLAN.md -- Delete EVPI calculation code, Basic results components, and related tests
+- [x] 19-01-PLAN.md -- Delete EVPI calculation code, Basic results components, and related tests
 - [ ] 19-02-PLAN.md -- Remove mode infrastructure from types, store, pages, hooks, and export components
 - [ ] 19-03-PLAN.md -- Migrate form consumers to flat store API and rename ResultsSection
 
@@ -129,7 +129,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 19. Basic Mode Deprecation | 2/3 | In Progress |  |
+| 19. Basic Mode Deprecation | 1/3 | In Progress|  |
 | 20. Engine Accuracy Fixes | 0/TBD | Not started | - |
 | 21. Engine Cleanup | 0/TBD | Not started | - |
 | 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
