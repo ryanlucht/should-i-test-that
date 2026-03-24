@@ -75,7 +75,7 @@ export interface AdvancedInputs {
   studentTDf: 3 | 5 | 10 | null;
   /** Test duration in days */
   testDurationDays: number | null;
-  /** Daily traffic eligible for the experiment */
+  /** Total daily traffic to the site/app (before eligibility filtering) */
   dailyTraffic: number | null;
   /** Fraction of traffic seeing the variant (e.g., 0.5 for 50/50 split) */
   trafficSplit: number | null;

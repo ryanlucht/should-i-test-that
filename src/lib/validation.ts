@@ -201,7 +201,7 @@ export const experimentDesignSchema = z.object({
     .int('Duration must be whole days'),
 
   /**
-   * Daily eligible traffic
+   * Total daily traffic to the site/app (before eligibility filtering)
    * Required - can be auto-derived from annual visitors or manually entered
    */
   dailyTraffic: z
@@ -236,6 +236,22 @@ export const experimentDesignSchema = z.object({
     .number()
     .min(0, 'Latency cannot be negative')
     .int('Latency must be whole days'),
+}).superRefine((data, ctx) => {
+  // Horizon validation: test duration + decision latency cannot exceed 365 days (per ENG-13, D-14)
+  // The analysis uses a 365-day horizon, so the combined test + decision time must fit within it.
+  if (data.testDurationDays + data.decisionLatencyDays > 365) {
+    const message = 'Test duration + decision latency cannot exceed 365 days (the analysis horizon)';
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message,
+      path: ['testDurationDays'],
+    });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message,
+      path: ['decisionLatencyDays'],
+    });
+  }
 });
 
 export type ExperimentDesignFormData = z.infer<typeof experimentDesignSchema>;

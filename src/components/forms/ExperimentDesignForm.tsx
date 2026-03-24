@@ -3,7 +3,7 @@
  *
  * Collects test parameters for EVSI calculation per 05-CONTEXT.md:
  * - Test duration in days (required)
- * - Daily eligible traffic (required, can auto-derive from annual visitors)
+ * - Total daily traffic (required, can auto-derive from annual visitors)
  * - Traffic split / variant allocation (default 50%)
  * - Eligibility fraction (default 100%)
  * - Decision latency in days (default 0, visually de-emphasized)
@@ -178,7 +178,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
               name="dailyTraffic"
               label="Daily traffic"
               placeholder="5,000"
-              tooltip="Average daily visitors who can enter the experiment"
+              tooltip="Total average daily visitors to your site or app (before any eligibility filtering)"
               error={errors.dailyTraffic?.message}
               labelSuffix={
                 canDeriveFromAnnual ? (
@@ -208,7 +208,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
               name="eligibilityFraction"
               label="Eligible traffic"
               placeholder="100%"
-              tooltip="What fraction of all traffic is eligible for this experiment?"
+              tooltip="Not running this experiment on 100% of possible users? Change this number from 100% to the fraction of eligible users you'll actually experiment on."
               error={errors.eligibilityFraction?.message}
             />
           </div>
@@ -225,7 +225,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
                 name="decisionLatencyDays"
                 label="Decision latency"
                 placeholder="0"
-                tooltip="Time needed for analysis, review, and deployment after the test concludes."
+                tooltip="Days after the test concludes before you ship a decision. Include time for analysis, review, data maturation, and deployment."
                 error={errors.decisionLatencyDays?.message}
                 suffix="days"
               />
