@@ -1,15 +1,18 @@
 /**
  * Prior Distribution Utilities
  *
- * Functions for computing Normal prior parameters from user inputs.
+ * Functions for computing prior parameters from user inputs.
  * The prior represents uncertainty about relative lift L.
  *
  * Key formulas (from SPEC.md Section 6.2):
- *   mu_L = (L_low + L_high) / 2
- *   sigma_L = (L_high - L_low) / (2 * z_0.95)
+ *   Normal:    sigma_L = (L_high - L_low) / (2 * z_0.95)
+ *   Student-t: scale_t = (L_high - L_low) / (2 * t_inv(0.95, df))  [ENG-01]
  *
  * Where z_0.95 = 1.6448536 (95th percentile of standard normal)
+ * and t_inv(0.95, df) is the 95th percentile of the Student-t distribution
  */
+
+import jStat from 'jstat';
 
 /**
  * z-score for 95th percentile of standard normal distribution
@@ -118,3 +121,60 @@ export const DEFAULT_INTERVAL = {
   /** Upper bound in percentage (95th percentile) */
   high: 8.22,
 };
+
+/**
+ * Derive Student-t scale parameter from user's 90% credible interval.
+ * Uses t-quantile instead of Normal quantile (per ENG-01, D-10).
+ *
+ * Mathematical basis (for statistician audit):
+ * For Student-t(location=mu, scale=s, df), the 90% interval spans
+ *   [mu + s * t_inv(0.05, df), mu + s * t_inv(0.95, df)]
+ * Since t_inv(0.05, df) = -t_inv(0.95, df), this simplifies to:
+ *   halfWidth = s * t_inv(0.95, df)
+ *   s = halfWidth / t_inv(0.95, df)
+ *
+ * The old code used z_0.95 (Normal quantile) instead of t_inv(0.95, df),
+ * which silently widened the 90% interval for Student-t distributions.
+ *
+ * @param intervalLowPercent - Lower bound of 90% interval (percentage, e.g., -8.22)
+ * @param intervalHighPercent - Upper bound of 90% interval (percentage, e.g., 8.22)
+ * @param df - degrees of freedom (must be > 0; if invalid, falls back to Normal quantile)
+ * @returns Prior parameters { mu_L, sigma_L } as decimals, where sigma_L is the t-calibrated scale
+ *
+ * @example
+ * // For df=3, scale is smaller than Normal because t_inv(0.95,3) > z_0.95
+ * computeStudentTPriorScale(-8.22, 8.22, 3)
+ * // => { mu_L: 0, sigma_L: ~0.0349 }  (vs ~0.05 for Normal)
+ */
+export function computeStudentTPriorScale(
+  intervalLowPercent: number,
+  intervalHighPercent: number,
+  df: number
+): PriorParameters {
+  // Convert from percentage to decimal
+  const L_low = intervalLowPercent / 100;
+  const L_high = intervalHighPercent / 100;
+
+  // Mean is the midpoint of the interval
+  const mu_L = (L_low + L_high) / 2;
+
+  // Guard against invalid df (addresses Codex df guardrail concern)
+  if (df <= 0 || !isFinite(df)) {
+    // Fall back to Normal calibration as safe default
+    return computePriorFromInterval(intervalLowPercent, intervalHighPercent);
+  }
+
+  // t_95 = t_inv(0.95, df): the 95th percentile of Student-t with df degrees of freedom
+  // For df=3: t_95 ~= 2.3534
+  // For df=5: t_95 ~= 2.0150
+  // For df=10: t_95 ~= 1.8125
+  // Compare: z_0.95 = 1.6449 (Normal) -- always smaller, so Normal scale is always larger
+  const t_95 = jStat.studentt.inv(0.95, df);
+
+  // Scale = halfWidth / t_95
+  // halfWidth = (L_high - L_low) / 2
+  // sigma_L = halfWidth / t_95 = (L_high - L_low) / (2 * t_95)
+  const sigma_L = (L_high - L_low) / (2 * t_95);
+
+  return { mu_L, sigma_L };
+}
