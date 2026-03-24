@@ -246,9 +246,8 @@ describe('useEVSICalculations', () => {
 
       const { evsi, cod, netValueDollars } = result.current.results!;
 
-      // Net value should be a reasonable positive value
-      // (or zero if CoD exceeds EVSI benefit)
-      expect(netValueDollars).toBeGreaterThanOrEqual(0);
+      // Net value can be negative (timing costs can exceed information value per ENG-08)
+      expect(Number.isFinite(netValueDollars)).toBe(true);
 
       // EVSI and CoD should still be available for UI decomposition
       expect(evsi.evsiDollars).toBeGreaterThan(0);
