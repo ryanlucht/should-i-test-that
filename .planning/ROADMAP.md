@@ -12,7 +12,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 ## Phases
 
 - [x] **Phase 19: Basic Mode Deprecation** - Remove EVPI calculations, dual-mode UI, and mode-switching infrastructure (completed 2026-03-24)
-- [ ] **Phase 20: Engine Accuracy Fixes** - Fix Student-t calibration, feasibility/truncation, traffic semantics, negative net value, and horizon validation
+- [x] **Phase 20: Engine Accuracy Fixes** - Fix Student-t calibration, feasibility/truncation, traffic semantics, negative net value, and horizon validation (completed 2026-03-24)
 - [ ] **Phase 21: Engine Cleanup** - Extract shared helpers, fix comments, remove dead code, harden edge cases
 - [ ] **Phase 22: Learning Bits Guide Infrastructure** - Build dialogue component, typewriter hook, toggle, and section-aware state (BLOCKED on PM content for dialogue text)
 - [ ] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update
@@ -48,7 +48,7 @@ Plans:
   3. Traffic input semantics are unambiguous -- either dailyTraffic means total visitors (eligibilityFraction applies) or already-eligible visitors (no eligibilityFraction), with no contradictory paths
   4. Negative net value displays honestly as a negative dollar amount with "test not worth running" messaging (not clamped to $0)
   5. Test duration + decision latency cannot silently exceed a 365-day horizon without explicit validation or capping
-**Plans:** 3/4 plans executed
+**Plans:** 3/4 plans complete
 
 Plans:
 - [x] 20-01-PLAN.md -- Student-t calibration via t-quantile, chart shading, plotting range, and posterior grid bounds
@@ -65,7 +65,11 @@ Plans:
   2. No outdated comments remain about negative net value being "an artifact" or non-negative assertions in hook tests
   3. Dead CostOfDelayCard component and unused standalone CoD exports are gone from the codebase
   4. normalPdf() returns 0 (not NaN/Infinity) when sd <= 0; edge-case inputs (one-arm-zero, CR0=0, CR0=1, sigma=0, invalid Uniform bounds) produce valid numeric outputs
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 21-01-PLAN.md -- Extract shared warning helpers into feasibility.ts, add normalPdf sd<=0 guard, update CalculationWarning type
+- [ ] 21-02-PLAN.md -- Fix outdated hook test assertions, verify dead CostOfDelayCard removal, add comprehensive edge-case safety tests
 
 ### Phase 22: Learning Bits Guide Infrastructure
 **Goal**: Guide component infrastructure is built and wired to calculator sections, ready for dialogue content insertion once PM provides text
@@ -136,8 +140,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 19. Basic Mode Deprecation | 1/3 | Complete    | 2026-03-24 |
-| 20. Engine Accuracy Fixes | 3/4 | In Progress|  |
-| 21. Engine Cleanup | 0/TBD | Not started | - |
+| 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
+| 21. Engine Cleanup | 0/2 | Not started | - |
 | 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
