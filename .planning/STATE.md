@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 21-01-PLAN.md (DRY Warning Helpers + normalPdf Guard)
-last_updated: "2026-03-24T18:34:22.540Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 21-02-PLAN.md (Test Fixes + Edge-Case Safety)
+last_updated: "2026-03-24T18:40:51.944Z"
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 20]: Export 'Timing costs' computed as evsi - netValue to match live UI ValueBreakdownCard formula
 - [Phase 21]: Warning helpers return CalculationWarning | null for composable push-into-array usage
 - [Phase 21]: ENG-17 confirmed already done: net-value.ts uses liftFeasibilityBounds
+- [Phase 21]: ENG-19 edge-case tests pass immediately since guards exist from 21-01; tests document and verify existing behavior
+- [Phase 21]: ENG-16 confirmed: CostOfDelayCard removed, remaining CoDResults/calculateCostOfDelay actively used
 
 ### Pending Todos
 
@@ -89,8 +91,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-24T18:34:22.538Z
-Stopped at: Completed 21-01-PLAN.md (DRY Warning Helpers + normalPdf Guard)
+Last session: 2026-03-24T18:40:51.942Z
+Stopped at: Completed 21-02-PLAN.md (Test Fixes + Edge-Case Safety)
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference
