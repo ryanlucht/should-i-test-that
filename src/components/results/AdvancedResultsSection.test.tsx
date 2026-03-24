@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
-import { ResultsSection } from './ResultsSection';
+import { ResultsSection } from './AdvancedResultsSection';
 import type { EVSICalculationResults, CoDResults } from '@/hooks/useEVSICalculations';
 
 // Mock useEVSICalculations hook
