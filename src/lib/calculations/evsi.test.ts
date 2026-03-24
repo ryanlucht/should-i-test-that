@@ -16,7 +16,6 @@ import {
   truncatedNormalMeanTwoSided,
   computeEffectivePriorMetrics,
 } from './evsi';
-import { calculateEVPI } from './evpi';
 import { studentTQuantileBounds } from './student-t-helpers';
 import type { PriorDistribution } from './distributions';
 
@@ -158,19 +157,14 @@ describe('calculateEVSIMonteCarlo', () => {
         n_variant: 5000,
       }, 5000);
 
-      // Calculate EVPI for same prior
-      const evpiResult = calculateEVPI({
-        baselineConversionRate: 0.05,
-        annualVisitors: 1000000, // Doesn't affect K directly here
-        valuePerConversion: 100, // Doesn't affect K directly here
-        prior: { mu_L: 0, sigma_L: 0.05 },
-        threshold_L: 0,
-      });
+      // EVPI for Normal(0, 0.05) at threshold 0 with K=5M:
+      // EVPI = K * sigma * phi(0) = 5,000,000 * 0.05 * 0.3989 ≈ 99,725
+      // (EVPI code removed in Phase 19 DEPR-02, using analytical formula)
+      const evpiApprox = 5000000 * 0.05 * 0.3989;
 
-      // Scale EVPI to same K (K from EVPI = 5M)
       // EVSI should be less than or equal to EVPI
       // Allow 10% tolerance for Monte Carlo variance
-      expect(evsiResult.evsiDollars).toBeLessThanOrEqual(evpiResult.evpiDollars * 1.1);
+      expect(evsiResult.evsiDollars).toBeLessThanOrEqual(evpiApprox * 1.1);
     });
   });
 

@@ -2,16 +2,14 @@
  * EVSI Calculations Hook
  *
  * React hook that computes EVSI results from the current wizard store state.
- * Used in Advanced mode to value the specific A/B test the user can run.
+ * Computes the value of running a specific A/B test the user can run.
  *
  * Key behaviors:
- * - Returns null if mode is 'basic' or inputs are incomplete
+ * - Returns null if inputs are incomplete
  * - Returns loading=true while Worker is computing (async)
  * - Uses fast path for Normal priors (synchronous, no Worker needed)
  * - Uses Web Worker for Student-t and Uniform (Monte Carlo, non-blocking)
  * - Calculates Cost of Delay from experiment parameters
- *
- * Per 05-CONTEXT.md: EVSI is the relevant value in Advanced mode (not EVPI).
  *
  * Per audit recommendations (COD-01, COD-02, COD-03):
  * - netValueDollars computed via integrated calculation (calculateNetValueMonteCarlo)
@@ -26,13 +24,66 @@ import {
   normalizeThresholdToLift,
   calculateEVSINormalFastPath,
   calculateEVSIMonteCarlo,
-  calculateCostOfDelay,
   deriveSampleSizes,
 } from '@/lib/calculations';
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computePriorFromInterval, computeStudentTPriorScale, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
-import type { CoDResults } from '@/lib/calculations/cost-of-delay';
+
+/**
+ * Results from Cost of Delay calculation
+ * (Inlined here after standalone cost-of-delay.ts was removed in DEPR-02)
+ */
+export interface CoDResults {
+  /** Total Cost of Delay in dollars */
+  codDollars: number;
+  /** Daily opportunity cost (EV_ship_day) in dollars */
+  dailyOpportunityCost: number;
+  /** Whether CoD applies (true if default decision is Ship) */
+  codApplies: boolean;
+}
+
+/**
+ * Calculate Cost of Delay for an A/B test
+ *
+ * Per SPEC.md Section A6:
+ *   EV_ship_annual = K * (mu_L - T_L)
+ *   EV_ship_day = EV_ship_annual / 365
+ *   If default is Ship (mu_L >= T_L):
+ *     CoD = (1 - f_var) * EV_ship_day * D_test + EV_ship_day * D_latency
+ *   If default is Don't Ship: CoD = 0
+ *
+ * (Inlined here after standalone cost-of-delay.ts was removed in DEPR-02)
+ */
+function calculateCostOfDelay(inputs: {
+  K: number;
+  mu_L: number;
+  threshold_L: number;
+  testDurationDays: number;
+  variantFraction: number;
+  decisionLatencyDays: number;
+}): CoDResults {
+  const { K, mu_L, threshold_L, testDurationDays, variantFraction, decisionLatencyDays } = inputs;
+
+  // EV_ship_annual = K * (mu_L - T_L)
+  const EV_ship_annual = K * (mu_L - threshold_L);
+
+  // CoD only applies when default decision is Ship (EV_ship_annual > 0)
+  const codApplies = EV_ship_annual > 0;
+
+  if (!codApplies) {
+    return { codDollars: 0, dailyOpportunityCost: 0, codApplies: false };
+  }
+
+  // EV_ship_day = EV_ship_annual / 365
+  const EV_ship_day = EV_ship_annual / 365;
+
+  // CoD = (1 - f_var) * EV_ship_day * D_test + EV_ship_day * D_latency
+  const controlFraction = 1 - variantFraction;
+  const codDollars = controlFraction * EV_ship_day * testDurationDays + EV_ship_day * decisionLatencyDays;
+
+  return { codDollars, dailyOpportunityCost: EV_ship_day, codApplies: true };
+}
 
 /**
  * Combined results from EVSI and Cost of Delay calculations
@@ -42,7 +93,7 @@ export interface EVSICalculationResults {
   evsi: EVSIResults;
   /** Cost of Delay results including codDollars, dailyOpportunityCost */
   cod: CoDResults;
-  /** Net value: EVSI - CoD (the headline number in Advanced mode) */
+  /** Net value: EVSI - CoD (the headline number) */
   netValueDollars: number;
   /** Sample sizes derived from experiment design */
   sampleSizes: {
@@ -77,14 +128,12 @@ export interface UseEVSICalculationsResult {
  * }
  */
 export function useEVSICalculations(): UseEVSICalculationsResult {
-  // Select all inputs we need
-  const mode = useWizardStore((state) => state.mode);
-  const sharedInputs = useWizardStore((state) => state.inputs.shared);
-  const advancedInputs = useWizardStore((state) => state.inputs.advanced);
+  // Select all inputs from flat store structure
+  const inputs = useWizardStore((state) => state.inputs);
 
   // Track loading state for async Worker computation
   const [loading, setLoading] = useState(false);
-  // EVSI results for backwards-compatible UI display (decomposition)
+  // EVSI results for UI display (decomposition)
   const [workerResults, setWorkerResults] = useState<EVSIResults | null>(null);
   // Integrated net value results (headline number - COD-03)
   const [netValueResults, setNetValueResults] = useState<NetValueResults | null>(null);
@@ -99,42 +148,37 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
   // Step 1: Validate inputs and derive parameters
   // ===========================================
   const validatedInputs = useMemo(() => {
-    // Only compute in Advanced mode
-    if (mode !== 'advanced') {
-      return null;
-    }
-
-    // Validate shared inputs
+    // Validate baseline inputs
     if (
-      sharedInputs.baselineConversionRate === null ||
-      sharedInputs.annualVisitors === null ||
-      sharedInputs.valuePerConversion === null ||
-      sharedInputs.thresholdScenario === null
+      inputs.baselineConversionRate === null ||
+      inputs.annualVisitors === null ||
+      inputs.valuePerConversion === null ||
+      inputs.thresholdScenario === null
     ) {
       return null;
     }
 
     // Validate threshold value/unit for non-any-positive scenarios
     if (
-      sharedInputs.thresholdScenario !== 'any-positive' &&
-      (sharedInputs.thresholdValue === null || sharedInputs.thresholdUnit === null)
+      inputs.thresholdScenario !== 'any-positive' &&
+      (inputs.thresholdValue === null || inputs.thresholdUnit === null)
     ) {
       return null;
     }
 
-    // Validate advanced inputs
+    // Validate experiment design inputs
     if (
-      advancedInputs.priorShape === null ||
-      advancedInputs.testDurationDays === null ||
-      advancedInputs.dailyTraffic === null ||
-      advancedInputs.trafficSplit === null ||
-      advancedInputs.eligibilityFraction === null
+      inputs.priorShape === null ||
+      inputs.testDurationDays === null ||
+      inputs.dailyTraffic === null ||
+      inputs.trafficSplit === null ||
+      inputs.eligibilityFraction === null
     ) {
       return null;
     }
 
     // Validate studentTDf for Student-t prior
-    if (advancedInputs.priorShape === 'student-t' && advancedInputs.studentTDf === null) {
+    if (inputs.priorShape === 'student-t' && inputs.studentTDf === null) {
       return null;
     }
 
@@ -145,18 +189,18 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
     // Determine prior parameters from interval
     const isDefaultPrior =
-      sharedInputs.priorIntervalLow !== null &&
-      sharedInputs.priorIntervalHigh !== null &&
-      Math.abs(sharedInputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(sharedInputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
+      inputs.priorIntervalLow !== null &&
+      inputs.priorIntervalHigh !== null &&
+      Math.abs(inputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
+      Math.abs(inputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
 
     // Get Normal parameters (used for Normal and Student-t)
     const normalParams =
-      isDefaultPrior || sharedInputs.priorIntervalLow === null || sharedInputs.priorIntervalHigh === null
+      isDefaultPrior || inputs.priorIntervalLow === null || inputs.priorIntervalHigh === null
         ? DEFAULT_PRIOR
-        : computePriorFromInterval(sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh);
+        : computePriorFromInterval(inputs.priorIntervalLow, inputs.priorIntervalHigh);
 
-    switch (advancedInputs.priorShape) {
+    switch (inputs.priorShape) {
       case 'normal':
         prior = {
           type: 'normal',
@@ -166,17 +210,18 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         break;
 
       case 'student-t': {
-        // Use t-quantile calibration to preserve user's 90% interval (per ENG-01, D-10)
-        // The old code reused normalParams, which used z_0.95 instead of t_inv(0.95, df),
-        // silently widening the Student-t 90% interval beyond user's specification.
-        const tParams = (sharedInputs.priorIntervalLow !== null && sharedInputs.priorIntervalHigh !== null)
-          ? computeStudentTPriorScale(sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh, advancedInputs.studentTDf!)
-          : computeStudentTPriorScale(DEFAULT_INTERVAL.low, DEFAULT_INTERVAL.high, advancedInputs.studentTDf!);
+        // Student-t uses t-quantile calibrated scale to preserve user's 90% interval (ENG-01)
+        const df = inputs.studentTDf!;
+        const tParams = computeStudentTPriorScale(
+          inputs.priorIntervalLow !== null ? inputs.priorIntervalLow / 100 : DEFAULT_INTERVAL.low / 100,
+          inputs.priorIntervalHigh !== null ? inputs.priorIntervalHigh / 100 : DEFAULT_INTERVAL.high / 100,
+          df
+        );
         prior = {
           type: 'student-t',
           mu_L: tParams.mu_L,
           sigma_L: tParams.sigma_L,
-          df: advancedInputs.studentTDf!,
+          df,
         };
         break;
       }
@@ -184,11 +229,11 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       case 'uniform': {
         // Uniform uses the interval bounds directly
         // Convert from percentage to decimal
-        const lowBound = sharedInputs.priorIntervalLow !== null
-          ? sharedInputs.priorIntervalLow / 100
+        const lowBound = inputs.priorIntervalLow !== null
+          ? inputs.priorIntervalLow / 100
           : DEFAULT_INTERVAL.low / 100;
-        const highBound = sharedInputs.priorIntervalHigh !== null
-          ? sharedInputs.priorIntervalHigh / 100
+        const highBound = inputs.priorIntervalHigh !== null
+          ? inputs.priorIntervalHigh / 100
           : DEFAULT_INTERVAL.high / 100;
         prior = {
           type: 'uniform',
@@ -212,20 +257,20 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // Step 3: Calculate K and threshold
     // ===========================================
     const K = deriveK(
-      sharedInputs.annualVisitors,
-      sharedInputs.baselineConversionRate,
-      sharedInputs.valuePerConversion
+      inputs.annualVisitors,
+      inputs.baselineConversionRate,
+      inputs.valuePerConversion
     );
 
     let threshold_L: number;
-    if (sharedInputs.thresholdScenario === 'any-positive') {
+    if (inputs.thresholdScenario === 'any-positive') {
       threshold_L = 0;
-    } else if (sharedInputs.thresholdUnit === null || sharedInputs.thresholdValue === null) {
+    } else if (inputs.thresholdUnit === null || inputs.thresholdValue === null) {
       return null;
     } else {
       threshold_L = normalizeThresholdToLift(
-        sharedInputs.thresholdValue,
-        sharedInputs.thresholdUnit,
+        inputs.thresholdValue,
+        inputs.thresholdUnit,
         K
       );
     }
@@ -234,10 +279,10 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // Step 4: Calculate sample sizes
     // ===========================================
     const sampleSizes = deriveSampleSizes({
-      dailyTraffic: advancedInputs.dailyTraffic,
-      testDurationDays: advancedInputs.testDurationDays,
-      eligibilityFraction: advancedInputs.eligibilityFraction,
-      variantFraction: advancedInputs.trafficSplit,
+      dailyTraffic: inputs.dailyTraffic,
+      testDurationDays: inputs.testDurationDays,
+      eligibilityFraction: inputs.eligibilityFraction,
+      variantFraction: inputs.trafficSplit,
     });
 
     // ===========================================
@@ -245,7 +290,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // ===========================================
     const evsiInputs: EVSIInputs = {
       K,
-      baselineConversionRate: sharedInputs.baselineConversionRate,
+      baselineConversionRate: inputs.baselineConversionRate,
       threshold_L,
       prior,
       n_control: sampleSizes.n_control,
@@ -253,7 +298,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     };
 
     // ===========================================
-    // Step 6: Build CoD inputs (for backwards-compatible UI display)
+    // Step 6: Build CoD inputs (for UI display)
     // ===========================================
     const priorMean = prior.type === 'uniform'
       ? (prior.low_L! + prior.high_L!) / 2
@@ -263,9 +308,9 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       K,
       mu_L: priorMean,
       threshold_L,
-      testDurationDays: advancedInputs.testDurationDays,
-      variantFraction: advancedInputs.trafficSplit,
-      decisionLatencyDays: advancedInputs.decisionLatencyDays ?? 0,
+      testDurationDays: inputs.testDurationDays,
+      variantFraction: inputs.trafficSplit,
+      decisionLatencyDays: inputs.decisionLatencyDays ?? 0,
     };
 
     // ===========================================
@@ -275,14 +320,14 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // This is the primary calculation; EVSI and CoD are for UI decomposition only
     const netValueInputs: NetValueInputs = {
       K,
-      baselineConversionRate: sharedInputs.baselineConversionRate,
+      baselineConversionRate: inputs.baselineConversionRate,
       threshold_L,
       prior,
       n_control: sampleSizes.n_control,
       n_variant: sampleSizes.n_variant,
-      testDurationDays: advancedInputs.testDurationDays,
-      variantFraction: advancedInputs.trafficSplit,
-      decisionLatencyDays: advancedInputs.decisionLatencyDays ?? 0,
+      testDurationDays: inputs.testDurationDays,
+      variantFraction: inputs.trafficSplit,
+      decisionLatencyDays: inputs.decisionLatencyDays ?? 0,
     };
 
     return {
@@ -293,29 +338,28 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       sampleSizes,
     };
   }, [
-    mode,
-    sharedInputs.baselineConversionRate,
-    sharedInputs.annualVisitors,
-    sharedInputs.valuePerConversion,
-    sharedInputs.priorIntervalLow,
-    sharedInputs.priorIntervalHigh,
-    sharedInputs.thresholdScenario,
-    sharedInputs.thresholdUnit,
-    sharedInputs.thresholdValue,
-    advancedInputs.priorShape,
-    advancedInputs.studentTDf,
-    advancedInputs.testDurationDays,
-    advancedInputs.dailyTraffic,
-    advancedInputs.trafficSplit,
-    advancedInputs.eligibilityFraction,
-    advancedInputs.decisionLatencyDays,
+    inputs.baselineConversionRate,
+    inputs.annualVisitors,
+    inputs.valuePerConversion,
+    inputs.priorIntervalLow,
+    inputs.priorIntervalHigh,
+    inputs.thresholdScenario,
+    inputs.thresholdUnit,
+    inputs.thresholdValue,
+    inputs.priorShape,
+    inputs.studentTDf,
+    inputs.testDurationDays,
+    inputs.dailyTraffic,
+    inputs.trafficSplit,
+    inputs.eligibilityFraction,
+    inputs.decisionLatencyDays,
   ]);
 
   // ===========================================
   // Step 8: Compute EVSI and integrated Net Value
   // ===========================================
   // Per COD-03: Net value is computed via integrated simulation (calculateNetValueMonteCarlo)
-  // EVSI is still computed separately for backwards-compatible UI display
+  // EVSI is still computed separately for UI display
   useEffect(() => {
     // Clear results if inputs become invalid
     if (!validatedInputs) {
@@ -430,7 +474,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
     const { codInputs, sampleSizes } = validatedInputs;
 
-    // Calculate Cost of Delay (for backwards-compatible UI display)
+    // Calculate Cost of Delay (for UI display)
     const cod = calculateCostOfDelay(codInputs);
 
     // Net value comes from INTEGRATED calculation (COD-03)
