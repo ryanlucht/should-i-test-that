@@ -1,22 +1,25 @@
 /**
- * EVSI Verdict Card - Advanced mode primary verdict display
+ * EVSI Verdict Card - Primary verdict display
  *
- * Per 05-CONTEXT.md verdict wording:
- * "If you can test it for **up to** $[EVSI - CoD], test it"
+ * Displays honest net value messaging:
+ * - Positive: "If you can run this test for up to $X, test it"
+ * - Negative: "This test would cost you ~$X more than the information is worth"
  *
- * Note: "up to" instead of Basic mode's "less than" to emphasize
- * EVSI as acceptable ceiling, not just maximum.
+ * Per D-06/D-07/D-08:
+ * - Show actual negative dollar value (not clamped to $0) for headline
+ * - When negative: max test budget is $0, delay/exposure costs outweigh learning
+ * - When positive: keep existing "up to $X, test it" messaging
  *
  * Requirements covered:
- * - ADV-OUT-01: Primary verdict with "up to" wording
- * - ADV-OUT-02: Y = max(0, EVSI - CoD)
+ * - ENG-08: Honest negative net value display
  */
 
 import { formatSmartCurrency } from '@/lib/formatting';
+import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 interface EVSIVerdictCardProps {
-  /** Net value: EVSI - CoD (already clamped to non-negative) */
+  /** Net value from integrated simulation (can be negative) */
   netValueDollars: number | null;
   /** True while calculation is in progress */
   isLoading: boolean;
@@ -29,13 +32,19 @@ export function EVSIVerdictCard({
   isLoading,
   error,
 }: EVSIVerdictCardProps) {
-  // Ensure non-negative (should already be handled by hook)
-  const displayValue = netValueDollars !== null ? Math.max(0, netValueDollars) : null;
+  // Display the raw value - no clamping. Negative values are honest.
+  const displayValue = netValueDollars;
 
   // Determine card styling based on state
+  // Warning style for negative net value (amber border)
   const cardClasses = error
     ? 'rounded-xl border bg-destructive/10 border-destructive/20 p-6 space-y-4'
-    : 'rounded-xl border bg-card p-6 space-y-4';
+    : cn(
+        'rounded-xl border p-6 space-y-4',
+        displayValue !== null && displayValue < 0
+          ? 'bg-amber-50/50 border-amber-200/50'
+          : 'bg-card'
+      );
 
   // Per RESEARCH.md pitfall #4: Live region must exist in DOM before content changes.
   // Always render the same container structure, updating content inside it.
@@ -67,25 +76,41 @@ export function EVSIVerdictCard({
           </p>
         )}
 
-        {/* Primary verdict headline */}
+        {/* Primary verdict headline - conditional messaging per D-07/D-08 */}
         {!isLoading && !error && displayValue !== null && (
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground leading-relaxed">
-              If you can run this test for{' '}
-              <span className="text-primary">up to {formatSmartCurrency(displayValue)}</span>,
-              test it.
-            </h3>
+            {displayValue >= 0 ? (
+              <h3 className="text-xl font-semibold text-foreground leading-relaxed">
+                If you can run this test for{' '}
+                <span className="text-primary">up to {formatSmartCurrency(displayValue)}</span>,
+                test it.
+              </h3>
+            ) : (
+              <h3 className="text-xl font-semibold text-foreground leading-relaxed">
+                Under current assumptions, this test would{' '}
+                <span className="text-destructive">cost you ~{formatSmartCurrency(Math.abs(displayValue))}</span>{' '}
+                more than the information is worth.
+              </h3>
+            )}
           </div>
         )}
       </div>
 
-      {/* Explanation note - per 05-CONTEXT.md (only shown with valid result) */}
+      {/* Explanation note - conditional messaging for positive/negative */}
       {!isLoading && !error && displayValue !== null && (
         <div className="rounded-lg bg-muted/50 border border-muted px-4 py-3">
           <p className="text-sm text-muted-foreground">
-            This is <strong>EVSI minus Cost of Delay</strong> — the realistic value
-            of running this specific test. It accounts for the test being imperfect
-            and the opportunity cost of waiting for results.
+            {displayValue >= 0 ? (
+              <>
+                This is the <strong>net value of testing</strong> -- what the test
+                information is worth after accounting for the cost of waiting for results.
+              </>
+            ) : (
+              <>
+                The delay and exposure costs outweigh the expected learning.
+                The maximum you should pay to run this test is <strong>$0</strong>.
+              </>
+            )}
           </p>
         </div>
       )}
