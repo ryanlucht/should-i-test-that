@@ -42,8 +42,8 @@ export function ValueBreakdownCard({
   // This captures value lost during test period and latency
   const timingCostsDollars = evsiDollars - netValueDollars;
 
-  // Format for display (net value clamped to 0 for display)
-  const displayNetValue = Math.max(0, netValueDollars);
+  // Display the raw net value -- no clamping. Negative values are honest.
+  const displayNetValue = netValueDollars;
 
   // Control fraction for explanation
   const controlPercent = Math.round((1 - variantFraction) * 100);
@@ -116,18 +116,21 @@ export function ValueBreakdownCard({
         {/* Divider */}
         <div className="border-t border-border my-1" />
 
-        {/* Net value row */}
+        {/* Net value row - color indicates positive (primary) vs negative (destructive) */}
         <div className="flex justify-between items-baseline">
           <span className="text-sm font-medium text-foreground">Net value</span>
-          <span className="text-lg font-semibold text-primary">
-            {formatSmartCurrency(displayNetValue)}
+          <span className={cn(
+            "text-lg font-semibold",
+            displayNetValue >= 0 ? "text-primary" : "text-destructive"
+          )}>
+            {displayNetValue < 0 ? '-' : ''}{formatSmartCurrency(Math.abs(displayNetValue))}
           </span>
         </div>
       </div>
 
       {/* Brief description */}
       <p className="text-xs text-muted-foreground pt-1">
-        Net value is the most you should pay to run this test.
+        Net value is the expected benefit of testing after accounting for timing costs.
       </p>
     </div>
   );

@@ -13,8 +13,9 @@
  *
  * Mathematical notes (for statistician audit):
  * - Net Value = E[ValueWithTest] - E[ValueWithoutTest]
- * - Final result is clamped to >= 0 to avoid negative values due to Monte Carlo noise
- *   (information cannot hurt in expectation, so negative net value is an artifact)
+ * - Net value CAN be legitimately negative when timing costs (delay, exposure during test)
+ *   outweigh the expected value of the information gained
+ * - maxTestBudgetDollars is clamped to >= 0 (you should never pay to run a test that destroys value)
  * - ValueWithTest = ValueDuringTest + ValueDuringLatency + ValueAfterDecision
  * - ValueWithoutTest = K * (L - T) if default=ship, else 0
  *

@@ -140,7 +140,7 @@ export function ResultsSection() {
     <div className="space-y-6">
       {/* Primary Verdict - ADV-OUT-01, ADV-OUT-02 */}
       <EVSIVerdictCard
-        netValueDollars={results ? Math.max(0, results.netValueDollars) : null}
+        netValueDollars={results ? results.netValueDollars : null}
         isLoading={loading}
       />
 
@@ -243,15 +243,21 @@ export function ResultsSection() {
           {/* EVSI Intuition */}
           <div className="rounded-xl border bg-muted/30 border-muted p-4 space-y-2">
             <p className="text-sm font-medium text-foreground">
-              How to interpret {formatSmartCurrency(Math.max(0, results.netValueDollars))}
+              How to interpret {formatSmartCurrency(results.netValueDollars)}
             </p>
             <p className="text-sm text-muted-foreground">
               The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI represents
               the expected improvement in your decision from running this test.
               However, running a test has timing costs: during the test period,
               only the variant group receives treatment, and during decision latency,
-              nobody does. The net {formatSmartCurrency(Math.max(0, results.netValueDollars))} accounts
-              for these timing effects and is the most you should pay to run this test.
+              nobody does.{' '}
+              {results.netValueDollars >= 0 ? (
+                <>The net {formatSmartCurrency(results.netValueDollars)} accounts
+                for these timing effects and is the most you should pay to run this test.</>
+              ) : (
+                <>The net {formatSmartCurrency(results.netValueDollars)} indicates
+                the timing costs outweigh the expected learning from this test.</>
+              )}
             </p>
           </div>
 
