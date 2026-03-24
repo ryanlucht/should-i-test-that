@@ -81,6 +81,19 @@ describe('normalPdf', () => {
     const pdf = normalPdf(2, 0, 1);
     expect(pdf).toBeCloseTo(standardNormalPDF(2), 10);
   });
+
+  // Guard: sd <= 0 returns 0 density (ENG-18)
+  it('returns 0 for sd = 0 (not NaN or Infinity)', () => {
+    expect(normalPdf(5, 5, 0)).toBe(0);
+  });
+
+  it('returns 0 for sd = -1 (not NaN or Infinity)', () => {
+    expect(normalPdf(5, 5, -1)).toBe(0);
+  });
+
+  it('returns 0 for sd = -0.001 (not NaN or Infinity)', () => {
+    expect(normalPdf(5, 5, -0.001)).toBe(0);
+  });
 });
 
 describe('seOfRelativeLift', () => {
