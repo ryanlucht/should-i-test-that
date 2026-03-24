@@ -167,9 +167,10 @@ export function ExportButton(props: ExportButtonProps) {
   const actualK = chartK;
 
   // Derive verdict value based on mode
+  // No clamping -- let ExportCard handle display for negative net value
   const verdictValue = mode === 'basic'
     ? props.evpiResults.evpiDollars
-    : Math.max(0, props.evsiResults.netValueDollars);
+    : props.evsiResults.netValueDollars;
 
   // Derive prior shape description for Advanced mode
   const priorShapeDescription = useMemo(() => {

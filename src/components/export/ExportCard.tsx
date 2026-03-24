@@ -84,7 +84,7 @@ interface ExportCardProps {
   /** EVSI value (only for advanced mode) */
   evsi?: number;
 
-  /** Cost of Delay (only for advanced mode) */
+  /** Legacy CoD value (only for advanced mode, kept for backward compat) */
   cod?: number;
 
   /** Net value (only for advanced mode) */
@@ -119,7 +119,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
       miniChartK,
       priorShapeDescription,
       evsi,
-      cod,
+      netValue,
       testDurationDays,
     },
     ref
@@ -235,11 +235,17 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                 <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
                 it's worth testing.
               </>
-            ) : (
+            ) : verdictValue >= 0 ? (
               <>
                 If you can run this test for up to{' '}
                 <span style={{ color: '#7C3AED' }}>{formattedValue}</span>,
                 test it.
+              </>
+            ) : (
+              <>
+                Under current assumptions, this test would{' '}
+                <span style={{ color: '#DC2626' }}>cost you ~{formatSmartCurrency(Math.abs(verdictValue))}</span>{' '}
+                more than the information is worth.
               </>
             )}
           </p>
@@ -260,16 +266,11 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
               </>
             ) : (
               <>
-                This is <strong>EVSI minus Cost of Delay</strong> — the realistic value of running
-                this specific test. EVSI (Expected Value of Sample Information) is{' '}
+                This is the <strong>net value of testing</strong> -- what the test
+                information is worth after accounting for the cost of waiting for results.
+                EVSI (Expected Value of Sample Information) is{' '}
                 {evsi !== undefined ? formatSmartCurrency(evsi) : 'N/A'}, accounting for the test
                 being imperfect.
-                {cod !== undefined && cod > 0 && testDurationDays !== undefined && (
-                  <>
-                    {' '}Running the test for {testDurationDays} days delays rollout, costing{' '}
-                    {formatSmartCurrency(cod)} in expected opportunity cost.
-                  </>
-                )}
               </>
             )}
           </p>
@@ -444,8 +445,8 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             </div>
           )}
 
-          {/* Cost of Delay (Advanced mode only) */}
-          {mode === 'advanced' && cod !== undefined && (
+          {/* Timing costs (Advanced mode only) - computed as EVSI - Net Value */}
+          {mode === 'advanced' && evsi !== undefined && netValue !== undefined && (
             <div
               style={{
                 backgroundColor: '#F9FAFB',
@@ -461,7 +462,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: '0 0 8px 0',
                 }}
               >
-                Cost of Delay
+                Timing costs
               </p>
               <p
                 style={{
@@ -471,7 +472,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: 0,
                 }}
               >
-                {formatSmartCurrency(cod)}
+                {formatSmartCurrency(evsi - netValue)}
               </p>
             </div>
           )}
