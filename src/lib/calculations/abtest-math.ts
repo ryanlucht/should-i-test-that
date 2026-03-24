@@ -60,6 +60,8 @@ export function sampleStandardNormal(): number {
  * @returns Probability density at x
  */
 export function normalPdf(x: number, mean: number, sd: number): number {
+  // Guard: sd <= 0 produces NaN/Infinity from division; return 0 density (ENG-18)
+  if (sd <= 0) return 0;
   const z = (x - mean) / sd;
   return standardNormalPDF(z) / sd;
 }

@@ -55,7 +55,7 @@ export interface EVSIInputs {
  */
 export interface CalculationWarning {
   /** Machine-readable warning code */
-  code: 'rare_events' | 'high_rejection' | 'high_feasibility_rejection' | 'invalid_cr0';
+  code: 'rare_events' | 'high_rejection' | 'high_feasibility_rejection' | 'invalid_cr0' | 'low_acceptance';
   /** Human-readable warning message */
   message: string;
 }
