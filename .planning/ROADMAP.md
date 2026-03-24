@@ -65,10 +65,10 @@ Plans:
   2. No outdated comments remain about negative net value being "an artifact" or non-negative assertions in hook tests
   3. Dead CostOfDelayCard component and unused standalone CoD exports are gone from the codebase
   4. normalPdf() returns 0 (not NaN/Infinity) when sd <= 0; edge-case inputs (one-arm-zero, CR0=0, CR0=1, sigma=0, invalid Uniform bounds) produce valid numeric outputs
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 21-01-PLAN.md -- Extract shared warning helpers into feasibility.ts, add normalPdf sd<=0 guard, update CalculationWarning type
+- [x] 21-01-PLAN.md -- Extract shared warning helpers into feasibility.ts, add normalPdf sd<=0 guard, update CalculationWarning type
 - [ ] 21-02-PLAN.md -- Fix outdated hook test assertions, verify dead CostOfDelayCard removal, add comprehensive edge-case safety tests
 
 ### Phase 22: Learning Bits Guide Infrastructure
@@ -141,7 +141,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 19. Basic Mode Deprecation | 1/3 | Complete    | 2026-03-24 |
 | 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
-| 21. Engine Cleanup | 0/2 | Not started | - |
+| 21. Engine Cleanup | 1/2 | In Progress|  |
 | 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |

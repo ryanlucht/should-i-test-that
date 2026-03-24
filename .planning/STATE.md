@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Phase complete — ready for verification
-stopped_at: Completed 20-04-PLAN.md (Negative Net Value & Export Messaging)
-last_updated: "2026-03-24T14:52:05.198Z"
+status: Ready to execute
+stopped_at: Completed 21-01-PLAN.md (DRY Warning Helpers + normalPdf Guard)
+last_updated: "2026-03-24T18:34:22.540Z"
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 7
-  completed_plans: 6
+  total_plans: 9
+  completed_plans: 7
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 20 — Engine Accuracy Fixes
+**Current focus:** Phase 21 — Engine Cleanup
 
 ## Current Position
 
-Phase: 20 (Engine Accuracy Fixes) — EXECUTING
-Plan: 4 of 4
+Phase: 21 (Engine Cleanup) — EXECUTING
+Plan: 2 of 2
 
 ## Milestone History
 
@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 20]: TRUNCATION_THRESHOLD=0.001 as shared constant; tail-mass detection replaces lower-bound-only heuristic
 - [Phase 20]: No Math.max(0) clamps in UI display; raw net value flows from hook through to verdict, breakdown, and export cards
 - [Phase 20]: Export 'Timing costs' computed as evsi - netValue to match live UI ValueBreakdownCard formula
+- [Phase 21]: Warning helpers return CalculationWarning | null for composable push-into-array usage
+- [Phase 21]: ENG-17 confirmed already done: net-value.ts uses liftFeasibilityBounds
 
 ### Pending Todos
 
@@ -87,8 +89,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-24T14:52:05.196Z
-Stopped at: Completed 20-04-PLAN.md (Negative Net Value & Export Messaging)
+Last session: 2026-03-24T18:34:22.538Z
+Stopped at: Completed 21-01-PLAN.md (DRY Warning Helpers + normalPdf Guard)
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference

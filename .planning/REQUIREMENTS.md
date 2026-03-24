@@ -34,11 +34,11 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 ### Engine — Cleanup
 
-- [ ] **ENG-14**: Rare-events warning logic extracted into shared helper (DRY across evsi.ts and net-value.ts)
+- [x] **ENG-14**: Rare-events warning logic extracted into shared helper (DRY across evsi.ts and net-value.ts)
 - [ ] **ENG-15**: Outdated comments corrected (net-value.ts "negative net value is an artifact" comment, hook test nonneg assertions)
 - [ ] **ENG-16**: Dead CostOfDelayCard component and unused standalone CoD exports removed
-- [ ] **ENG-17**: net-value.ts uses shared liftFeasibilityBounds() helper instead of manual redefinition
-- [ ] **ENG-18**: normalPdf() guards against sd <= 0
+- [x] **ENG-17**: net-value.ts uses shared liftFeasibilityBounds() helper instead of manual redefinition
+- [x] **ENG-18**: normalPdf() guards against sd <= 0
 - [ ] **ENG-19**: Edge-case safety — one-arm-zero, CR0 at 0 or 1, sigma=0, invalid Uniform bounds produce no NaN or contradictory outputs
 
 ### Guide — Learning Bits Guided Dialogue
@@ -135,11 +135,11 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 | ENG-11 | Phase 20 | Complete |
 | ENG-12 | Phase 20 | Complete |
 | ENG-13 | Phase 20 | Complete |
-| ENG-14 | Phase 21 | Pending |
+| ENG-14 | Phase 21 | Complete |
 | ENG-15 | Phase 21 | Pending |
 | ENG-16 | Phase 21 | Pending |
-| ENG-17 | Phase 21 | Pending |
-| ENG-18 | Phase 21 | Pending |
+| ENG-17 | Phase 21 | Complete |
+| ENG-18 | Phase 21 | Complete |
 | ENG-19 | Phase 21 | Pending |
 | GUIDE-01 | Phase 22 | Pending |
 | GUIDE-02 | Phase 22 | Pending |
