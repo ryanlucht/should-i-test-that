@@ -26,8 +26,9 @@
 
 import { sample, cdf, getPriorMean } from './distributions';
 import { computePosteriorMean, computeEffectivePriorMetrics } from './evsi';
-import { seOfRelativeLift, sampleStandardNormal } from './abtest-math';
+import { seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
+import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from './feasibility';
 import type { NetValueInputs, NetValueResults, CalculationWarning } from './types';
 
 /**
@@ -295,37 +296,37 @@ export function calculateNetValueMonteCarlo(
   // ===========================================
   // Step 3.5: Compute effective prior metrics under feasibility truncation
   // ===========================================
-  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
-  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
-  // on a truncated prior. For consistency, we should display metrics
-  // (mean, probClearsThreshold) from the same truncated prior.
+  // Per ENG-03/ENG-04: Use actual tail mass (both bounds) to detect truncation.
+  // The old heuristic (sigma > |mu + 1|) only checked the lower bound and missed
+  // upper-bound truncation (which matters when CR0 is large, e.g., CR0=0.90).
   //
-  // Only compute effective metrics when truncation is likely to matter:
-  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
-  // - Normal priors with wide sigma relative to distance to L=-1
-  // This adds ~2000 samples overhead, so skip for tight Normal priors
+  // When truncation is material (infeasible mass > TRUNCATION_THRESHOLD):
+  // - Use effective truncated metrics for probability and default decision
+  // - The default decision must reflect the truncated mean, not the untruncated mean
   let effectiveProbClears = 1 - cdf(threshold_L, prior);
 
-  const needsEffectiveMetrics =
-    prior.type !== 'normal' ||
-    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
+  const infeasibleMass = computeInfeasibleTailMass(prior, CR0);
+  const needsEffectiveMetrics = infeasibleMass > TRUNCATION_THRESHOLD;
+
+  // Default decision starts from untruncated mean, may be overridden
+  let effectiveDefaultDecision = defaultDecision;
 
   if (needsEffectiveMetrics) {
     const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
     effectiveProbClears = effective.effectiveProbClears;
+    // Use truncated mean for default decision (per ENG-03)
+    effectiveDefaultDecision = determineDefaultDecision(effective.effectivePriorMean, threshold_L);
   }
 
   // Use effective probClears for the returned metric
   const probClearsThreshold = effectiveProbClears;
 
   // ===========================================
-  // Step 4: Feasibility bounds for lift
+  // Step 4: Feasibility bounds for lift (via shared helper)
   // ===========================================
   // CR1 = CR0 * (1 + L) must be in [0, 1]
-  // L_min = -1 (CR1 = 0)
-  // L_max = (1/CR0) - 1 (CR1 = 1)
-  const L_min = -1;
-  const L_max = 1 / CR0 - 1;
+  // L_min = -1 (CR1 = 0), L_max = (1/CR0) - 1 (CR1 = 1)
+  const { L_min, L_max } = liftFeasibilityBounds(CR0);
 
   // ===========================================
   // Step 5: Monte Carlo simulation
@@ -336,7 +337,9 @@ export function calculateNetValueMonteCarlo(
   let rejectedSamples = 0;
   let decisionChanges = 0;
 
-  const maxIterations = numSamples * 10; // Cap to prevent infinite loops
+  // Adaptive cap: 50x instead of 10x to allow more attempts when rejection rate
+  // is high (e.g., high-CR0 cases where L_max is tight). Per ENG-12.
+  const maxIterations = numSamples * 50;
   let iterations = 0;
 
   while (validSamples < numSamples && iterations < maxIterations) {
@@ -354,13 +357,14 @@ export function calculateNetValueMonteCarlo(
     validSamples++;
 
     // ===========================================
-    // Value WITHOUT test (use default decision)
+    // Value WITHOUT test (use effective default decision)
     // ===========================================
     // This is the baseline: what happens if we don't test.
-    // Apply default decision for the full year.
+    // Apply effective default decision for the full year.
+    // Per ENG-03: uses effectiveDefaultDecision (truncated mean) when truncation material
     const valueWithoutTest = calculateBaselineValue(
       L_true,
-      defaultDecision,
+      effectiveDefaultDecision,
       threshold_L,
       K
     );
@@ -386,8 +390,8 @@ export function calculateNetValueMonteCarlo(
     const posteriorDecision =
       posteriorMean >= threshold_L ? 'ship' : 'dont-ship';
 
-    // Track decision changes
-    if (posteriorDecision !== defaultDecision) {
+    // Track decision changes (relative to effective default, which may use truncated mean)
+    if (posteriorDecision !== effectiveDefaultDecision) {
       decisionChanges++;
     }
 
@@ -407,10 +411,19 @@ export function calculateNetValueMonteCarlo(
   }
 
   // ===========================================
-  // Step 5.5: Check for high rejection rate warning (Edge Case 6)
+  // Step 5.5: Check for low acceptance and high rejection rate warnings
   // ===========================================
-  // High rejection indicates prior places substantial mass outside feasible bounds.
-  // This can lead to metrics that don't reflect the full prior distribution.
+
+  // Low acceptance warning (ENG-12): when accepted fraction < 50%
+  // Per Codex review: actionable advice, not "reduce baseline conversion rate"
+  if (validSamples < numSamples * 0.5) {
+    warnings.push({
+      code: 'low_acceptance',
+      message: `Only ${validSamples} of ${numSamples} requested samples were accepted after feasibility filtering. Results may be less precise. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
+    });
+  }
+
+  // High rejection rate warning (Edge Case 6)
   // Threshold: >10% rejection rate triggers warning.
   const totalAttempted = validSamples + rejectedSamples;
   if (totalAttempted > 0) {
@@ -418,7 +431,7 @@ export function calculateNetValueMonteCarlo(
     if (rejectionRate > 0.10) {
       warnings.push({
         code: 'high_rejection',
-        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing prior or adjusting baseline rate.`,
+        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
       });
     }
   }
@@ -430,7 +443,7 @@ export function calculateNetValueMonteCarlo(
     return {
       netValueDollars: 0,
       maxTestBudgetDollars: 0,
-      defaultDecision,
+      defaultDecision: effectiveDefaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
       numSamples: 0,
@@ -460,7 +473,7 @@ export function calculateNetValueMonteCarlo(
   return {
     netValueDollars,
     maxTestBudgetDollars,
-    defaultDecision,
+    defaultDecision: effectiveDefaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
     numSamples: validSamples,
