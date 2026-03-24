@@ -105,6 +105,53 @@ export const useWizardStore = create<WizardStore>()(
       partialize: (state) => ({
         inputs: state.inputs,
       }),
+      /**
+       * Sanitize persisted state: remove obsolete keys that would cause type errors.
+       * This handles the conversionLatencyDays removal (ENG-07) gracefully --
+       * old sessionStorage snapshots containing conversionLatencyDays are silently
+       * ignored on rehydration instead of polluting the state.
+       */
+      merge: (persistedState: unknown, currentState: WizardStore): WizardStore => {
+        const persisted = persistedState as Partial<Pick<WizardStore, 'inputs' | 'mode'>> | undefined;
+        if (!persisted) return currentState;
+
+        // Start with current state as base
+        const merged = { ...currentState };
+
+        // Restore mode if present
+        if (persisted.mode) {
+          merged.mode = persisted.mode;
+        }
+
+        // Restore inputs, but only keep keys that exist in current initial state
+        if (persisted.inputs) {
+          // Sanitize shared inputs: only copy known keys
+          if (persisted.inputs.shared) {
+            const cleanShared = { ...currentState.inputs.shared };
+            for (const key of Object.keys(currentState.inputs.shared) as (keyof typeof currentState.inputs.shared)[]) {
+              if (key in persisted.inputs.shared) {
+                (cleanShared as Record<string, unknown>)[key] =
+                  (persisted.inputs.shared as Record<string, unknown>)[key];
+              }
+            }
+            merged.inputs = { ...merged.inputs, shared: cleanShared };
+          }
+
+          // Sanitize advanced inputs: only copy known keys (strips obsolete conversionLatencyDays etc.)
+          if (persisted.inputs.advanced) {
+            const cleanAdvanced = { ...currentState.inputs.advanced };
+            for (const key of Object.keys(currentState.inputs.advanced) as (keyof typeof currentState.inputs.advanced)[]) {
+              if (key in persisted.inputs.advanced) {
+                (cleanAdvanced as Record<string, unknown>)[key] =
+                  (persisted.inputs.advanced as Record<string, unknown>)[key];
+              }
+            }
+            merged.inputs = { ...merged.inputs, advanced: cleanAdvanced };
+          }
+        }
+
+        return merged;
+      },
     }
   )
 );

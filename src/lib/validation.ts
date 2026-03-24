@@ -186,7 +186,6 @@ export type PriorShapeFormData = z.infer<typeof priorShapeSchema>;
  * Per 05-CONTEXT.md defaults:
  * - trafficSplit: 0.5 (50/50 default)
  * - eligibilityFraction: 1.0 (100% default)
- * - conversionLatencyDays: 0 (default)
  * - decisionLatencyDays: 0 (default)
  * - testDurationDays: required (no default)
  * - dailyTraffic: required or auto-derived from annual visitors / 365
@@ -228,15 +227,6 @@ export const experimentDesignSchema = z.object({
     .number()
     .min(1, 'Eligibility must be at least 1%')
     .max(100, 'Eligibility cannot exceed 100%'),
-
-  /**
-   * Days from exposure to expected conversion
-   * Optional with default 0 - visually de-emphasized in UI
-   */
-  conversionLatencyDays: z
-    .number()
-    .min(0, 'Latency cannot be negative')
-    .int('Latency must be whole days'),
 
   /**
    * Days after test ends before shipping decision
