@@ -43,7 +43,7 @@ import {
   ExperimentDesignForm,
   type ExperimentDesignFormHandle,
 } from '@/components/forms/ExperimentDesignForm';
-import { AdvancedResultsSection } from '@/components/results';
+import { ResultsSection } from '@/components/results';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
 import { useWizardStore } from '@/stores/wizardStore';
 import { trackStepCompleted } from '@/lib/analytics';
@@ -336,7 +336,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                 )}
 
                 {/* Results section - EVSI verdict with CoD breakdown */}
-                {section.id === 'results' && <AdvancedResultsSection />}
+                {section.id === 'results' && <ResultsSection />}
               </div>
 
               {/* Navigation buttons */}
