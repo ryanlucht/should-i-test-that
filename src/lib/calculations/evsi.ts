@@ -29,7 +29,7 @@ import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { studentTQuantileBounds } from './student-t-helpers';
 import { determineDefaultDecision } from './derived';
-import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from './feasibility';
+import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD, checkRareEventsWarning, checkLowAcceptanceWarning, checkHighRejectionWarning } from './feasibility';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
 /**
@@ -457,23 +457,11 @@ export function calculateEVSIMonteCarlo(
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
-  // Step 2.5: Check for rare events warning (Accuracy-08)
+  // Step 2.5: Check for rare events warning (Accuracy-08, per ENG-14 shared helper)
   // ===========================================
-  // The Normal approximation for lift becomes unreliable when expected
-  // conversions per arm are low (<20). Warn user to consider alternatives.
-  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
   const warnings: CalculationWarning[] = [];
-  const expectedConvControl = n_control * CR0;
-  const expectedConvVariant = n_variant * CR0;
-  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
-
-  if (minExpectedConversions < 20) {
-    warnings.push({
-      code: 'rare_events',
-      message:
-        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
-    });
-  }
+  const rareEventsWarning = checkRareEventsWarning(n_control, n_variant, CR0);
+  if (rareEventsWarning) warnings.push(rareEventsWarning);
 
   // ===========================================
   // Step 3: Determine prior mean and default decision
@@ -609,30 +597,12 @@ export function calculateEVSIMonteCarlo(
   }
 
   // ===========================================
-  // Step 5.5: Check for low acceptance and high rejection rate warnings
+  // Step 5.5: Check for low acceptance and high rejection rate warnings (per ENG-14 shared helpers)
   // ===========================================
-
-  // Low acceptance warning (ENG-12): when accepted fraction < 50%
-  // Per Codex review: actionable advice, not "reduce baseline conversion rate"
-  if (validSamples < numSamples * 0.5) {
-    warnings.push({
-      code: 'low_acceptance',
-      message: `Only ${validSamples} of ${numSamples} requested samples were accepted after feasibility filtering. Results may be less precise. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
-    });
-  }
-
-  // High rejection rate warning (Edge Case 6)
-  // Threshold: >10% rejection rate triggers warning.
-  const totalAttempted = validSamples + rejectedSamples;
-  if (totalAttempted > 0) {
-    const rejectionRate = rejectedSamples / totalAttempted;
-    if (rejectionRate > 0.10) {
-      warnings.push({
-        code: 'high_rejection',
-        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
-      });
-    }
-  }
+  const lowAccWarning = checkLowAcceptanceWarning(validSamples, numSamples);
+  if (lowAccWarning) warnings.push(lowAccWarning);
+  const highRejWarning = checkHighRejectionWarning(validSamples, rejectedSamples);
+  if (highRejWarning) warnings.push(highRejWarning);
 
   // ===========================================
   // Step 6: Handle zero valid samples edge case
@@ -774,23 +744,11 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
   const data_precision = 1 / SE_squared; // 1/SE^2
 
   // ===========================================
-  // Step 1.5: Check for rare events warning (Accuracy-08)
+  // Step 1.5: Check for rare events warning (Accuracy-08, per ENG-14 shared helper)
   // ===========================================
-  // The Normal approximation for lift becomes unreliable when expected
-  // conversions per arm are low (<20). Warn user to consider alternatives.
-  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
   const warnings: CalculationWarning[] = [];
-  const expectedConvControl = n_control * CR0;
-  const expectedConvVariant = n_variant * CR0;
-  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
-
-  if (minExpectedConversions < 20) {
-    warnings.push({
-      code: 'rare_events',
-      message:
-        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
-    });
-  }
+  const rareEventsWarning = checkRareEventsWarning(n_control, n_variant, CR0);
+  if (rareEventsWarning) warnings.push(rareEventsWarning);
 
   // ===========================================
   // Step 2: Calculate prior precision

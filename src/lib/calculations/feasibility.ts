@@ -11,6 +11,7 @@
 import { cdf } from './distributions';
 import { liftFeasibilityBounds } from './abtest-math';
 import type { PriorDistribution } from './distributions';
+import type { CalculationWarning } from './types';
 
 /**
  * Threshold for "material" truncation. When infeasible tail mass exceeds this,
@@ -46,4 +47,73 @@ export function computeInfeasibleTailMass(
   const massBelow = cdf(L_min, prior);          // P(L < -1)
   const massAbove = 1 - cdf(L_max, prior);      // P(L > 1/CR0 - 1)
   return massBelow + massAbove;
+}
+
+/**
+ * Check if Normal approximation for lift may be unreliable due to low expected conversions.
+ * Threshold: min(n_control * CR0, n_variant * CR0) < 20
+ * Per Accuracy-08.
+ *
+ * @param n_control - Control group sample size
+ * @param n_variant - Variant group sample size
+ * @param CR0 - Baseline conversion rate
+ * @returns CalculationWarning if expected conversions are low, null otherwise
+ */
+export function checkRareEventsWarning(
+  n_control: number, n_variant: number, CR0: number
+): CalculationWarning | null {
+  // minExpected = smallest expected conversion count across arms
+  const minExpected = Math.min(n_control * CR0, n_variant * CR0);
+  if (minExpected < 20) {
+    return {
+      code: 'rare_events',
+      message: 'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    };
+  }
+  return null;
+}
+
+/**
+ * Check if too few MC samples were accepted after feasibility filtering.
+ * Threshold: validSamples < numSamples * 0.5
+ * Per ENG-12.
+ *
+ * @param validSamples - Number of samples accepted after feasibility filtering
+ * @param numSamples - Number of samples originally requested
+ * @returns CalculationWarning if acceptance rate is low, null otherwise
+ */
+export function checkLowAcceptanceWarning(
+  validSamples: number, numSamples: number
+): CalculationWarning | null {
+  if (validSamples < numSamples * 0.5) {
+    return {
+      code: 'low_acceptance',
+      message: `Only ${validSamples} of ${numSamples} requested samples were accepted after feasibility filtering. Results may be less precise. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
+    };
+  }
+  return null;
+}
+
+/**
+ * Check if rejection rate exceeds 10% of total attempted samples.
+ * Per Edge Case 6.
+ *
+ * @param validSamples - Number of samples accepted
+ * @param rejectedSamples - Number of samples rejected
+ * @returns CalculationWarning if rejection rate is high, null otherwise
+ */
+export function checkHighRejectionWarning(
+  validSamples: number, rejectedSamples: number
+): CalculationWarning | null {
+  const totalAttempted = validSamples + rejectedSamples;
+  if (totalAttempted > 0) {
+    const rejectionRate = rejectedSamples / totalAttempted;
+    if (rejectionRate > 0.10) {
+      return {
+        code: 'high_rejection',
+        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing the prior interval or verifying the baseline conversion rate.`,
+      };
+    }
+  }
+  return null;
 }
