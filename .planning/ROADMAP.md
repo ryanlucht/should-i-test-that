@@ -48,12 +48,12 @@ Plans:
   3. Traffic input semantics are unambiguous -- either dailyTraffic means total visitors (eligibilityFraction applies) or already-eligible visitors (no eligibilityFraction), with no contradictory paths
   4. Negative net value displays honestly as a negative dollar amount with "test not worth running" messaging (not clamped to $0)
   5. Test duration + decision latency cannot silently exceed a 365-day horizon without explicit validation or capping
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
-- [ ] 20-01-PLAN.md -- Student-t calibration via t-quantile, chart shading, plotting range, and posterior grid bounds
-- [ ] 20-02-PLAN.md -- Traffic label/tooltip fixes, conversionLatencyDays removal, and 365-day horizon validation
-- [ ] 20-03-PLAN.md -- Feasibility/truncation consistency: tail-mass detection, truncated default decision, fast-path gating, rejection sampling
+- [x] 20-01-PLAN.md -- Student-t calibration via t-quantile, chart shading, plotting range, and posterior grid bounds
+- [x] 20-02-PLAN.md -- Traffic label/tooltip fixes, conversionLatencyDays removal, and 365-day horizon validation
+- [x] 20-03-PLAN.md -- Feasibility/truncation consistency: tail-mass detection, truncated default decision, fast-path gating, rejection sampling
 - [ ] 20-04-PLAN.md -- Negative net value display and legacy Cost of Delay retirement from exports
 
 ### Phase 21: Engine Cleanup
@@ -136,7 +136,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 19. Basic Mode Deprecation | 1/3 | Complete    | 2026-03-24 |
-| 20. Engine Accuracy Fixes | 0/4 | Not started | - |
+| 20. Engine Accuracy Fixes | 3/4 | In Progress|  |
 | 21. Engine Cleanup | 0/TBD | Not started | - |
 | 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |

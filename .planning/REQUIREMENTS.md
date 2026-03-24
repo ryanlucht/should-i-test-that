@@ -15,22 +15,22 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 ### Engine — Statistical Accuracy (High Priority)
 
-- [ ] **ENG-01**: Student-t prior calibrated using t-quantile (not Normal quantile) to preserve user-entered 90% interval
-- [ ] **ENG-02**: Student-t chart shading computed from t-quantiles (not Normal quantiles)
-- [ ] **ENG-03**: Default decision uses effective truncated prior mean when feasibility truncation is material
-- [ ] **ENG-04**: Feasibility truncation detection based on actual tail mass outside [L_min, L_max] (not lower-bound-only heuristic)
-- [ ] **ENG-05**: Normal fast path gated by infeasible tail mass; falls back to MC when truncation is material
-- [ ] **ENG-06**: Traffic input semantics resolved — dailyTraffic is either total (keep eligibilityFraction) or already-eligible (remove it); no ambiguity
-- [ ] **ENG-07**: conversionLatencyDays either folded into decision delay calculation or removed from UI
-- [ ] **ENG-08**: Negative net value displayed honestly in UI (not clamped to $0); clear "test not worth running" messaging when net value is negative
-- [ ] **ENG-09**: Legacy standalone Cost of Delay retired from exports; net value explanation uses integrated simulation result
+- [x] **ENG-01**: Student-t prior calibrated using t-quantile (not Normal quantile) to preserve user-entered 90% interval
+- [x] **ENG-02**: Student-t chart shading computed from t-quantiles (not Normal quantiles)
+- [x] **ENG-03**: Default decision uses effective truncated prior mean when feasibility truncation is material
+- [x] **ENG-04**: Feasibility truncation detection based on actual tail mass outside [L_min, L_max] (not lower-bound-only heuristic)
+- [x] **ENG-05**: Normal fast path gated by infeasible tail mass; falls back to MC when truncation is material
+- [x] **ENG-06**: Traffic input semantics resolved — dailyTraffic is either total (keep eligibilityFraction) or already-eligible (remove it); no ambiguity
+- [x] **ENG-07**: conversionLatencyDays either folded into decision delay calculation or removed from UI
+- [x] **ENG-08**: Negative net value displayed honestly in UI (not clamped to $0); clear "test not worth running" messaging when net value is negative
+- [x] **ENG-09**: Legacy standalone Cost of Delay retired from exports; net value explanation uses integrated simulation result
 
 ### Engine — Statistical Accuracy (Medium Priority)
 
-- [ ] **ENG-10**: Student-t chart plotting uses quantile-based bounds instead of mu +/- 4*sigma
-- [ ] **ENG-11**: Student-t posterior grid uses quantile-based bounds instead of mu +/- 6*sigma
-- [ ] **ENG-12**: Rejection sampling handles low accepted-mass regimes (adaptive cap or warning when accepted samples fall short)
-- [ ] **ENG-13**: 365-day horizon validated — testDurationDays + decisionLatencyDays capped, or explicit horizon parameter introduced
+- [x] **ENG-10**: Student-t chart plotting uses quantile-based bounds instead of mu +/- 4*sigma
+- [x] **ENG-11**: Student-t posterior grid uses quantile-based bounds instead of mu +/- 6*sigma
+- [x] **ENG-12**: Rejection sampling handles low accepted-mass regimes (adaptive cap or warning when accepted samples fall short)
+- [x] **ENG-13**: 365-day horizon validated — testDurationDays + decisionLatencyDays capped, or explicit horizon parameter introduced
 
 ### Engine — Cleanup
 
@@ -122,19 +122,19 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 | DEPR-01 | Phase 19 | Complete |
 | DEPR-02 | Phase 19 | Complete |
 | DEPR-03 | Phase 19 | Complete |
-| ENG-01 | Phase 20 | Pending |
-| ENG-02 | Phase 20 | Pending |
-| ENG-03 | Phase 20 | Pending |
-| ENG-04 | Phase 20 | Pending |
-| ENG-05 | Phase 20 | Pending |
-| ENG-06 | Phase 20 | Pending |
-| ENG-07 | Phase 20 | Pending |
-| ENG-08 | Phase 20 | Pending |
-| ENG-09 | Phase 20 | Pending |
-| ENG-10 | Phase 20 | Pending |
-| ENG-11 | Phase 20 | Pending |
-| ENG-12 | Phase 20 | Pending |
-| ENG-13 | Phase 20 | Pending |
+| ENG-01 | Phase 20 | Complete |
+| ENG-02 | Phase 20 | Complete |
+| ENG-03 | Phase 20 | Complete |
+| ENG-04 | Phase 20 | Complete |
+| ENG-05 | Phase 20 | Complete |
+| ENG-06 | Phase 20 | Complete |
+| ENG-07 | Phase 20 | Complete |
+| ENG-08 | Phase 20 | Complete |
+| ENG-09 | Phase 20 | Complete |
+| ENG-10 | Phase 20 | Complete |
+| ENG-11 | Phase 20 | Complete |
+| ENG-12 | Phase 20 | Complete |
+| ENG-13 | Phase 20 | Complete |
 | ENG-14 | Phase 21 | Pending |
 | ENG-15 | Phase 21 | Pending |
 | ENG-16 | Phase 21 | Pending |

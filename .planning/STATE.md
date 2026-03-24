@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 19-02-PLAN.md (Mode-Switching Infrastructure Removal)
-last_updated: "2026-03-23T23:45:21.911Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 20-04-PLAN.md (Negative Net Value & Export Messaging)
+last_updated: "2026-03-24T14:52:05.198Z"
 progress:
   total_phases: 8
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 1
+  completed_phases: 1
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 19 — Basic Mode Deprecation
+**Current focus:** Phase 20 — Engine Accuracy Fixes
 
 ## Current Position
 
-Phase: 19 (Basic Mode Deprecation) — EXECUTING
-Plan: 3 of 3
+Phase: 20 (Engine Accuracy Fixes) — EXECUTING
+Plan: 4 of 4
 
 ## Milestone History
 
@@ -67,6 +67,14 @@ Recent decisions affecting current work:
 - Centralized analytics module (v1.2) -- Datadog dependency isolated, DD-01 extends it
 - [Phase 19]: Inlined calculateCostOfDelay into useEVSICalculations hook after removing standalone cost-of-delay.ts
 - [Phase 19]: Flat WizardInputs type replaces SharedInputs/AdvancedInputs/InputsState; priorShape defaults to normal
+- [Phase 20]: Used zustand persist merge() for schema migration to strip obsolete keys from sessionStorage
+- [Phase 20]: Used zod superRefine for cross-field horizon validation (errors on both testDurationDays and decisionLatencyDays)
+- [Phase 20]: Centralized Student-t quantile logic in student-t-helpers.ts to prevent drift across files
+- [Phase 20]: Student-t scale uses t-quantile calibration (jStat.studentt.inv) instead of Normal Z_95
+- [Phase 20]: Extracted feasibility logic to shared module to eliminate cross-module coupling (Codex HIGH)
+- [Phase 20]: TRUNCATION_THRESHOLD=0.001 as shared constant; tail-mass detection replaces lower-bound-only heuristic
+- [Phase 20]: No Math.max(0) clamps in UI display; raw net value flows from hook through to verdict, breakdown, and export cards
+- [Phase 20]: Export 'Timing costs' computed as evsi - netValue to match live UI ValueBreakdownCard formula
 
 ### Pending Todos
 
@@ -79,8 +87,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-23T23:45:21.908Z
-Stopped at: Completed 19-02-PLAN.md (Mode-Switching Infrastructure Removal)
+Last session: 2026-03-24T14:52:05.196Z
+Stopped at: Completed 20-04-PLAN.md (Negative Net Value & Export Messaging)
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference

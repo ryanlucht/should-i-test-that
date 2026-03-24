@@ -1,11 +1,12 @@
 /**
- * Experiment Design Form (Advanced mode)
+ * Experiment Design Form
  *
  * Collects test parameters for EVSI calculation per 05-CONTEXT.md:
  * - Test duration in days (required)
- * - Total daily traffic (required, can auto-derive from annual visitors)
+ * - Daily eligible traffic (required, can auto-derive from annual visitors)
  * - Traffic split / variant allocation (default 50%)
  * - Eligibility fraction (default 100%)
+ * - Conversion latency in days (default 0, visually de-emphasized)
  * - Decision latency in days (default 0, visually de-emphasized)
  *
  * These inputs determine sample size and test precision for EVSI.
@@ -41,9 +42,8 @@ export interface ExperimentDesignFormHandle {
 export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
   function ExperimentDesignForm(_props, ref) {
     // Get store values and setters
-    const advancedInputs = useWizardStore((state) => state.inputs.advanced);
-    const sharedInputs = useWizardStore((state) => state.inputs.shared);
-    const setAdvancedInput = useWizardStore((state) => state.setAdvancedInput);
+    const inputs = useWizardStore((state) => state.inputs);
+    const setInput = useWizardStore((state) => state.setInput);
 
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<ExperimentDesignFormData>({
@@ -51,18 +51,18 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
       mode: 'onBlur', // Validate on blur per CONTEXT.md
       reValidateMode: 'onBlur', // Re-validate on blur, not while typing
       defaultValues: {
-        testDurationDays: advancedInputs.testDurationDays ?? undefined,
-        dailyTraffic: advancedInputs.dailyTraffic ?? undefined,
+        testDurationDays: inputs.testDurationDays ?? undefined,
+        dailyTraffic: inputs.dailyTraffic ?? undefined,
         // Convert decimal to percentage for display (0.5 -> 50)
         // Check for null, undefined, AND NaN to handle stale session data
-        trafficSplit: advancedInputs.trafficSplit != null && !Number.isNaN(advancedInputs.trafficSplit)
-          ? decimalToPercent(advancedInputs.trafficSplit)
+        trafficSplit: inputs.trafficSplit != null && !Number.isNaN(inputs.trafficSplit)
+          ? decimalToPercent(inputs.trafficSplit)
           : 50,
         // Convert decimal to percentage for display (1.0 -> 100)
-        eligibilityFraction: advancedInputs.eligibilityFraction != null && !Number.isNaN(advancedInputs.eligibilityFraction)
-          ? decimalToPercent(advancedInputs.eligibilityFraction)
+        eligibilityFraction: inputs.eligibilityFraction != null && !Number.isNaN(inputs.eligibilityFraction)
+          ? decimalToPercent(inputs.eligibilityFraction)
           : 100,
-        decisionLatencyDays: advancedInputs.decisionLatencyDays ?? 0,
+        decisionLatencyDays: inputs.decisionLatencyDays ?? 0,
       },
     });
 
@@ -79,14 +79,14 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
      */
     const onSubmit = useCallback(
       (data: ExperimentDesignFormData) => {
-        setAdvancedInput('testDurationDays', data.testDurationDays);
-        setAdvancedInput('dailyTraffic', data.dailyTraffic);
+        setInput('testDurationDays', data.testDurationDays);
+        setInput('dailyTraffic', data.dailyTraffic);
         // Convert percentage (e.g., 50) to decimal (e.g., 0.5) before storing
-        setAdvancedInput('trafficSplit', percentToDecimal(data.trafficSplit));
-        setAdvancedInput('eligibilityFraction', percentToDecimal(data.eligibilityFraction));
-        setAdvancedInput('decisionLatencyDays', data.decisionLatencyDays);
+        setInput('trafficSplit', percentToDecimal(data.trafficSplit));
+        setInput('eligibilityFraction', percentToDecimal(data.eligibilityFraction));
+        setInput('decisionLatencyDays', data.decisionLatencyDays);
       },
-      [setAdvancedInput]
+      [setInput]
     );
 
     /**
@@ -113,40 +113,40 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
      * Formula: annualVisitors / 365 (rounded to whole number)
      */
     const handleDeriveFromAnnual = useCallback(() => {
-      if (sharedInputs.annualVisitors !== null) {
-        const derivedDaily = Math.round(sharedInputs.annualVisitors / 365);
+      if (inputs.annualVisitors !== null) {
+        const derivedDaily = Math.round(inputs.annualVisitors / 365);
         setValue('dailyTraffic', derivedDaily);
-        setAdvancedInput('dailyTraffic', derivedDaily);
+        setInput('dailyTraffic', derivedDaily);
       }
-    }, [sharedInputs.annualVisitors, setValue, setAdvancedInput]);
+    }, [inputs.annualVisitors, setValue, setInput]);
 
     // Check if we can show the derive button
-    const canDeriveFromAnnual = sharedInputs.annualVisitors !== null && sharedInputs.annualVisitors > 0;
+    const canDeriveFromAnnual = inputs.annualVisitors !== null && inputs.annualVisitors > 0;
 
     // Sync form with store changes (e.g., if store is reset)
     // Use != null to check for both null AND undefined (handles stale session data)
     useEffect(() => {
-      if (advancedInputs.testDurationDays != null) {
-        setValue('testDurationDays', advancedInputs.testDurationDays);
+      if (inputs.testDurationDays != null) {
+        setValue('testDurationDays', inputs.testDurationDays);
       }
-      if (advancedInputs.dailyTraffic != null) {
-        setValue('dailyTraffic', advancedInputs.dailyTraffic);
+      if (inputs.dailyTraffic != null) {
+        setValue('dailyTraffic', inputs.dailyTraffic);
       }
-      if (advancedInputs.trafficSplit != null && !Number.isNaN(advancedInputs.trafficSplit)) {
-        setValue('trafficSplit', decimalToPercent(advancedInputs.trafficSplit));
+      if (inputs.trafficSplit != null && !Number.isNaN(inputs.trafficSplit)) {
+        setValue('trafficSplit', decimalToPercent(inputs.trafficSplit));
       }
-      if (advancedInputs.eligibilityFraction != null && !Number.isNaN(advancedInputs.eligibilityFraction)) {
-        setValue('eligibilityFraction', decimalToPercent(advancedInputs.eligibilityFraction));
+      if (inputs.eligibilityFraction != null && !Number.isNaN(inputs.eligibilityFraction)) {
+        setValue('eligibilityFraction', decimalToPercent(inputs.eligibilityFraction));
       }
-      if (advancedInputs.decisionLatencyDays != null) {
-        setValue('decisionLatencyDays', advancedInputs.decisionLatencyDays);
+      if (inputs.decisionLatencyDays != null) {
+        setValue('decisionLatencyDays', inputs.decisionLatencyDays);
       }
     }, [
-      advancedInputs.testDurationDays,
-      advancedInputs.dailyTraffic,
-      advancedInputs.trafficSplit,
-      advancedInputs.eligibilityFraction,
-      advancedInputs.decisionLatencyDays,
+      inputs.testDurationDays,
+      inputs.dailyTraffic,
+      inputs.trafficSplit,
+      inputs.eligibilityFraction,
+      inputs.decisionLatencyDays,
       setValue,
     ]);
 
@@ -178,7 +178,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
               name="dailyTraffic"
               label="Daily traffic"
               placeholder="5,000"
-              tooltip="Total average daily visitors to your site or app (before any eligibility filtering)"
+              tooltip="Average daily visitors who can enter the experiment"
               error={errors.dailyTraffic?.message}
               labelSuffix={
                 canDeriveFromAnnual ? (
@@ -187,7 +187,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
                     onClick={handleDeriveFromAnnual}
                     className="text-xs text-primary hover:text-primary/80"
                   >
-                    (derive: {Math.round(sharedInputs.annualVisitors! / 365).toLocaleString()}/day)
+                    (derive: {Math.round(inputs.annualVisitors! / 365).toLocaleString()}/day)
                   </button>
                 ) : undefined
               }
@@ -208,7 +208,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
               name="eligibilityFraction"
               label="Eligible traffic"
               placeholder="100%"
-              tooltip="Not running this experiment on 100% of possible users? Change this number from 100% to the fraction of eligible users you'll actually experiment on."
+              tooltip="What fraction of all traffic is eligible for this experiment?"
               error={errors.eligibilityFraction?.message}
             />
           </div>
@@ -219,13 +219,15 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
               Advanced timing (optional)
             </p>
 
+            {/* conversionLatencyDays removed (ENG-07) — users should factor maturation into decisionLatencyDays */}
+
             {/* Decision Latency (default 0, de-emphasized, tooltip only) */}
             <div className="opacity-75">
               <NumberInput
                 name="decisionLatencyDays"
                 label="Decision latency"
                 placeholder="0"
-                tooltip="Days after the test concludes before you ship a decision. Include time for analysis, review, data maturation, and deployment."
+                tooltip="Time needed for analysis, review, and deployment after the test concludes."
                 error={errors.decisionLatencyDays?.message}
                 suffix="days"
               />

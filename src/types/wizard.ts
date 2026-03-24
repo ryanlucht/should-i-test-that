@@ -2,34 +2,32 @@
  * Wizard Types
  *
  * Type definitions for the wizard state management system.
- * Used by the Zustand store to track mode selection, user inputs,
+ * Used by the Zustand store to track user inputs
  * and navigation through the calculator sections.
  */
 
 /**
- * Calculator mode - determines which inputs and calculations are shown
- * - basic: EVPI calculation with fewer inputs (3 business inputs + prior selection)
- * - advanced: EVSI calculation with test design, cost inputs, and Cost of Delay
- */
-export type Mode = 'basic' | 'advanced';
-
-/**
  * Section identifiers for the calculator wizard
  * Used for navigation tracking and progress indicator
+ *
+ * Sections: Baseline, Uncertainty, Threshold, Test Design, Results
  */
 export type SectionId =
   | 'business-inputs'
   | 'prior-selection'
   | 'threshold'
-  | 'test-design' // Advanced only
-  | 'costs' // Advanced only
+  | 'test-design'
+  | 'costs'
   | 'results';
 
 /**
- * Shared inputs that persist across mode switches
- * These values are used in both Basic and Advanced calculations
+ * All wizard inputs in a single flat structure.
+ * Combines what was previously SharedInputs and AdvancedInputs
+ * since there is only one calculator mode (EVSI).
  */
-export interface SharedInputs {
+export interface WizardInputs {
+  // --- Baseline Metrics ---
+
   /** Baseline conversion rate as a decimal (e.g., 0.05 for 5%) */
   baselineConversionRate: number | null;
   /** Annual visitors/traffic */
@@ -38,59 +36,41 @@ export interface SharedInputs {
   visitorUnitLabel: string;
   /** Revenue or value per conversion in dollars */
   valuePerConversion: number | null;
+
+  // --- Prior / Uncertainty ---
+
   /** Prior type selection: 'default' uses N(0, 0.05), 'custom' uses interval bounds */
   priorType: 'default' | 'custom' | null;
   /** Lower bound of 90% credible interval (percentage form, e.g., -5 for -5%) */
   priorIntervalLow: number | null;
   /** Upper bound of 90% credible interval (percentage form, e.g., 10 for 10%) */
   priorIntervalHigh: number | null;
+  /** Prior distribution shape (normal, student-t, or uniform) */
+  priorShape: 'normal' | 'student-t' | 'uniform' | null;
+  /** Degrees of freedom for Student-t distribution (3=Heavy, 5=Moderate, 10=Near-normal) */
+  studentTDf: 3 | 5 | 10 | null;
+
+  // --- Threshold ---
+
   /** Threshold scenario: 'any-positive' | 'minimum-lift' | 'accept-loss' */
   thresholdScenario: 'any-positive' | 'minimum-lift' | 'accept-loss' | null;
   /** Threshold unit when applicable: 'dollars' | 'lift' */
   thresholdUnit: 'dollars' | 'lift' | null;
   /** Threshold value in the selected unit (can be negative for accept-loss scenario) */
   thresholdValue: number | null;
-}
 
-/**
- * Advanced-only inputs that are cleared when switching to Basic mode
- * These are only relevant for EVSI calculations
- *
- * Per 05-CONTEXT.md:
- * Prior shape inputs:
- * - priorShape: 'normal' (default when switching to Advanced), 'student-t', or 'uniform'
- * - studentTDf: Degrees of freedom for Student-t (3=Heavy, 5=Moderate, 10=Near-normal)
- *
- * Experiment design inputs:
- * - testDurationDays: required, user must enter
- * - dailyTraffic: required, can auto-derive from annual visitors / 365
- * - trafficSplit: 0.5 default (50/50 split)
- * - eligibilityFraction: 1.0 default (100% eligible)
- * - decisionLatencyDays: 0 default (days after test ends before shipping)
- */
-export interface AdvancedInputs {
-  /** Prior distribution shape (normal, student-t, or uniform) - defaults to 'normal' in Advanced mode */
-  priorShape: 'normal' | 'student-t' | 'uniform' | null;
-  /** Degrees of freedom for Student-t distribution (3=Heavy, 5=Moderate, 10=Near-normal) */
-  studentTDf: 3 | 5 | 10 | null;
+  // --- Experiment Design ---
+
   /** Test duration in days */
   testDurationDays: number | null;
-  /** Total daily traffic to the site/app (before eligibility filtering) */
+  /** Daily traffic eligible for the experiment */
   dailyTraffic: number | null;
   /** Fraction of traffic seeing the variant (e.g., 0.5 for 50/50 split) */
   trafficSplit: number | null;
   /** Fraction of all traffic eligible for the experiment (e.g., 1.0 for 100%) */
   eligibilityFraction: number | null;
-  /** Days after test ends before you can ship the decision */
+  /** Days after test ends before you can ship the decision (include data maturation time) */
   decisionLatencyDays: number | null;
-}
-
-/**
- * Combined inputs state containing both shared and advanced-only values
- */
-export interface InputsState {
-  shared: SharedInputs;
-  advanced: AdvancedInputs;
 }
 
 /**
@@ -105,9 +85,17 @@ export interface NavigationState {
 }
 
 /**
- * Initial values for shared inputs
+ * Initial values for all wizard inputs
+ *
+ * Defaults:
+ * - priorShape: 'normal' (always in EVSI mode)
+ * - studentTDf: null (only relevant when priorShape is 'student-t')
+ * - trafficSplit: 0.5 (50/50 default, pre-filled)
+ * - eligibilityFraction: 1.0 (100% default, pre-filled)
+ * - latency fields: 0 (default, pre-filled)
+ * - duration and daily traffic: null (user must enter)
  */
-export const initialSharedInputs: SharedInputs = {
+export const initialInputs: WizardInputs = {
   baselineConversionRate: null,
   annualVisitors: null,
   visitorUnitLabel: 'visitors',
@@ -115,40 +103,24 @@ export const initialSharedInputs: SharedInputs = {
   priorType: null,
   priorIntervalLow: null,
   priorIntervalHigh: null,
+  priorShape: 'normal', // Always in EVSI mode, default to Normal
+  studentTDf: null, // Only used when priorShape is 'student-t'
   thresholdScenario: null,
   thresholdUnit: null,
   thresholdValue: null,
-};
-
-/**
- * Initial values for advanced-only inputs
- * Per 05-CONTEXT.md defaults:
- * - priorShape: null (set to 'normal' when switching Basic -> Advanced)
- * - studentTDf: null (only relevant when priorShape is 'student-t')
- * - trafficSplit: 0.5 (50/50 default, pre-filled)
- * - eligibilityFraction: 1.0 (100% default, pre-filled)
- * - latency fields: 0 (default, pre-filled)
- * - duration and daily traffic: null (user must enter)
- */
-export const initialAdvancedInputs: AdvancedInputs = {
-  priorShape: null, // Set to 'normal' when switching to Advanced mode
-  studentTDf: null, // Only used when priorShape is 'student-t'
   testDurationDays: null,
   dailyTraffic: null,
   trafficSplit: 0.5, // Default to 50/50 split
   eligibilityFraction: 1.0, // Default to 100% eligible
-  decisionLatencyDays: 0, // Default to 0 days
+  decisionLatencyDays: 0, // Default to 0 days (include data maturation time)
 };
 
 /**
- * Complete wizard state interface including mode, inputs, navigation, and actions
+ * Complete wizard state interface including inputs, navigation, and actions
  */
 export interface WizardState {
-  // Mode
-  mode: Mode;
-
   // Inputs
-  inputs: InputsState;
+  inputs: WizardInputs;
 
   // Navigation (not persisted)
   currentSection: number;
@@ -159,19 +131,10 @@ export interface WizardState {
  * Wizard actions for state mutations
  */
 export interface WizardActions {
-  /** Set the calculator mode (basic/advanced) - clears advanced inputs when switching to basic */
-  setMode: (mode: Mode) => void;
-
-  /** Update a shared input value */
-  setSharedInput: <K extends keyof SharedInputs>(
+  /** Update an input value */
+  setInput: <K extends keyof WizardInputs>(
     key: K,
-    value: SharedInputs[K]
-  ) => void;
-
-  /** Update an advanced-only input value */
-  setAdvancedInput: <K extends keyof AdvancedInputs>(
-    key: K,
-    value: AdvancedInputs[K]
+    value: WizardInputs[K]
   ) => void;
 
   /** Set the current active section */
