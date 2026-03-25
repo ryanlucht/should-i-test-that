@@ -30,7 +30,7 @@ import {
   formatPercentage,
 } from '@/lib/formatting';
 import { trackCalculationCompleted } from '@/lib/analytics';
-import { DEFAULT_INTERVAL, DEFAULT_PRIOR, computePriorFromInterval } from '@/lib/prior';
+import { buildPriorFromInputs } from '@/lib/prior';
 import type { PriorDistribution } from '@/lib/calculations/types';
 
 export function AdvancedResultsSection() {
@@ -38,66 +38,17 @@ export function AdvancedResultsSection() {
   const sharedInputs = useWizardStore((state) => state.inputs.shared);
   const advancedInputs = useWizardStore((state) => state.inputs.advanced);
 
-  // Build prior distribution for export (mirrors useEVSICalculations logic)
-  // Must be before early return to satisfy React hooks rules
+  // Build prior distribution for export
+  // Uses centralized buildPriorFromInputs to ensure consistent calibration
+  // with useEVSICalculations hook (Student-t uses t-quantile, not z_0.95).
+  // Must be before early return to satisfy React hooks rules.
   const prior: PriorDistribution = useMemo(() => {
-    const isDefaultPrior =
-      sharedInputs.priorIntervalLow !== null &&
-      sharedInputs.priorIntervalHigh !== null &&
-      Math.abs(sharedInputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(sharedInputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
-
-    const normalParams =
-      isDefaultPrior ||
-      sharedInputs.priorIntervalLow === null ||
-      sharedInputs.priorIntervalHigh === null
-        ? DEFAULT_PRIOR
-        : computePriorFromInterval(
-            sharedInputs.priorIntervalLow,
-            sharedInputs.priorIntervalHigh
-          );
-
-    const shape = advancedInputs.priorShape ?? 'normal';
-
-    switch (shape) {
-      case 'normal':
-        return {
-          type: 'normal' as const,
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-
-      case 'student-t':
-        return {
-          type: 'student-t' as const,
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-          df: advancedInputs.studentTDf ?? 5,
-        };
-
-      case 'uniform': {
-        const lowBound =
-          sharedInputs.priorIntervalLow !== null
-            ? sharedInputs.priorIntervalLow / 100
-            : DEFAULT_INTERVAL.low / 100;
-        const highBound =
-          sharedInputs.priorIntervalHigh !== null
-            ? sharedInputs.priorIntervalHigh / 100
-            : DEFAULT_INTERVAL.high / 100;
-        return {
-          type: 'uniform' as const,
-          low_L: lowBound,
-          high_L: highBound,
-        };
-      }
-
-      default:
-        return {
-          type: 'normal' as const,
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-    }
+    return buildPriorFromInputs({
+      priorShape: advancedInputs.priorShape ?? 'normal',
+      studentTDf: advancedInputs.studentTDf ?? undefined,
+      intervalLowPercent: sharedInputs.priorIntervalLow,
+      intervalHighPercent: sharedInputs.priorIntervalHigh,
+    });
   }, [
     sharedInputs.priorIntervalLow,
     sharedInputs.priorIntervalHigh,

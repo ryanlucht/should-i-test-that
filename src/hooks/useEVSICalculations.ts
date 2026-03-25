@@ -30,7 +30,7 @@ import {
   deriveSampleSizes,
 } from '@/lib/calculations';
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
-import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
+import { buildPriorFromInputs } from '@/lib/prior';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
 import type { CoDResults } from '@/lib/calculations/cost-of-delay';
 
@@ -141,66 +141,15 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // ===========================================
     // Step 2: Build prior distribution
     // ===========================================
-    let prior: PriorDistribution;
-
-    // Determine prior parameters from interval
-    const isDefaultPrior =
-      sharedInputs.priorIntervalLow !== null &&
-      sharedInputs.priorIntervalHigh !== null &&
-      Math.abs(sharedInputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(sharedInputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
-
-    // Get Normal parameters (used for Normal and Student-t)
-    const normalParams =
-      isDefaultPrior || sharedInputs.priorIntervalLow === null || sharedInputs.priorIntervalHigh === null
-        ? DEFAULT_PRIOR
-        : computePriorFromInterval(sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh);
-
-    switch (advancedInputs.priorShape) {
-      case 'normal':
-        prior = {
-          type: 'normal',
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-        break;
-
-      case 'student-t':
-        // Student-t uses same location-scale as Normal, plus df
-        prior = {
-          type: 'student-t',
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-          df: advancedInputs.studentTDf!,
-        };
-        break;
-
-      case 'uniform': {
-        // Uniform uses the interval bounds directly
-        // Convert from percentage to decimal
-        const lowBound = sharedInputs.priorIntervalLow !== null
-          ? sharedInputs.priorIntervalLow / 100
-          : DEFAULT_INTERVAL.low / 100;
-        const highBound = sharedInputs.priorIntervalHigh !== null
-          ? sharedInputs.priorIntervalHigh / 100
-          : DEFAULT_INTERVAL.high / 100;
-        prior = {
-          type: 'uniform',
-          low_L: lowBound,
-          high_L: highBound,
-        };
-        break;
-      }
-
-      default:
-        // Fallback to Normal if somehow an unknown shape is passed
-        // This shouldn't happen if types are correct, but provides safety
-        prior = {
-          type: 'normal',
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-    }
+    // Uses centralized buildPriorFromInputs to ensure consistent calibration
+    // across all call sites (hook, form preview, results export).
+    // Student-t uses t-quantile calibration, not Normal z_0.95.
+    const prior = buildPriorFromInputs({
+      priorShape: advancedInputs.priorShape,
+      studentTDf: advancedInputs.studentTDf ?? undefined,
+      intervalLowPercent: sharedInputs.priorIntervalLow,
+      intervalHighPercent: sharedInputs.priorIntervalHigh,
+    });
 
     // ===========================================
     // Step 3: Calculate K and threshold
