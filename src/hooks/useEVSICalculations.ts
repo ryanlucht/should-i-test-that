@@ -9,12 +9,11 @@
  * - Returns loading=true while Worker is computing (async)
  * - Uses fast path for Normal priors (synchronous, no Worker needed)
  * - Uses Web Worker for Student-t and Uniform (Monte Carlo, non-blocking)
- * - Calculates Cost of Delay from experiment parameters
  *
  * Per audit recommendations (COD-01, COD-02, COD-03):
  * - netValueDollars computed via integrated calculation (calculateNetValueMonteCarlo)
  * - NOT computed as evsiDollars - codDollars (which has timing inconsistency)
- * - EVSI and CoD still exposed separately for UI display breakdown
+ * - Legacy CoD computation removed per audit Priority 7
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -32,69 +31,15 @@ import { buildPriorFromInputs } from '@/lib/prior';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults, CalculationWarning } from '@/lib/calculations/types';
 
 /**
- * Results from Cost of Delay calculation
- * (Inlined here after standalone cost-of-delay.ts was removed in DEPR-02)
- */
-export interface CoDResults {
-  /** Total Cost of Delay in dollars */
-  codDollars: number;
-  /** Daily opportunity cost (EV_ship_day) in dollars */
-  dailyOpportunityCost: number;
-  /** Whether CoD applies (true if default decision is Ship) */
-  codApplies: boolean;
-}
-
-/**
- * Calculate Cost of Delay for an A/B test
- *
- * Per SPEC.md Section A6:
- *   EV_ship_annual = K * (mu_L - T_L)
- *   EV_ship_day = EV_ship_annual / 365
- *   If default is Ship (mu_L >= T_L):
- *     CoD = (1 - f_var) * EV_ship_day * D_test + EV_ship_day * D_latency
- *   If default is Don't Ship: CoD = 0
- *
- * (Inlined here after standalone cost-of-delay.ts was removed in DEPR-02)
- */
-function calculateCostOfDelay(inputs: {
-  K: number;
-  mu_L: number;
-  threshold_L: number;
-  testDurationDays: number;
-  variantFraction: number;
-  decisionLatencyDays: number;
-}): CoDResults {
-  const { K, mu_L, threshold_L, testDurationDays, variantFraction, decisionLatencyDays } = inputs;
-
-  // EV_ship_annual = K * (mu_L - T_L)
-  const EV_ship_annual = K * (mu_L - threshold_L);
-
-  // CoD only applies when default decision is Ship (EV_ship_annual > 0)
-  const codApplies = EV_ship_annual > 0;
-
-  if (!codApplies) {
-    return { codDollars: 0, dailyOpportunityCost: 0, codApplies: false };
-  }
-
-  // EV_ship_day = EV_ship_annual / 365
-  const EV_ship_day = EV_ship_annual / 365;
-
-  // CoD = (1 - f_var) * EV_ship_day * D_test + EV_ship_day * D_latency
-  const controlFraction = 1 - variantFraction;
-  const codDollars = controlFraction * EV_ship_day * testDurationDays + EV_ship_day * decisionLatencyDays;
-
-  return { codDollars, dailyOpportunityCost: EV_ship_day, codApplies: true };
-}
-
-/**
- * Combined results from EVSI and Cost of Delay calculations
+ * Combined results from EVSI calculation
+ * (Legacy CoDResults and calculateCostOfDelay removed per audit Priority 7:
+ *  the separate CoD object used raw prior mean rather than the integrated
+ *  simulation, creating an inconsistency. Net value is now the sole headline.)
  */
 export interface EVSICalculationResults {
   /** EVSI results including evsiDollars, defaultDecision, probabilities */
   evsi: EVSIResults;
-  /** Cost of Delay results including codDollars, dailyOpportunityCost */
-  cod: CoDResults;
-  /** Net value: EVSI - CoD (the headline number) */
+  /** Net value of testing (the headline number, from integrated simulation) */
   netValueDollars: number;
   /** Sample sizes derived from experiment design */
   sampleSizes: {
@@ -117,7 +62,7 @@ export interface UseEVSICalculationsResult {
 }
 
 /**
- * Hook that computes EVSI and CoD results from current wizard store state.
+ * Hook that computes EVSI results from current wizard store state.
  *
  * @returns Object with loading state and calculation results
  *
@@ -126,7 +71,6 @@ export interface UseEVSICalculationsResult {
  * if (loading) return <Spinner />;
  * if (results) {
  *   console.log(`EVSI: $${results.evsi.evsiDollars}`);
- *   console.log(`CoD: $${results.cod.codDollars}`);
  *   console.log(`Net: $${results.netValueDollars}`);
  * }
  */
@@ -243,23 +187,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     };
 
     // ===========================================
-    // Step 6: Build CoD inputs (for UI display)
-    // ===========================================
-    const priorMean = prior.type === 'uniform'
-      ? (prior.low_L! + prior.high_L!) / 2
-      : prior.mu_L!;
-
-    const codInputs = {
-      K,
-      mu_L: priorMean,
-      threshold_L,
-      testDurationDays: inputs.testDurationDays,
-      variantFraction: inputs.trafficSplit,
-      decisionLatencyDays: inputs.decisionLatencyDays ?? 0,
-    };
-
-    // ===========================================
-    // Step 7: Build NetValue inputs (integrated calculation)
+    // Step 6: Build NetValue inputs (integrated calculation)
     // ===========================================
     // Per COD-03: Net value computed in single coherent simulation
     // This is the primary calculation; EVSI and CoD are for UI decomposition only
@@ -278,7 +206,6 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     return {
       prior,
       evsiInputs,
-      codInputs,
       netValueInputs,
       sampleSizes,
     };
@@ -427,20 +354,12 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       return null;
     }
 
-    const { codInputs, sampleSizes } = validatedInputs;
-
-    // Calculate Cost of Delay (for UI display)
-    const cod = calculateCostOfDelay(codInputs);
-
-    // Net value comes from INTEGRATED calculation (COD-03)
-    // NOT from workerResults.evsiDollars - cod.codDollars
-    // The integrated simulation computes timing-aware net value coherently
+    const { sampleSizes } = validatedInputs;
     const netValueDollars = netValueResults.netValueDollars;
 
     // Merge warnings from EVSI and net-value calculations (audit Priority 8b)
-    // Dedup strategy: Use warning `code` as dedup key. Each CalculationWarning.code
-    // is already a unique identifier per warning type (e.g., 'rare_events',
-    // 'high_rejection'), so code-only dedup is sufficient and avoids over-collapsing.
+    // Use warning code as dedup key to avoid showing duplicate messages
+    // The code field is already a unique identifier per warning type (e.g., 'NEGATIVE_NET_VALUE', 'HIGH_TRUNCATION')
     const evsiWarnings = workerResults.warnings ?? [];
     const netValueWarnings = netValueResults.warnings ?? [];
     const seen = new Set<string>();
@@ -454,7 +373,6 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
     return {
       evsi: workerResults,
-      cod,
       netValueDollars,
       sampleSizes,
       warnings: mergedWarnings,

@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { ResultsSection } from './AdvancedResultsSection';
-import type { EVSICalculationResults, CoDResults } from '@/hooks/useEVSICalculations';
+import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
 
 // Mock useEVSICalculations hook
 vi.mock('@/hooks/useEVSICalculations', () => ({
@@ -29,13 +29,6 @@ vi.mock('@/components/export/ExportButton', () => ({
 import { useEVSICalculations } from '@/hooks/useEVSICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 
-// Sample Cost of Delay results
-const sampleCodResults: CoDResults = {
-  codApplies: true,
-  codDollars: 2500,
-  dailyOpportunityCost: 125,
-};
-
 // Sample EVSI results for testing
 const sampleEVSIResults: EVSICalculationResults = {
   evsi: {
@@ -46,7 +39,6 @@ const sampleEVSIResults: EVSICalculationResults = {
     numSamples: 10000,
     numRejected: 50,
   },
-  cod: sampleCodResults,
   netValueDollars: 9500,
   sampleSizes: {
     n_total: 10000,

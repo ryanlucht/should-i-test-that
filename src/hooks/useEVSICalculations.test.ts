@@ -3,8 +3,8 @@
  *
  * Tests verify:
  * - Hook returns null when inputs are incomplete
- * - Hook returns EVSI+CoD results when all inputs are valid
- * - Hook calculates CoD correctly for Ship vs Don't Ship scenarios
+ * - Hook returns EVSI results when all inputs are valid
+ * - Net value computed via integrated simulation (not EVSI - CoD)
  * - Loading state during async calculation
  *
  * Note: Web Worker tests are limited since Vitest/JSDOM doesn't natively
@@ -175,7 +175,7 @@ describe('useEVSICalculations', () => {
       expect(result.current.results!.sampleSizes.n_control).toBe(35000);
     });
 
-    it('calculates CoD = 0 when default is Don\'t Ship', async () => {
+    it('identifies default decision as Dont Ship when threshold exceeds prior mean', async () => {
       act(() => {
         setupBaselineInputs();
         setupExperimentInputs();
@@ -194,12 +194,11 @@ describe('useEVSICalculations', () => {
 
       // Default decision should be Don't Ship (threshold > prior mean)
       expect(result.current.results!.evsi.defaultDecision).toBe('dont-ship');
-      // CoD should be 0 when default is Don't Ship
-      expect(result.current.results!.cod.codDollars).toBe(0);
-      expect(result.current.results!.cod.codApplies).toBe(false);
+      // No cod field on results (removed per audit P7)
+      expect('cod' in result.current.results!).toBe(false);
     });
 
-    it('calculates CoD > 0 when default is Ship', async () => {
+    it('identifies default decision as Ship when prior mean exceeds threshold', async () => {
       act(() => {
         setupBaselineInputs();
         setupExperimentInputs();
@@ -219,9 +218,6 @@ describe('useEVSICalculations', () => {
 
       // Default decision should be Ship (prior mean > threshold)
       expect(result.current.results!.evsi.defaultDecision).toBe('ship');
-      // CoD should apply when default is Ship
-      expect(result.current.results!.cod.codApplies).toBe(true);
-      expect(result.current.results!.cod.codDollars).toBeGreaterThan(0);
     });
 
     it('calculates net value via integrated calculation (COD-03)', async () => {
@@ -244,17 +240,15 @@ describe('useEVSICalculations', () => {
         expect(result.current.results).not.toBeNull();
       });
 
-      const { evsi, cod, netValueDollars } = result.current.results!;
+      const { evsi, netValueDollars } = result.current.results!;
 
       // Net value can be negative (timing costs can exceed information value per ENG-08)
       expect(Number.isFinite(netValueDollars)).toBe(true);
 
-      // EVSI and CoD should still be available for UI decomposition
+      // EVSI should still be available for UI decomposition
       expect(evsi.evsiDollars).toBeGreaterThan(0);
-      expect(cod.codDollars).toBeGreaterThanOrEqual(0);
 
-      // Net value is NOT simply EVSI - CoD (that's the old calculation)
-      // Due to Monte Carlo variance, it will typically differ from simple subtraction
+      // Net value comes from integrated simulation (COD-03), not EVSI - CoD
       // The integrated calculation computes value with timing effects coherently
     });
 
