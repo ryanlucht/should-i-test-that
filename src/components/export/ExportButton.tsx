@@ -263,7 +263,6 @@ export function ExportButton(props: ExportButtonProps) {
           miniChartK={actualK}
           priorShapeDescription={priorShapeDescription}
           evsi={mode === 'advanced' ? props.evsiResults.evsi.evsiDollars : undefined}
-          cod={mode === 'advanced' ? props.evsiResults.cod.codDollars : undefined}
           netValue={mode === 'advanced' ? props.evsiResults.netValueDollars : undefined}
           testDurationDays={testDurationDays}
         />

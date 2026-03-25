@@ -89,9 +89,6 @@ interface ExportCardProps {
   /** EVSI value (only for advanced mode) */
   evsi?: number;
 
-  /** Legacy CoD value (only for advanced mode, kept for backward compat) */
-  cod?: number;
-
   /** Net value (only for advanced mode) */
   netValue?: number;
 
