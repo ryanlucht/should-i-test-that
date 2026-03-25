@@ -363,6 +363,37 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle, Uncer
     return (
       <FormProvider {...methods}>
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          {/* Default Prior Option — always visible above accordion */}
+          <button
+            type="button"
+            onClick={() => {
+              // Reset shape to Normal and fill default interval values
+              setInput('priorShape', 'normal');
+              setInput('studentTDf', null);
+              handleUseDefault();
+            }}
+            className={cn(
+              'w-full rounded-xl border-2 p-4 text-left transition-all',
+              'hover:border-primary/50 hover:shadow-sm',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'border-border bg-card hover:bg-muted/50'
+            )}
+          >
+            <div className="flex-1">
+              <p className="font-medium text-foreground">
+                Fill with Recommended Default
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                I&apos;m 90% sure the relative lift is between -8% and +8%
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                This is a reasonable starting point if you&apos;re unsure.
+                It assumes most changes have small effects.
+                This is also the prior used in Eppo for Bayesian experiment analysis.
+              </p>
+            </div>
+          </button>
+
           {/* Prior shape accordion toggle (D-08) — default closed */}
           <div className="space-y-4">
             <button

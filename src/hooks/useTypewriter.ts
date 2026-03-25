@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 
 /**
  * Character delay for typewriter animation in milliseconds.
- * Per CONTEXT.md D-03: speed is executor discretion; 30ms chosen for readable pacing.
+ * Per CONTEXT.md D-03: speed is executor discretion; 12ms for fast, fluid pacing
+ * so users don't wait long on longer dialogue messages.
  */
-const CHAR_DELAY_MS = 30;
+const CHAR_DELAY_MS = 12;
 
 /**
  * useTypewriter

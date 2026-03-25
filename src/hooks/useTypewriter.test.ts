@@ -9,7 +9,7 @@ import { useTypewriter } from './useTypewriter';
 function advanceChars(n: number) {
   for (let i = 0; i < n; i++) {
     act(() => {
-      vi.advanceTimersByTime(30);
+      vi.advanceTimersByTime(12);
     });
   }
 }
@@ -45,7 +45,7 @@ describe('useTypewriter', () => {
     expect(result.current.isComplete).toBe(false);
   });
 
-  it('reveals text character by character at 30ms intervals', () => {
+  it('reveals text character by character at 12ms intervals', () => {
     const { result } = renderHook(() => useTypewriter('Hello'));
 
     // Initially empty
