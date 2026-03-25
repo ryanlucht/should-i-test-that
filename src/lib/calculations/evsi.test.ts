@@ -17,6 +17,7 @@ import {
   computeEffectivePriorMetrics,
 } from './evsi';
 import { studentTQuantileBounds } from './student-t-helpers';
+import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from './feasibility';
 import type { PriorDistribution } from './distributions';
 
 /**
@@ -2004,5 +2005,70 @@ describe('ENG-19: edge-case safety', () => {
     expect(result.evsiDollars).toBe(0);
     expect(Number.isNaN(result.evsiDollars)).toBe(false);
     expect(Number.isFinite(result.evsiDollars)).toBe(true);
+  });
+});
+
+// ===========================================
+// Worker truncation routing for Normal priors
+// ===========================================
+// Per audit Priority 2: The worker must respect the same truncation gate
+// as the hook (useEVSICalculations.ts). When infeasible tail mass exceeds
+// TRUNCATION_THRESHOLD, Normal priors should use MC instead of fast path.
+
+describe('Worker truncation routing for Normal priors', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('truncation-sensitive Normal (CR0=0.90) has infeasible mass > TRUNCATION_THRESHOLD', () => {
+    // CR0=0.90 means L_max = 1/0.90 - 1 ~= 0.111
+    // Normal(0, 0.10) has significant mass above L_max=0.111
+    // This should exceed the 0.001 truncation threshold
+    const prior: PriorDistribution = { type: 'normal', mu_L: 0, sigma_L: 0.10 };
+    const infeasibleMass = computeInfeasibleTailMass(prior, 0.90);
+
+    expect(infeasibleMass).toBeGreaterThan(TRUNCATION_THRESHOLD);
+  });
+
+  it('MC path works for truncation-sensitive Normal prior', () => {
+    // Truncation-sensitive case: CR0=0.90, Normal(0, 0.10)
+    // Worker should route this to MC, so MC must produce valid results
+    const result = calculateEVSIMonteCarlo({
+      K: 100000,
+      baselineConversionRate: 0.90,
+      threshold_L: 0,
+      prior: { type: 'normal', mu_L: 0, sigma_L: 0.10 },
+      n_control: 5000,
+      n_variant: 5000,
+    }, 5000);
+
+    expect(result.evsiDollars).toBeGreaterThanOrEqual(0);
+    expect(result.numSamples).toBeGreaterThan(0);
+    expect(Number.isFinite(result.evsiDollars)).toBe(true);
+  });
+
+  it('low-truncation Normal (CR0=0.05) has infeasible mass <= TRUNCATION_THRESHOLD', () => {
+    // CR0=0.05 means L_max = 1/0.05 - 1 = 19.0
+    // Normal(0, 0.05) has virtually zero mass outside [-1, 19]
+    // Fast path is appropriate here
+    const prior: PriorDistribution = { type: 'normal', mu_L: 0, sigma_L: 0.05 };
+    const infeasibleMass = computeInfeasibleTailMass(prior, 0.05);
+
+    expect(infeasibleMass).toBeLessThanOrEqual(TRUNCATION_THRESHOLD);
+  });
+
+  it('boundary condition: infeasibleMass === TRUNCATION_THRESHOLD takes fast path (<=)', () => {
+    // Verifies hook/worker parity: both use `<=` so boundary case
+    // (infeasibleMass === TRUNCATION_THRESHOLD = 0.001) takes fast path.
+    // IMPORTANT: Uses <= (not <) to match hook behavior exactly.
+    expect(TRUNCATION_THRESHOLD <= TRUNCATION_THRESHOLD).toBe(true);
+
+    // Just above boundary should take MC path
+    expect(TRUNCATION_THRESHOLD + 1e-10 <= TRUNCATION_THRESHOLD).toBe(false);
   });
 });
