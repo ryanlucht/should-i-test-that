@@ -14,6 +14,7 @@ Help users make better testing decisions by quantifying the value of information
 
 **Version:** v2.0 in progress (v1.2 shipped 2026-02-21)
 **Phase 22 complete** — Learning Bits guide infrastructure: RPG dialogue overlay with 8-message typewriter system, accordion progressive disclosure, highlight pulse, session persistence
+**Phase 22.1 complete** — Stats engine correctness: Student-t calibration fix, centralized prior construction, unit-aware threshold formatting, worker truncation routing, truncated-Normal posterior mean, legacy CoD removal, warning plumbing
 **Codebase:** ~16,400 lines TypeScript/React (Phase 19: -3,100 lines EVPI/mode code removed)
 **Tech stack:** Vite + React 19 + TypeScript + Tailwind 4 + shadcn/ui + Zustand + Recharts + jStat + Datadog RUM
 
