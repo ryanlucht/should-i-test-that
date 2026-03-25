@@ -22,8 +22,9 @@ const CHAR_DELAY_MS = 30;
 export function useTypewriter(text: string): { displayed: string; isComplete: boolean } {
   // Cache the reduced-motion preference on mount using a ref to avoid
   // calling matchMedia on every render (perf optimization).
+  // Guard against jsdom/test environments where matchMedia may not exist.
   const prefersReducedMotionRef = useRef<boolean>(
-    typeof window !== 'undefined'
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false
   );

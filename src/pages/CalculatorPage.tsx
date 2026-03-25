@@ -22,8 +22,11 @@
  * - Session persistence for inputs (not navigation)
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Calculator } from 'lucide-react';
+import { LearningBitsOverlay } from '@/components/guide/LearningBitsOverlay';
+import { LearningBitsBubble } from '@/components/guide/LearningBitsBubble';
+import { useGuideMessages, GuideTrigger } from '@/hooks/useGuideMessages';
 import { SectionWrapper } from '@/components/wizard/SectionWrapper';
 import { NavigationButtons } from '@/components/wizard/NavigationButtons';
 import { StickyProgressIndicator } from '@/components/wizard/StickyProgressIndicator';
@@ -84,6 +87,13 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
   const canAccessSection = useWizardStore((state) => state.canAccessSection);
 
+  // Guide overlay state (GUIDE-01, GUIDE-02, GUIDE-03)
+  const guideEnabled = useWizardStore((state) => state.guideEnabled);
+  const setGuideEnabled = useWizardStore((state) => state.setGuideEnabled);
+
+  // Trigger event state for guide messages (wired from form accordion/focus events)
+  const [guideTrigger, setGuideTrigger] = useState<GuideTrigger>(GuideTrigger.None);
+
   // Single section list
   const sections = SECTIONS;
   const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
@@ -91,6 +101,21 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   // Scroll spy tracks which section is visible
   const activeSection = useScrollSpy(sectionIds);
 
+  // Guide message routing: maps active section + trigger events to dialogue text
+  const { currentMessage } = useGuideMessages(activeSection, guideTrigger);
+
+  // Trigger callbacks wired from form components to guide message system
+  const handlePriorShapeAccordionOpen = useCallback(() => {
+    setGuideTrigger(GuideTrigger.PriorShapeAccordionOpen);
+  }, []);
+
+  const handlePriorBoundFocus = useCallback(() => {
+    setGuideTrigger(GuideTrigger.PriorBoundFocus);
+  }, []);
+
+  const handleAdvancedTimingOpen = useCallback(() => {
+    setGuideTrigger(GuideTrigger.AdvancedTimingOpen);
+  }, []);
 
   // Refs for form validation
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
@@ -322,7 +347,11 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
 
                 {/* Uncertainty section - prior selection form */}
                 {section.id === 'uncertainty' && (
-                  <UncertaintyPriorForm ref={uncertaintyFormRef} />
+                  <UncertaintyPriorForm
+                    ref={uncertaintyFormRef}
+                    onPriorShapeAccordionOpen={handlePriorShapeAccordionOpen}
+                    onPriorBoundFocus={handlePriorBoundFocus}
+                  />
                 )}
 
                 {/* Threshold section - shipping threshold form */}
@@ -332,7 +361,10 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
 
                 {/* Test Design section - experiment parameters */}
                 {section.id === 'test-design' && (
-                  <ExperimentDesignForm ref={experimentDesignFormRef} />
+                  <ExperimentDesignForm
+                    ref={experimentDesignFormRef}
+                    onAdvancedTimingOpen={handleAdvancedTimingOpen}
+                  />
                 )}
 
                 {/* Results section - EVSI verdict with CoD breakdown */}
@@ -367,6 +399,20 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
           {' '}and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
         </p>
       </footer>
+
+      {/* Learning Bits Guide Overlay (GUIDE-01, GUIDE-02, GUIDE-03)
+          Rendered at end of DOM for z-50 stacking above page content.
+          guideEnabled=true → expanded dialogue; false → collapsed bubble avatar. */}
+      {guideEnabled ? (
+        <LearningBitsOverlay
+          messageText={currentMessage}
+          onClose={() => setGuideEnabled(false)}
+        />
+      ) : (
+        <LearningBitsBubble
+          onOpen={() => setGuideEnabled(true)}
+        />
+      )}
     </div>
   );
 }
