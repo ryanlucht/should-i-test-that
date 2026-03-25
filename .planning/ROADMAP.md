@@ -15,6 +15,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 20: Engine Accuracy Fixes** - Fix Student-t calibration, feasibility/truncation, traffic semantics, negative net value, and horizon validation (completed 2026-03-24)
 - [x] **Phase 21: Engine Cleanup** - Extract shared helpers, fix comments, remove dead code, harden edge cases (completed 2026-03-24)
 - [ ] **Phase 22: Learning Bits Guide Infrastructure** - Build dialogue component, typewriter hook, toggle, and section-aware state (BLOCKED on PM content for dialogue text)
+- [ ] **Phase 22.1: Stats Engine Correctness Fixes** - Fix remaining audit findings: Student-t double-division, worker truncation routing, truncated posterior mean, centralized prior builder, threshold formatting, traffic label semantics, legacy CoD removal, warning plumbing
 - [ ] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update
 - [ ] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard
 - [ ] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification
@@ -88,15 +89,28 @@ Plans:
 
 **UI hint**: yes
 
-### Phase 22.1: Stats engine correctness fixes (INSERTED)
+### Phase 22.1: Stats Engine Correctness Fixes (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** All 8 audit findings from the v2 statistics audit are resolved: Student-t prior scale is correct at hook level, worker respects truncation routing, posterior mean uses truncated formula when appropriate, prior construction is centralized, threshold display is unit-aware, traffic label semantics are unambiguous, legacy CoD is removed, and warnings are plumbed to the UI
+**Requirements**: AUDIT-P1, AUDIT-P2, AUDIT-P3, AUDIT-P4, AUDIT-P5, AUDIT-P6, AUDIT-P7, AUDIT-P8a, AUDIT-P8b
 **Depends on:** Phase 22
-**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+  1. Student-t prior with [-8.22, 8.22] and df=5 produces sigma_L ~ 0.04079 (not 0.0004079)
+  2. Worker does not use Normal fast path when infeasible tail mass exceeds TRUNCATION_THRESHOLD
+  3. computePosteriorMean returns truncated-Normal posterior mean when truncation is active
+  4. All prior-construction sites (hook, form preview, results) use single buildPriorFromInputs helper
+  5. Dollar thresholds display as currency, not as percentage
+  6. dailyTraffic label/tooltip clarifies total traffic before eligibility filtering
+  7. Legacy calculateCostOfDelay and CoDResults removed from codebase
+  8. Net-value warnings reach the UI warning renderer
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 22.1 to break down)
+- [ ] 22.1-01-PLAN.md -- Centralize prior construction (buildPriorFromInputs) and fix Student-t double-division
+- [ ] 22.1-02-PLAN.md -- Unit-aware threshold formatting and dailyTraffic label semantics fix
+- [ ] 22.1-03-PLAN.md -- Remove legacy Cost of Delay from hook, export button, and export card
+- [ ] 22.1-04-PLAN.md -- Worker truncation routing gate and dead truncated-normal.ts deletion
+- [ ] 22.1-05-PLAN.md -- Truncated-Normal posterior mean for Normal priors and net-value warning plumbing
 
 ### Phase 23: Homepage & Welcome Experience
 **Goal**: Users land on a new homepage with Learning Bits welcome dialogue, branded logo, and clear start/skip paths into the calculator
@@ -147,7 +161,7 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 19 > 20 > 21 > 22 > 23 > 24 > 25 > 26
+**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 26
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -155,6 +169,7 @@ Plans:
 | 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
 | 21. Engine Cleanup | 2/2 | Complete    | 2026-03-24 |
 | 22. Learning Bits Guide Infrastructure | 0/2 | Planned    |  |
+| 22.1. Stats Engine Correctness Fixes | 0/5 | Planned | - |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
@@ -189,6 +204,15 @@ Plans:
 | GUIDE-01 | 22 | Yes |
 | GUIDE-02 | 22 | Yes |
 | GUIDE-03 | 22 | Yes |
+| AUDIT-P1 | 22.1 | Yes |
+| AUDIT-P2 | 22.1 | Yes |
+| AUDIT-P3 | 22.1 | Yes |
+| AUDIT-P4 | 22.1 | Yes |
+| AUDIT-P5 | 22.1 | Yes |
+| AUDIT-P6 | 22.1 | Yes |
+| AUDIT-P7 | 22.1 | Yes |
+| AUDIT-P8a | 22.1 | Yes |
+| AUDIT-P8b | 22.1 | Yes |
 | HOME-01 | 23 | Yes |
 | HOME-02 | 23 | Yes |
 | HOME-03 | 23 | Yes |
@@ -208,7 +232,7 @@ Plans:
 | DD-01 | 25 | Yes |
 | DEPLOY-01 | 26 | Yes |
 
-**Coverage:** 43/43 requirements mapped (100%)
+**Coverage:** 52/52 requirements mapped (100%)
 
 ---
 *Roadmap created: 2026-03-23*
