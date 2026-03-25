@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 22.1-05-PLAN.md
-last_updated: "2026-03-25T20:36:01.501Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 22.1-03-PLAN.md
+last_updated: "2026-03-25T20:44:46.824Z"
 progress:
   total_phases: 9
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # Project State
@@ -88,6 +88,7 @@ Recent decisions affecting current work:
 - [Phase 22.1]: formatThreshold uses strict union type for scenario with safe runtime fallback (no | string)
 - [Phase 22.1]: Test 1 adjusted from plan: mu_L=0.05/L_hat=0.10 for >5% truncation effect (posterior near L_max)
 - [Phase 22.1]: Warning merging uses CalculationWarning.code as dedup key (sufficient for existing warning taxonomy)
+- [Phase 22.1]: Legacy CoD computation fully removed (not deprecated) per audit P7: stale math using raw prior mean
 
 ### Pending Todos
 
@@ -104,8 +105,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:36:01.498Z
-Stopped at: Completed 22.1-05-PLAN.md
+Last session: 2026-03-25T20:44:46.821Z
+Stopped at: Completed 22.1-03-PLAN.md
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference
