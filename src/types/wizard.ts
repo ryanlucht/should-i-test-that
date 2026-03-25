@@ -157,6 +157,9 @@ export interface WizardState {
   // Navigation (not persisted)
   currentSection: number;
   completedSections: number[];
+
+  // Guide state (persisted in sessionStorage via Zustand — D-06)
+  guideEnabled: boolean; // Per D-06: defaults ON for new sessions
 }
 
 /**
@@ -165,6 +168,9 @@ export interface WizardState {
 export interface WizardActions {
   /** Set the calculator mode (basic/advanced) - clears advanced inputs when switching to basic */
   setMode: (mode: Mode) => void;
+
+  /** Enable or disable the Learning Bits guide dialogue (D-06) */
+  setGuideEnabled: (enabled: boolean) => void;
 
   /** Update a shared input value */
   setSharedInput: <K extends keyof SharedInputs>(

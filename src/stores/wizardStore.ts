@@ -52,6 +52,7 @@ export const useWizardStore = create<WizardStore>()(
       inputs: initialInputs,
       currentSection: 0,
       completedSections: [],
+      guideEnabled: true, // Default ON for new sessions (D-06)
 
       /**
        * Set the calculator mode
@@ -248,6 +249,14 @@ export const useWizardStore = create<WizardStore>()(
       },
 
       /**
+       * Enable or disable the Learning Bits guide dialogue
+       * Persisted in sessionStorage via Zustand partialize (D-06)
+       */
+      setGuideEnabled: (enabled: boolean) => {
+        set({ guideEnabled: enabled });
+      },
+
+      /**
        * Reset all wizard state to initial values
        * Used when user wants to start over
        */
@@ -264,6 +273,7 @@ export const useWizardStore = create<WizardStore>()(
           inputs: initialInputs,
           currentSection: 0,
           completedSections: [],
+          guideEnabled: true, // Reset guide to default ON (D-06)
         });
       },
     }),
@@ -271,14 +281,43 @@ export const useWizardStore = create<WizardStore>()(
       name: 'wizard-storage',
       storage: createJSONStorage(() => sessionStorage),
       /**
-       * Only persist inputs and mode to sessionStorage
+       * Only persist inputs, mode, and guideEnabled to sessionStorage.
        * Navigation state (currentSection, completedSections) is not persisted
-       * so users start fresh on page refresh but keep their input values
+       * so users start fresh on page refresh but keep their input values.
+       * guideEnabled is persisted so dismissal state survives page navigation
+       * within a session (D-06).
        */
       partialize: (state) => ({
         inputs: state.inputs,
         mode: state.mode,
+        guideEnabled: state.guideEnabled,
       }),
+      /**
+       * Sanitize persisted state and handle top-level fields (guideEnabled).
+       * Old sessionStorage snapshots that lack guideEnabled default to true (new session = guidance ON).
+       */
+      merge: (persistedState: unknown, currentState: WizardStore): WizardStore => {
+        const persisted = persistedState as Partial<Pick<WizardStore, 'inputs' | 'mode' | 'guideEnabled'>> | undefined;
+        if (!persisted) return currentState;
+
+        // Restore inputs if present (use currentState as base to preserve any new fields)
+        const restoredInputs = persisted.inputs
+          ? {
+              shared: { ...currentState.inputs.shared, ...persisted.inputs.shared },
+              advanced: { ...currentState.inputs.advanced, ...persisted.inputs.advanced },
+            }
+          : currentState.inputs;
+
+        // guideEnabled: default true if not in snapshot (new session gets guidance ON — D-06)
+        const guideEnabled = persisted.guideEnabled ?? true;
+
+        return {
+          ...currentState,
+          inputs: restoredInputs,
+          mode: persisted.mode ?? currentState.mode,
+          guideEnabled,
+        };
+      },
     }
   )
 );
