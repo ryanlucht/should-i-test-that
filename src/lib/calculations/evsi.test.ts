@@ -2072,3 +2072,136 @@ describe('Worker truncation routing for Normal priors', () => {
     expect(TRUNCATION_THRESHOLD + 1e-10 <= TRUNCATION_THRESHOLD).toBe(false);
   });
 });
+
+// ===========================================
+// Truncated-Normal posterior mean (audit Priority 3)
+// ===========================================
+// When a Normal prior has material feasibility truncation, the posterior
+// mean must use the truncated-Normal formula instead of the standard
+// conjugate update. This ensures the posterior respects L in [L_min, L_max].
+describe('Truncated-Normal posterior mean (audit P3)', () => {
+  it('Test 1: truncated posterior differs from untruncated by >5% for high-CR0', () => {
+    // CR0 = 0.90 => L_max = 1/0.90 - 1 = 0.1111
+    // Prior: Normal(0.05, 0.10) has material mass outside [-1, 0.1111]
+    // L_hat = 0.10, SE = 0.03
+    //
+    // Untruncated conjugate:
+    //   w = sigma_prior^2 / (sigma_prior^2 + SE^2)
+    //     = 0.01 / (0.01 + 0.0009) = 0.01/0.0109 = 0.9174
+    //   posteriorMean_untrunc = 0.9174 * 0.10 + 0.0826 * 0.05 = 0.09587
+    //
+    // The posterior mean (0.09587) is only ~0.53 sigma from L_max (0.1111),
+    // so truncation pulls the mean substantially inward (~14.8% difference).
+    const prior: PriorDistribution = { type: 'normal', mu_L: 0.05, sigma_L: 0.10 };
+    const CR0 = 0.90;
+    const L_hat = 0.10;
+    const SE = 0.03;
+
+    const truncatedResult = computePosteriorMean(L_hat, SE, prior, CR0);
+
+    // Untruncated conjugate mean
+    const sigma_prior = 0.10;
+    const prior_var = sigma_prior * sigma_prior;
+    const data_var = SE * SE;
+    const w = prior_var / (prior_var + data_var);
+    const untruncatedMean = w * L_hat + (1 - w) * 0.05;
+
+    const relativeDiff = Math.abs(truncatedResult - untruncatedMean) / Math.abs(untruncatedMean);
+    expect(relativeDiff).toBeGreaterThan(0.05);
+  });
+
+  it('Test 2: untruncated regime unchanged for low-CR0', () => {
+    // CR0 = 0.05 => L_max = 1/0.05 - 1 = 19.0
+    // Prior: Normal(0, 0.05) has negligible mass outside [-1, 19]
+    // Standard conjugate formula should be used (no truncation).
+    //
+    // w = 0.0025 / (0.0025 + 0.0001) = 0.0025/0.0026 = 0.9615
+    // posteriorMean = 0.9615 * 0.02 + 0.0385 * 0 = 0.01923
+    const prior: PriorDistribution = { type: 'normal', mu_L: 0, sigma_L: 0.05 };
+    const CR0 = 0.05;
+    const L_hat = 0.02;
+    const SE = 0.01;
+
+    const result = computePosteriorMean(L_hat, SE, prior, CR0);
+
+    // Standard conjugate formula
+    const sigma_prior = 0.05;
+    const prior_var = sigma_prior * sigma_prior; // 0.0025
+    const data_var = SE * SE; // 0.0001
+    const w = prior_var / (prior_var + data_var);
+    const expectedMean = w * L_hat + (1 - w) * 0;
+
+    expect(result).toBeCloseTo(expectedMean, 10);
+  });
+
+  it('Test 3: truncated posterior is within feasibility bounds', () => {
+    // Same high-CR0 case as Test 1
+    // The returned value must be within [L_min, L_max] = [-1, 0.1111]
+    const prior: PriorDistribution = { type: 'normal', mu_L: 0, sigma_L: 0.10 };
+    const CR0 = 0.90;
+    const L_hat = 0.05;
+    const SE = 0.03;
+
+    const L_min = -1;
+    const L_max = 1 / CR0 - 1; // 0.1111
+
+    const result = computePosteriorMean(L_hat, SE, prior, CR0);
+
+    expect(result).toBeGreaterThanOrEqual(L_min);
+    expect(result).toBeLessThanOrEqual(L_max);
+  });
+
+  it('Test 4: posteriorSigma formula verification against known analytic case', () => {
+    // Verifies the posteriorVariance formula used in the truncation branch:
+    //   posteriorVariance = 1 / (1/sigma_prior^2 + 1/SE^2)
+    //
+    // For sigma_prior = 0.10, SE = 0.03:
+    //   prior_variance = 0.10^2 = 0.01
+    //   data_variance  = 0.03^2 = 0.0009
+    //   posteriorVariance = 1 / (1/0.01 + 1/0.0009) = 1 / (100 + 1111.111) = 1/1211.111 = 0.0008259
+    //   posteriorSigma = sqrt(0.0008259) = 0.02874
+    //
+    // We verify INDIRECTLY: compute the expected truncated posterior mean manually
+    // using the known posteriorSigma, then assert computePosteriorMean matches.
+    // If the internal posteriorVariance formula were wrong, the truncated mean would differ.
+
+    const prior: PriorDistribution = { type: 'normal', mu_L: 0, sigma_L: 0.10 };
+    const CR0 = 0.90;
+    const L_hat = 0.05;
+    const SE = 0.03;
+
+    // Known analytic values
+    const sigma_prior = 0.10;
+    const prior_variance = sigma_prior * sigma_prior; // 0.01
+    const data_variance = SE * SE;                     // 0.0009
+    const w = prior_variance / (prior_variance + data_variance);
+    const untruncatedPosteriorMean = w * L_hat + (1 - w) * 0; // 0.04587
+
+    // posteriorVariance = 1 / (1/sigma_prior^2 + 1/SE^2) -- standard Bayesian Normal-Normal conjugate
+    const posteriorVariance = 1 / (1 / prior_variance + 1 / data_variance);
+    const posteriorSigma = Math.sqrt(posteriorVariance);
+
+    // Verify posteriorSigma matches known value
+    expect(posteriorSigma).toBeCloseTo(0.02874, 4);
+
+    // Feasibility bounds
+    const L_min = -1;
+    const L_max = 1 / CR0 - 1; // 0.1111
+
+    // Expected truncated posterior mean (using the already-exported function)
+    const expectedTruncatedMean = truncatedNormalMeanTwoSided(
+      untruncatedPosteriorMean,
+      posteriorSigma,
+      L_min,
+      L_max
+    );
+
+    // Actual result from computePosteriorMean
+    const actual = computePosteriorMean(L_hat, SE, prior, CR0);
+
+    // These must match within floating-point tolerance (1e-10)
+    // If the internal posteriorVariance formula were wrong, posteriorSigma would differ,
+    // and the truncated mean would not match.
+    expect(actual).toBeCloseTo(expectedTruncatedMean, 10);
+  });
+});

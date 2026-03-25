@@ -334,22 +334,61 @@ export function computePosteriorMean(
     const sigma_prior = prior.sigma_L!;
     const mu_prior = prior.mu_L!;
 
-    // Shrinkage weight: w = prior_variance / (prior_variance + data_variance)
-    // This determines how much to trust the data (L_hat) vs the prior
-    const prior_variance = sigma_prior * sigma_prior;
-    const data_variance = SE * SE;
-
     // Handle edge case: sigma_prior = 0 (point mass prior)
-    // w = 0 / (0 + SE^2) = 0, so posterior mean = mu_prior
-    if (prior_variance === 0) {
+    if (sigma_prior === 0) {
       return mu_prior;
     }
 
+    // --- Normal-Normal conjugate posterior (standard Bayesian update) ---
+    // Prior: L ~ Normal(mu_prior, sigma_prior^2)
+    // Likelihood: L_hat | L ~ Normal(L, SE^2)
+    // Posterior: L | L_hat ~ Normal(posteriorMean, posteriorVariance)
+    //
+    // posteriorVariance = 1 / (1/sigma_prior^2 + 1/SE^2)
+    //   This is the precision-weighted (inverse-variance) combination.
+    //   More informative data (smaller SE) pulls the posterior tighter.
+    //
+    // posteriorMean = w * L_hat + (1 - w) * mu_prior
+    //   where w = sigma_prior^2 / (sigma_prior^2 + SE^2)
+    //   is the data weight (proportion of posterior precision from data).
+    const prior_variance = sigma_prior * sigma_prior;
+    const data_variance = SE * SE;
     const w = prior_variance / (prior_variance + data_variance);
+    const untruncatedPosteriorMean = w * L_hat + (1 - w) * mu_prior;
 
-    // Posterior mean: weighted average of data and prior mean
-    // E[L|L_hat] = w * L_hat + (1-w) * mu_prior
-    return w * L_hat + (1 - w) * mu_prior;
+    // Per audit Priority 3: When feasibility truncation is material,
+    // the untruncated conjugate posterior mean is biased because it ignores
+    // the constraint L in [L_min, L_max]. Apply the truncated-Normal mean
+    // formula to the posterior distribution.
+    //
+    // Posterior ~ Normal(untruncatedPosteriorMean, posteriorVariance)
+    // Truncated to [L_min, L_max] where:
+    //   L_min = -1 (CR1 >= 0)
+    //   L_max = 1/CR0 - 1 (CR1 <= 1)
+    //
+    // posteriorVariance = 1 / (1/sigma_prior^2 + 1/SE^2)
+    //   This is the standard Normal-Normal conjugate posterior variance.
+    //   It does NOT depend on the data L_hat -- only on the prior and
+    //   likelihood precisions.
+    //
+    // E[L | data, L in [a,b]] = truncatedNormalMeanTwoSided(mu_post, sigma_post, a, b)
+    const infeasibleMass = computeInfeasibleTailMass(prior, CR0);
+    if (infeasibleMass > TRUNCATION_THRESHOLD) {
+      const { L_min, L_max } = liftFeasibilityBounds(CR0);
+      // Posterior standard deviation from conjugate posterior variance
+      const posteriorVariance = 1 / (1 / prior_variance + 1 / data_variance);
+      const posteriorSigma = Math.sqrt(posteriorVariance);
+      // Apply two-sided truncated-Normal mean formula
+      // truncatedNormalMeanTwoSided(mu, sigma, a, b) already exists in this file
+      return truncatedNormalMeanTwoSided(
+        untruncatedPosteriorMean,
+        posteriorSigma,
+        L_min,
+        L_max
+      );
+    }
+
+    return untruncatedPosteriorMean;
   }
 
   // ===========================================
