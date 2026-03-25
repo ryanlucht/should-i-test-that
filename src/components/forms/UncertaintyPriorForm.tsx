@@ -36,11 +36,10 @@ import {
   priorSelectionSchema,
   type PriorSelectionFormData,
 } from '@/lib/validation';
-import { DEFAULT_INTERVAL, computePriorFromInterval } from '@/lib/prior';
+import { DEFAULT_INTERVAL, computePriorFromInterval, buildPriorFromInputs } from '@/lib/prior';
 import { useWizardStore } from '@/stores/wizardStore';
 import { deriveK } from '@/lib/calculations';
 import { PriorDistributionChart } from '@/components/charts';
-import type { PriorDistribution } from '@/lib/calculations';
 import { PriorShapeForm, type PriorShapeFormHandle } from './PriorShapeForm';
 import { InfoTooltip } from './inputs/InfoTooltip';
 import { Input } from '@/components/ui/input';
@@ -96,58 +95,6 @@ function getAsymmetryMessage(impliedMeanPercent: number): string | null {
     } else {
       return "You're encoding a slight concern that this might hurt.";
     }
-  }
-}
-
-/**
- * Build a PriorDistribution object based on the selected shape
- *
- * Used to provide the chart with the full prior specification.
- *
- * @param shape - Selected prior shape ('normal', 'student-t', 'uniform')
- * @param normalParams - Normal distribution parameters (mu_L, sigma_L)
- * @param studentTDf - Degrees of freedom for Student-t (3, 5, or 10)
- * @param intervalLow - Low bound of 90% interval (percentage, e.g., -8.22)
- * @param intervalHigh - High bound of 90% interval (percentage, e.g., 8.22)
- */
-function buildPriorDistribution(
-  shape: 'normal' | 'student-t' | 'uniform',
-  normalParams: { mu_L: number; sigma_L: number },
-  studentTDf: 3 | 5 | 10 | null,
-  intervalLow: number | null,
-  intervalHigh: number | null
-): PriorDistribution {
-  switch (shape) {
-    case 'normal':
-      return {
-        type: 'normal',
-        mu_L: normalParams.mu_L,
-        sigma_L: normalParams.sigma_L,
-      };
-
-    case 'student-t':
-      return {
-        type: 'student-t',
-        mu_L: normalParams.mu_L,
-        sigma_L: normalParams.sigma_L,
-        df: studentTDf ?? 5, // Default to moderate tails
-      };
-
-    case 'uniform':
-      // Uniform uses interval bounds directly (convert percentage to decimal)
-      return {
-        type: 'uniform',
-        low_L: (intervalLow ?? DEFAULT_INTERVAL.low) / 100,
-        high_L: (intervalHigh ?? DEFAULT_INTERVAL.high) / 100,
-      };
-
-    default:
-      // Fallback to Normal
-      return {
-        type: 'normal',
-        mu_L: normalParams.mu_L,
-        sigma_L: normalParams.sigma_L,
-      };
   }
 }
 
@@ -663,15 +610,14 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle, Uncer
               <p className="text-sm font-medium text-foreground">
                 Your belief distribution:
               </p>
-                  {/* Chart reflects selected prior shape */}
+                  {/* Chart reflects selected prior shape via centralized buildPriorFromInputs */}
                   <PriorDistributionChart
-                    prior={buildPriorDistribution(
-                      inputs.priorShape ?? 'normal',
-                      priorParams,
-                      inputs.studentTDf,
-                      inputs.priorIntervalLow,
-                      inputs.priorIntervalHigh
-                    )}
+                    prior={buildPriorFromInputs({
+                      priorShape: inputs.priorShape ?? 'normal',
+                      studentTDf: inputs.studentTDf ?? undefined,
+                      intervalLowPercent: inputs.priorIntervalLow,
+                      intervalHighPercent: inputs.priorIntervalHigh,
+                    })}
                     threshold_L={computedThreshold_L}
                     K={K}
                   />

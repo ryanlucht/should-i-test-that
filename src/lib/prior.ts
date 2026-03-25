@@ -7,12 +7,18 @@
  * Key formulas (from SPEC.md Section 6.2):
  *   Normal:    sigma_L = (L_high - L_low) / (2 * z_0.95)
  *   Student-t: scale_t = (L_high - L_low) / (2 * t_inv(0.95, df))  [ENG-01]
+ *   Uniform:   low_L = L_low / 100, high_L = L_high / 100
  *
  * Where z_0.95 = 1.6448536 (95th percentile of standard normal)
  * and t_inv(0.95, df) is the 95th percentile of the Student-t distribution
+ *
+ * SINGLE SOURCE OF TRUTH: buildPriorFromInputs() is the only function
+ * that constructs PriorDistribution objects from user inputs. All call
+ * sites (hook, form preview, results export) must use this helper.
  */
 
 import jStat from 'jstat';
+import type { PriorDistribution } from './calculations/types';
 
 /**
  * z-score for 95th percentile of standard normal distribution
@@ -177,4 +183,61 @@ export function computeStudentTPriorScale(
   const sigma_L = (L_high - L_low) / (2 * t_95);
 
   return { mu_L, sigma_L };
+}
+
+/**
+ * Build a PriorDistribution from user inputs.
+ *
+ * SINGLE SOURCE OF TRUTH for prior construction.
+ * All call sites (useEVSICalculations hook, UncertaintyPriorForm preview,
+ * AdvancedResultsSection export) MUST use this function to avoid
+ * duplicated logic and calibration bugs (e.g., the Student-t double-division bug).
+ *
+ * INPUT CONVENTION: intervalLowPercent and intervalHighPercent are PERCENTAGE values
+ * as entered by the user (e.g., -8.22 for -8.22%). This function handles the
+ * conversion to decimal internally. Do NOT pre-divide by 100.
+ *
+ * @param params.priorShape - Selected distribution shape
+ * @param params.studentTDf - Degrees of freedom (required for 'student-t')
+ * @param params.intervalLowPercent - Lower bound of 90% interval in percentage (null -> DEFAULT_INTERVAL.low)
+ * @param params.intervalHighPercent - Upper bound of 90% interval in percentage (null -> DEFAULT_INTERVAL.high)
+ * @returns PriorDistribution ready for use in EVSI calculations
+ */
+export function buildPriorFromInputs(params: {
+  priorShape: 'normal' | 'student-t' | 'uniform';
+  studentTDf?: number;
+  intervalLowPercent: number | null;
+  intervalHighPercent: number | null;
+}): PriorDistribution {
+  // Apply default interval fallback for null inputs
+  // This matches the existing behavior in all 3 call sites
+  const low = params.intervalLowPercent ?? DEFAULT_INTERVAL.low;
+  const high = params.intervalHighPercent ?? DEFAULT_INTERVAL.high;
+
+  switch (params.priorShape) {
+    case 'normal': {
+      // Normal prior: use z_0.95 calibration via computePriorFromInterval
+      // computePriorFromInterval accepts PERCENTAGE values and divides by 100 internally
+      const { mu_L, sigma_L } = computePriorFromInterval(low, high);
+      return { type: 'normal', mu_L, sigma_L };
+    }
+
+    case 'student-t': {
+      // Student-t prior: use t_inv(0.95, df) calibration via computeStudentTPriorScale
+      // CRITICAL: This is the fix for the double-division bug (Priority 1).
+      // Previously, all 3 call sites used normalParams.sigma_L (z_0.95 calibration)
+      // instead of t-calibrated scale, producing incorrect sigma_L values.
+      const df = params.studentTDf ?? 5;
+      const { mu_L, sigma_L } = computeStudentTPriorScale(low, high, df);
+      return { type: 'student-t', mu_L, sigma_L, df };
+    }
+
+    case 'uniform': {
+      // Uniform prior: convert percentage bounds to decimal directly
+      // No calibration needed -- the interval IS the distribution
+      const low_L = low / 100;
+      const high_L = high / 100;
+      return { type: 'uniform', low_L, high_L };
+    }
+  }
 }

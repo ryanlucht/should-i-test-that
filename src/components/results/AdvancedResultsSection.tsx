@@ -27,73 +27,26 @@ import {
   formatPercentage,
 } from '@/lib/formatting';
 import { trackCalculationCompleted } from '@/lib/analytics';
-import { DEFAULT_INTERVAL, DEFAULT_PRIOR, computePriorFromInterval } from '@/lib/prior';
+import { buildPriorFromInputs, DEFAULT_INTERVAL } from '@/lib/prior';
 import type { PriorDistribution } from '@/lib/calculations/types';
 
 export function ResultsSection() {
   const { loading, results } = useEVSICalculations();
   const inputs = useWizardStore((state) => state.inputs);
 
-  // Build prior distribution for export (mirrors useEVSICalculations logic)
-  // Must be before early return to satisfy React hooks rules
+  // Build prior distribution for export
+  // Uses centralized buildPriorFromInputs to ensure consistent calibration
+  // with useEVSICalculations hook (Student-t uses t-quantile, not z_0.95).
+  // Must be before early return to satisfy React hooks rules.
   const prior: PriorDistribution = useMemo(() => {
-    const isDefaultPrior =
-      inputs.priorIntervalLow !== null &&
-      inputs.priorIntervalHigh !== null &&
-      Math.abs(inputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(inputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
-
-    const normalParams =
-      isDefaultPrior ||
-      inputs.priorIntervalLow === null ||
-      inputs.priorIntervalHigh === null
-        ? DEFAULT_PRIOR
-        : computePriorFromInterval(
-            inputs.priorIntervalLow,
-            inputs.priorIntervalHigh
-          );
-
-    const shape = inputs.priorShape ?? 'normal';
-
-    switch (shape) {
-      case 'normal':
-        return {
-          type: 'normal' as const,
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-
-      case 'student-t':
-        return {
-          type: 'student-t' as const,
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-          df: inputs.studentTDf ?? 5,
-        };
-
-      case 'uniform': {
-        const lowBound =
-          inputs.priorIntervalLow !== null
-            ? inputs.priorIntervalLow / 100
-            : DEFAULT_INTERVAL.low / 100;
-        const highBound =
-          inputs.priorIntervalHigh !== null
-            ? inputs.priorIntervalHigh / 100
-            : DEFAULT_INTERVAL.high / 100;
-        return {
-          type: 'uniform' as const,
-          low_L: lowBound,
-          high_L: highBound,
-        };
-      }
-
-      default:
-        return {
-          type: 'normal' as const,
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-    }
+    // Uses centralized buildPriorFromInputs to ensure consistent calibration
+    // with useEVSICalculations hook (Student-t uses t-quantile, not z_0.95).
+    return buildPriorFromInputs({
+      priorShape: inputs.priorShape ?? 'normal',
+      studentTDf: inputs.studentTDf ?? undefined,
+      intervalLowPercent: inputs.priorIntervalLow,
+      intervalHighPercent: inputs.priorIntervalHigh,
+    });
   }, [
     inputs.priorIntervalLow,
     inputs.priorIntervalHigh,

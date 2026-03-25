@@ -28,7 +28,7 @@ import {
 } from '@/lib/calculations';
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from '@/lib/calculations/feasibility';
-import { computePriorFromInterval, computeStudentTPriorScale, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
+import { buildPriorFromInputs } from '@/lib/prior';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
 
 /**
@@ -186,73 +186,15 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // ===========================================
     // Step 2: Build prior distribution
     // ===========================================
-    let prior: PriorDistribution;
-
-    // Determine prior parameters from interval
-    const isDefaultPrior =
-      inputs.priorIntervalLow !== null &&
-      inputs.priorIntervalHigh !== null &&
-      Math.abs(inputs.priorIntervalLow - DEFAULT_INTERVAL.low) < 0.01 &&
-      Math.abs(inputs.priorIntervalHigh - DEFAULT_INTERVAL.high) < 0.01;
-
-    // Get Normal parameters (used for Normal and Student-t)
-    const normalParams =
-      isDefaultPrior || inputs.priorIntervalLow === null || inputs.priorIntervalHigh === null
-        ? DEFAULT_PRIOR
-        : computePriorFromInterval(inputs.priorIntervalLow, inputs.priorIntervalHigh);
-
-    switch (inputs.priorShape) {
-      case 'normal':
-        prior = {
-          type: 'normal',
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-        break;
-
-      case 'student-t': {
-        // Student-t uses t-quantile calibrated scale to preserve user's 90% interval (ENG-01)
-        const df = inputs.studentTDf!;
-        const tParams = computeStudentTPriorScale(
-          inputs.priorIntervalLow !== null ? inputs.priorIntervalLow / 100 : DEFAULT_INTERVAL.low / 100,
-          inputs.priorIntervalHigh !== null ? inputs.priorIntervalHigh / 100 : DEFAULT_INTERVAL.high / 100,
-          df
-        );
-        prior = {
-          type: 'student-t',
-          mu_L: tParams.mu_L,
-          sigma_L: tParams.sigma_L,
-          df,
-        };
-        break;
-      }
-
-      case 'uniform': {
-        // Uniform uses the interval bounds directly
-        // Convert from percentage to decimal
-        const lowBound = inputs.priorIntervalLow !== null
-          ? inputs.priorIntervalLow / 100
-          : DEFAULT_INTERVAL.low / 100;
-        const highBound = inputs.priorIntervalHigh !== null
-          ? inputs.priorIntervalHigh / 100
-          : DEFAULT_INTERVAL.high / 100;
-        prior = {
-          type: 'uniform',
-          low_L: lowBound,
-          high_L: highBound,
-        };
-        break;
-      }
-
-      default:
-        // Fallback to Normal if somehow an unknown shape is passed
-        // This shouldn't happen if types are correct, but provides safety
-        prior = {
-          type: 'normal',
-          mu_L: normalParams.mu_L,
-          sigma_L: normalParams.sigma_L,
-        };
-    }
+    // Uses centralized buildPriorFromInputs to ensure consistent calibration
+    // across all call sites (hook, form preview, results export).
+    // Student-t uses t-quantile calibration, not Normal z_0.95.
+    const prior = buildPriorFromInputs({
+      priorShape: inputs.priorShape,
+      studentTDf: inputs.studentTDf ?? undefined,
+      intervalLowPercent: inputs.priorIntervalLow,
+      intervalHighPercent: inputs.priorIntervalHigh,
+    });
 
     // ===========================================
     // Step 3: Calculate K and threshold
