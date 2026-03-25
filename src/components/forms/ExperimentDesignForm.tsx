@@ -16,7 +16,7 @@
  * - Continue button always enabled; clicking with invalid inputs shows errors
  */
 
-import { useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useCallback, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -37,13 +37,24 @@ export interface ExperimentDesignFormHandle {
 }
 
 /**
+ * Callback props for Learning Bits guide integration (Phase 22).
+ */
+interface ExperimentDesignFormProps {
+  /** Fires when user opens the advanced timing accordion (triggers guide M7) */
+  onAdvancedTimingOpen?: () => void;
+}
+
+/**
  * Experiment design form with test parameters and validation on blur
  */
-export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
-  function ExperimentDesignForm(_props, ref) {
+export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, ExperimentDesignFormProps>(
+  function ExperimentDesignForm({ onAdvancedTimingOpen }, ref) {
     // Get store values and setters
     const inputs = useWizardStore((state) => state.inputs);
     const setInput = useWizardStore((state) => state.setInput);
+
+    // Accordion state for advanced timing section (D-10 — default closed)
+    const [advancedTimingOpen, setAdvancedTimingOpen] = useState(false);
 
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<ExperimentDesignFormData>({
@@ -213,25 +224,38 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle>(
             />
           </div>
 
-          {/* Latency fields - visually de-emphasized */}
-          <div className="space-y-4 pt-4 border-t border-border/50">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">
-              Advanced timing (optional)
-            </p>
+          {/* Advanced timing accordion (D-10) — default closed */}
+          <div className="pt-4 border-t border-border/50 space-y-4">
+            <button
+              type="button"
+              aria-expanded={advancedTimingOpen}
+              aria-controls="advanced-timing-content"
+              onClick={() => {
+                const willOpen = !advancedTimingOpen;
+                setAdvancedTimingOpen(willOpen);
+                if (willOpen) onAdvancedTimingOpen?.();
+              }}
+              className="text-sm font-medium text-primary underline cursor-pointer"
+            >
+              I want to consider time lag of metrics or decision-making
+            </button>
 
-            {/* conversionLatencyDays removed (ENG-07) — users should factor maturation into decisionLatencyDays */}
-
-            {/* Decision Latency (default 0, de-emphasized, tooltip only) */}
-            <div className="opacity-75">
-              <NumberInput
-                name="decisionLatencyDays"
-                label="Decision latency"
-                placeholder="0"
-                tooltip="Time needed for analysis, review, and deployment after the test concludes."
-                error={errors.decisionLatencyDays?.message}
-                suffix="days"
-              />
-            </div>
+            {advancedTimingOpen && (
+              <div id="advanced-timing-content" className="space-y-4">
+                {/* conversionLatencyDays removed (ENG-07) — users should factor maturation into decisionLatencyDays */}
+                {/* Decision Latency (default 0, de-emphasized, tooltip only) */}
+                <div className="opacity-75">
+                  <NumberInput
+                    name="decisionLatencyDays"
+                    label="Decision latency"
+                    placeholder="0"
+                    tooltip="Time needed for analysis, review, and deployment after the test concludes."
+                    error={errors.decisionLatencyDays?.message}
+                    suffix="days"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </form>
       </FormProvider>

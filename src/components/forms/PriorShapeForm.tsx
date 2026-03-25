@@ -50,6 +50,8 @@ export interface PriorShapeFormHandle {
 interface PriorShapeFormProps {
   /** Callback to fill recommended default values (triggers parent's handleUseDefault) */
   onUseDefaultPrior?: () => void;
+  /** Fires when user clicks a shape option (re-triggers guide M3 per D-12) */
+  onShapeOptionClick?: () => void;
 }
 
 /**
@@ -148,7 +150,7 @@ function DfPresetSelector({
  * Prior shape selector with radio cards
  */
 export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormProps>(
-  function PriorShapeForm({ onUseDefaultPrior }, ref) {
+  function PriorShapeForm({ onUseDefaultPrior, onShapeOptionClick }, ref) {
     // Get store values and setters
     const inputs = useWizardStore((state) => state.inputs);
     const setInput = useWizardStore((state) => state.setInput);
@@ -175,7 +177,8 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
     const selectedDf = watch('df') as StudentTDf | undefined;
 
     /**
-     * Handle shape change - update store and reset df when switching away from Student-t
+     * Handle shape change - update store and reset df when switching away from Student-t.
+     * Also fires onShapeOptionClick to re-trigger guide M3 per D-12.
      */
     const handleShapeChange = useCallback(
       (newShape: string) => {
@@ -196,8 +199,11 @@ export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormPro
             setInput('studentTDf', 5);
           }
         }
+
+        // Re-trigger guide M3 on any shape option click (D-12: re-triggerable)
+        onShapeOptionClick?.();
       },
-      [setValue, setInput, inputs.studentTDf]
+      [setValue, setInput, inputs.studentTDf, onShapeOptionClick]
     );
 
     /**

@@ -56,6 +56,17 @@ export interface UncertaintyPriorFormHandle {
 }
 
 /**
+ * Callback props for Learning Bits guide integration (Phase 22).
+ * These fire trigger events that advance the dialogue to the correct message.
+ */
+interface UncertaintyPriorFormProps {
+  /** Fires when user opens the prior shape accordion (triggers guide M3) */
+  onPriorShapeAccordionOpen?: () => void;
+  /** Fires when user focuses lower or upper bound inputs (triggers guide M4) */
+  onPriorBoundFocus?: () => void;
+}
+
+/**
  * Get the asymmetry explanation message based on implied mean
  * Per CONTEXT.md: Show message when |mean| > 0.5 (percentage points)
  */
@@ -143,14 +154,17 @@ function buildPriorDistribution(
 /**
  * Uncertainty prior form with default/custom selection and interval inputs
  */
-export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
-  function UncertaintyPriorForm(_props, ref) {
+export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle, UncertaintyPriorFormProps>(
+  function UncertaintyPriorForm({ onPriorShapeAccordionOpen, onPriorBoundFocus }, ref) {
     // Get store values and setters
     const inputs = useWizardStore((state) => state.inputs);
     const setInput = useWizardStore((state) => state.setInput);
 
     // Ref for PriorShapeForm validation
     const priorShapeFormRef = useRef<PriorShapeFormHandle>(null);
+
+    // Accordion state for prior shape section (D-08 — default closed)
+    const [priorShapeOpen, setPriorShapeOpen] = useState(false);
 
     // Check if Uniform prior is selected
     const isUniformPrior = inputs.priorShape === 'uniform';
@@ -235,6 +249,21 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
 
     // Get asymmetry message
     const asymmetryMessage = getAsymmetryMessage(impliedMeanPercent);
+
+    // Highlight pulse for implied expected lift when prior is off-center (D-09).
+    // Uses a key counter to force DOM remount only on false→true transitions,
+    // ensuring the CSS animation replays each time the threshold is crossed.
+    // Threshold: |impliedMeanPercent| > 1 (more than 1% off-center)
+    const [pulseKey, setPulseKey] = useState(0);
+    const prevShouldHighlight = useRef(false);
+    const shouldHighlight = Math.abs(impliedMeanPercent) > 1;
+
+    useEffect(() => {
+      if (shouldHighlight && !prevShouldHighlight.current) {
+        setPulseKey((k) => k + 1); // Force remount for animation replay
+      }
+      prevShouldHighlight.current = shouldHighlight;
+    }, [shouldHighlight]);
 
     /**
      * Handle successful form submission - store values in Zustand
@@ -334,21 +363,43 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
     return (
       <FormProvider {...methods}>
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-          {/* Section intro */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <p className="text-foreground font-medium">
-                What shape describes your uncertainty?
-              </p>
-              <InfoTooltip content="A 'prior' is your belief about the effect before running a test. A wider range means more uncertainty." />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Choose a distribution shape, then specify your 90% interval.
-            </p>
-          </div>
+          {/* Prior shape accordion toggle (D-08) — default closed */}
+          <div className="space-y-4">
+            <button
+              type="button"
+              aria-expanded={priorShapeOpen}
+              aria-controls="prior-shape-content"
+              onClick={() => {
+                const willOpen = !priorShapeOpen;
+                setPriorShapeOpen(willOpen);
+                if (willOpen) onPriorShapeAccordionOpen?.();
+              }}
+              className="text-sm font-medium text-primary underline cursor-pointer"
+            >
+              I want to define the shape of the prior distribution (advanced)
+            </button>
 
-          {/* Prior Shape Form */}
-          <PriorShapeForm ref={priorShapeFormRef} onUseDefaultPrior={handleUseDefault} />
+            {priorShapeOpen && (
+              <div id="prior-shape-content" className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-foreground font-medium">
+                      What shape describes your uncertainty?
+                    </p>
+                    <InfoTooltip content="A 'prior' is your belief about the effect before running a test. A wider range means more uncertainty." />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Choose a distribution shape, then specify your 90% interval.
+                  </p>
+                </div>
+                <PriorShapeForm
+                  ref={priorShapeFormRef}
+                  onUseDefaultPrior={handleUseDefault}
+                  onShapeOptionClick={onPriorShapeAccordionOpen}
+                />
+              </div>
+            )}
+          </div>
           {/* Divider between shape selector and interval inputs */}
           <div className="border-t border-border pt-6">
             <p className="text-sm font-medium text-foreground mb-4">
@@ -415,6 +466,8 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                             setIntervalLowDisplay(
                               val !== undefined && val !== null ? String(val) : ''
                             );
+                            // Fire guide trigger for M4 (bound focus event)
+                            onPriorBoundFocus?.();
                           }}
                           onBlur={() => {
                             setIntervalLowFocused(false);
@@ -491,6 +544,8 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                             setIntervalHighDisplay(
                               val !== undefined && val !== null ? String(val) : ''
                             );
+                            // Fire guide trigger for M4 (bound focus event)
+                            onPriorBoundFocus?.();
                           }}
                           onBlur={() => {
                             setIntervalHighFocused(false);
@@ -532,7 +587,16 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle>(
                 !errors.intervalLow &&
                 !errors.intervalHigh && (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
+                    {/* Highlight pulse container (D-09): wraps implied lift display.
+                        Uses key to force remount and replay animation on each false→true transition.
+                        Threshold: |impliedMeanPercent| > 1% triggers purple outline animation. */}
+                    <div
+                      key={shouldHighlight ? pulseKey : 'no-pulse'}
+                      className={cn(
+                        'flex items-center gap-2 text-sm',
+                        shouldHighlight && 'highlight-pulse-container'
+                      )}
+                    >
                       <span className="text-muted-foreground">
                         {isUniformPrior
                           ? 'Midpoint (expected value):'
