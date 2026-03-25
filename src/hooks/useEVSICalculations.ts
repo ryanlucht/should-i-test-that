@@ -29,7 +29,7 @@ import {
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from '@/lib/calculations/feasibility';
 import { buildPriorFromInputs } from '@/lib/prior';
-import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults } from '@/lib/calculations/types';
+import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults, CalculationWarning } from '@/lib/calculations/types';
 
 /**
  * Results from Cost of Delay calculation
@@ -102,6 +102,8 @@ export interface EVSICalculationResults {
     n_control: number;
     n_variant: number;
   };
+  /** Merged warnings from EVSI and net-value calculations (audit P8b) */
+  warnings: CalculationWarning[];
 }
 
 /**
@@ -435,11 +437,27 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // The integrated simulation computes timing-aware net value coherently
     const netValueDollars = netValueResults.netValueDollars;
 
+    // Merge warnings from EVSI and net-value calculations (audit Priority 8b)
+    // Dedup strategy: Use warning `code` as dedup key. Each CalculationWarning.code
+    // is already a unique identifier per warning type (e.g., 'rare_events',
+    // 'high_rejection'), so code-only dedup is sufficient and avoids over-collapsing.
+    const evsiWarnings = workerResults.warnings ?? [];
+    const netValueWarnings = netValueResults.warnings ?? [];
+    const seen = new Set<string>();
+    const mergedWarnings: CalculationWarning[] = [];
+    for (const w of [...evsiWarnings, ...netValueWarnings]) {
+      if (!seen.has(w.code)) {
+        seen.add(w.code);
+        mergedWarnings.push(w);
+      }
+    }
+
     return {
       evsi: workerResults,
       cod,
       netValueDollars,
       sampleSizes,
+      warnings: mergedWarnings,
     };
   }, [validatedInputs, workerResults, netValueResults]);
 
