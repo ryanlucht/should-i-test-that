@@ -171,6 +171,59 @@ export function formatSmartCurrency(value: number): string {
 }
 
 /**
+ * Format threshold value for display, respecting the original unit.
+ *
+ * Per audit Priority 5: threshold display must be unit-aware.
+ * Dollar thresholds render as currency ('+$10,000'), not as percentage ('+10000%').
+ * Lift thresholds render as percentage ('+2.5% lift').
+ * Any-positive scenario renders as 'Any positive impact'.
+ *
+ * Uses a strict union for scenario to ensure exhaustive handling.
+ * If an unknown scenario value is encountered at runtime (e.g., from old persisted data),
+ * a safe fallback of 'Unknown threshold' is returned instead of throwing.
+ *
+ * @param params.scenario - Threshold scenario type (strict union: 'any-positive' | 'minimum-lift' | 'accept-loss')
+ * @param params.unit - Original unit of the threshold value ('dollars' or 'lift')
+ * @param params.value - Raw threshold value (undefined for any-positive)
+ * @returns Formatted threshold string
+ */
+export function formatThreshold(params: {
+  scenario: 'any-positive' | 'minimum-lift' | 'accept-loss';
+  unit?: 'dollars' | 'lift' | null;
+  value?: number | null;
+}): string {
+  if (params.scenario === 'any-positive') {
+    return 'Any positive impact';
+  }
+
+  // Exhaustive handling for known scenarios
+  if (params.scenario !== 'minimum-lift' && params.scenario !== 'accept-loss') {
+    // Safe fallback for unexpected runtime values (e.g., old persisted data)
+    // Per Codex review: do not throw since runtime data could have old/unexpected values
+    return 'Unknown threshold';
+  }
+
+  const value = params.value ?? 0;
+
+  if (params.unit === 'dollars') {
+    // Format as currency using Intl.NumberFormat
+    const absFormatted = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Math.abs(value));
+    if (value > 0) return `+${absFormatted}`;
+    if (value < 0) return `-${absFormatted}`;
+    return absFormatted; // $0
+  }
+
+  // Default: lift percentage
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value}% lift`;
+}
+
+/**
  * Format probability as whole percentage for display
  *
  * Shows "<1%" or ">99%" for extremes to avoid misleading precision.

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { formatSmartCurrency } from './formatting';
+import { formatSmartCurrency, formatThreshold } from './formatting';
 
 describe('formatSmartCurrency', () => {
   describe('small amounts (< $1000)', () => {
@@ -131,5 +131,35 @@ describe('formatSmartCurrency', () => {
       const result = formatSmartCurrency(123.456);
       expect(result).toBe('$123');
     });
+  });
+});
+
+describe('formatThreshold', () => {
+  it('should return "Any positive impact" for any-positive scenario', () => {
+    expect(formatThreshold({ scenario: 'any-positive' })).toBe('Any positive impact');
+  });
+
+  it('should format lift threshold as percentage with sign', () => {
+    expect(formatThreshold({ scenario: 'minimum-lift', unit: 'lift', value: 2.5 })).toBe('+2.5% lift');
+  });
+
+  it('should format dollar threshold as currency with sign', () => {
+    expect(formatThreshold({ scenario: 'minimum-lift', unit: 'dollars', value: 10000 })).toBe('+$10,000');
+  });
+
+  it('should format negative dollar threshold with minus sign', () => {
+    expect(formatThreshold({ scenario: 'accept-loss', unit: 'dollars', value: -500 })).toBe('-$500');
+  });
+
+  it('should format negative lift threshold without plus sign', () => {
+    expect(formatThreshold({ scenario: 'minimum-lift', unit: 'lift', value: -1.5 })).toBe('-1.5% lift');
+  });
+
+  it('should format zero lift threshold without sign', () => {
+    expect(formatThreshold({ scenario: 'minimum-lift', unit: 'lift', value: 0 })).toBe('0% lift');
+  });
+
+  it('should format zero dollar threshold as $0', () => {
+    expect(formatThreshold({ scenario: 'minimum-lift', unit: 'dollars', value: 0 })).toBe('$0');
   });
 });
