@@ -97,8 +97,22 @@ describe('useGuideMessages', () => {
     expect(result.current.currentMessageIndex).toBe(6);
   });
 
-  it('GUIDE_MESSAGES array has exactly 7 entries', () => {
-    expect(GUIDE_MESSAGES).toHaveLength(7);
+  it('returns message index 7 when activeSection is results', () => {
+    const { result, rerender } = renderHook(
+      ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
+        useGuideMessages(section, trigger),
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+    );
+
+    act(() => {
+      rerender({ section: 'results', trigger: GuideTrigger.None });
+    });
+    expect(result.current.currentMessageIndex).toBe(7);
+    expect(result.current.currentMessage).toContain("Here's your results");
+  });
+
+  it('GUIDE_MESSAGES array has exactly 8 entries', () => {
+    expect(GUIDE_MESSAGES).toHaveLength(8);
   });
 
   it('GUIDE_MESSAGES[0] contains expected content about calculating value of running a test', () => {

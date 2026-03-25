@@ -14,8 +14,8 @@ export enum GuideTrigger {
 }
 
 /**
- * The 7 final dialogue messages for the Learning Bits guide system.
- * Source: dialogue_draft1.txt (PM final copy — D-11 confirmed).
+ * The 8 dialogue messages for the Learning Bits guide system.
+ * Source: dialogue_draft1.txt (PM final copy — D-11 confirmed), plus M8 for results.
  *
  * Message index to trigger mapping (from D-12 and UI-SPEC):
  * - [0] M1: Page load / baseline section
@@ -25,6 +25,7 @@ export enum GuideTrigger {
  * - [4] M5: Shipping Threshold section in view
  * - [5] M6: Experiment Design section focus
  * - [6] M7: Advanced timing accordion open / input focus
+ * - [7] M8: Results section (calculation complete)
  */
 export const GUIDE_MESSAGES = [
   "If we want to calculate the value of running a test, first we'll need to define the _stakes_ of the decision in question. Let's start with context - what metric could our changes affect, how many users would be exposed to the change annually, and how do we convert that metric into dollars?",
@@ -34,6 +35,7 @@ export const GUIDE_MESSAGES = [
   "Most of the time, teams will ship any change that shows likely positive impact, but that's not always the case! To calculate the value of running an experiment, we need to know what you would do in the absence of more data, and what result would be strong enough to change that decision?",
   "Finally, we need to consider how _informative_ we expect this experiment to be. Sample information is not perfect \u2013 so longer tests with more usable traffic, which usually means more precise results, makes the information from the test more valuable.",
   "Some metrics take time to mature, and teams often need extra time to analyze results and decide what to do. Both kinds of delay reduce the value of testing, because you have to wait longer to act on what you learn.",
+  "Here's your results! Click around to answer any questions you have about the calculation.",
 ] as const;
 
 /**
@@ -51,8 +53,10 @@ function sectionToMessageIndex(section: string): number | null {
       return 4;
     case 'test-design':
       return 5;
+    case 'results':
+      return 7;
     default:
-      return null; // No new message for results or unknown sections
+      return null; // No new message for unknown sections
   }
 }
 
@@ -60,9 +64,9 @@ function sectionToMessageIndex(section: string): number | null {
  * useGuideMessages
  *
  * Maps the active calculator section and user-triggered events to the
- * correct message index (0-6) in the GUIDE_MESSAGES array.
+ * correct message index (0-7) in the GUIDE_MESSAGES array.
  *
- * Scroll-based messages (M1, M2, M5, M6) advance automatically as the
+ * Scroll-based messages (M1, M2, M5, M6, M8) advance automatically as the
  * user scrolls through sections via useScrollSpy.
  *
  * Event-based messages (M3, M4, M7) are fired by callback props passed
