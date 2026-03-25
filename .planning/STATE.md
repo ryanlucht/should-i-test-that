@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-03-25T19:22:03.766Z"
+stopped_at: "Paused at Task 4 checkpoint: 22-02-PLAN.md (human-verify)"
+last_updated: "2026-03-25T19:34:01.613Z"
 progress:
   total_phases: 9
-  completed_phases: 2
-  total_plans: 15
-  completed_plans: 8
+  completed_phases: 3
+  total_plans: 16
+  completed_plans: 10
 ---
 
 # Project State
@@ -81,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 21]: ENG-16 confirmed: CostOfDelayCard removed, remaining CoDResults/calculateCostOfDelay actively used
 - [Phase 22]: guideEnabled added to v1.2 Zustand WizardState — persisted in sessionStorage via partialize/merge, defaults true per D-06
 - [Phase 22]: useTypewriter test: advance timers per-character via advanceChars(n) helper, not bulk advanceTimersByTime(n*30)
+- [Phase 22]: renderDialogueText helper processes displayed (sliced) text not full message to prevent typewriter reset on parent re-renders
+- [Phase 22]: useTypewriter matchMedia guard: typeof window.matchMedia === 'function' added for jsdom test environment compatibility
 
 ### Pending Todos
 
@@ -97,8 +99,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:22:03.763Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-03-25T19:33:57.117Z
+Stopped at: Paused at Task 4 checkpoint: 22-02-PLAN.md (human-verify)
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference

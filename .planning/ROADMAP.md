@@ -14,7 +14,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 19: Basic Mode Deprecation** - Remove EVPI calculations, dual-mode UI, and mode-switching infrastructure (completed 2026-03-24)
 - [x] **Phase 20: Engine Accuracy Fixes** - Fix Student-t calibration, feasibility/truncation, traffic semantics, negative net value, and horizon validation (completed 2026-03-24)
 - [x] **Phase 21: Engine Cleanup** - Extract shared helpers, fix comments, remove dead code, harden edge cases (completed 2026-03-24)
-- [ ] **Phase 22: Learning Bits Guide Infrastructure** - Build dialogue component, typewriter hook, toggle, and section-aware state (BLOCKED on PM content for dialogue text)
+- [x] **Phase 22: Learning Bits Guide Infrastructure** - Build dialogue component, typewriter hook, toggle, and section-aware state (BLOCKED on PM content for dialogue text) (completed 2026-03-25)
 - [ ] **Phase 22.1: Stats Engine Correctness Fixes** - Fix remaining audit findings: Student-t double-division, worker truncation routing, truncated posterior mean, centralized prior builder, threshold formatting, traffic label semantics, legacy CoD removal, warning plumbing
 - [ ] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update
 - [ ] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard
@@ -81,11 +81,11 @@ Plans:
   2. Dialogue content updates automatically when user navigates between calculator sections
   3. Guidance on/off toggle persists in sessionStorage; new sessions default to guidance ON
   4. Animated ellipsis indicates waiting state after text completes; prefers-reduced-motion shows full text immediately
-**Plans:** 0/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 22-01-PLAN.md -- Store extension, hooks (useTypewriter, useGuideMessages), CSS infrastructure, font import, mascot asset
-- [ ] 22-02-PLAN.md -- Guide components (Overlay, Avatar, Bubble, BouncingDots), accordion collapses, highlight pulse, CalculatorPage wiring
+- [x] 22-01-PLAN.md -- Store extension, hooks (useTypewriter, useGuideMessages), CSS infrastructure, font import, mascot asset
+- [x] 22-02-PLAN.md -- Guide components (Overlay, Avatar, Bubble, BouncingDots), accordion collapses, highlight pulse, CalculatorPage wiring
 
 **UI hint**: yes
 
@@ -168,7 +168,7 @@ Plans:
 | 19. Basic Mode Deprecation | 1/3 | Complete    | 2026-03-24 |
 | 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
 | 21. Engine Cleanup | 2/2 | Complete    | 2026-03-24 |
-| 22. Learning Bits Guide Infrastructure | 0/2 | Planned    |  |
+| 22. Learning Bits Guide Infrastructure | 2/2 | Complete   | 2026-03-25 |
 | 22.1. Stats Engine Correctness Fixes | 0/5 | Planned | - |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
