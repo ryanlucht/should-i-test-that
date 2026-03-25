@@ -72,19 +72,31 @@ Plans:
 - [x] 21-02-PLAN.md -- Fix outdated hook test assertions, verify dead CostOfDelayCard removal, add comprehensive edge-case safety tests
 
 ### Phase 22: Learning Bits Guide Infrastructure
-**Goal**: Guide component infrastructure is built and wired to calculator sections, ready for dialogue content insertion once PM provides text
+**Goal**: Complete Learning Bits guided dialogue overlay with RPG-style card, mascot avatar, typewriter animation, section-aware messages, accordion collapses, and highlight pulse — wired to calculator sections with all 7 final dialogue messages
 **Depends on**: Phase 21 (engine must be stable before layering UI)
 **Requirements**: GUIDE-01, GUIDE-02, GUIDE-03
-
-> **BLOCKER**: Actual dialogue text content (section-by-section messages, welcome sequence copy) is pending PM input. The component shell, useTypewriter hook, toggle mechanism, and section-aware state can all be built and tested with placeholder text. Content integration requires a follow-up once PM delivers dialogue copy. Do NOT block on this -- build infrastructure, flag content as a gap.
-
 **Success Criteria** (what must be TRUE):
   1. A fixed-position overlay dialogue box with mascot avatar and typewriter text animation appears when guidance is enabled
   2. Dialogue content updates automatically when user navigates between calculator sections
   3. Guidance on/off toggle persists in sessionStorage; new sessions default to guidance ON
   4. Animated ellipsis indicates waiting state after text completes; prefers-reduced-motion shows full text immediately
-**Plans**: TBD
+**Plans:** 0/2 plans executed
+
+Plans:
+- [ ] 22-01-PLAN.md -- Store extension, hooks (useTypewriter, useGuideMessages), CSS infrastructure, font import, mascot asset
+- [ ] 22-02-PLAN.md -- Guide components (Overlay, Avatar, Bubble, BouncingDots), accordion collapses, highlight pulse, CalculatorPage wiring
+
 **UI hint**: yes
+
+### Phase 22.1: Stats engine correctness fixes (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 22
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 22.1 to break down)
 
 ### Phase 23: Homepage & Welcome Experience
 **Goal**: Users land on a new homepage with Learning Bits welcome dialogue, branded logo, and clear start/skip paths into the calculator
@@ -141,8 +153,8 @@ Plans:
 |-------|----------------|--------|-----------|
 | 19. Basic Mode Deprecation | 1/3 | Complete    | 2026-03-24 |
 | 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
-| 21. Engine Cleanup | 2/2 | Complete   | 2026-03-24 |
-| 22. Learning Bits Guide Infrastructure | 0/TBD | Not started | - |
+| 21. Engine Cleanup | 2/2 | Complete    | 2026-03-24 |
+| 22. Learning Bits Guide Infrastructure | 0/2 | Planned    |  |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Phase 22 UI-SPEC approved
-last_updated: "2026-03-25T17:38:54.704Z"
+status: Ready to execute
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-03-25T19:22:03.766Z"
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 2
-  total_plans: 9
+  total_plans: 15
   completed_plans: 8
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 21 — Engine Cleanup
+**Current focus:** Phase 22 — learning-bits-guide-infrastructure
 
 ## Current Position
 
-Phase: 22
-Plan: Not started
+Phase: 22 (learning-bits-guide-infrastructure) — EXECUTING
+Plan: 2 of 2
 
 ## Milestone History
 
@@ -79,11 +79,17 @@ Recent decisions affecting current work:
 - [Phase 21]: ENG-17 confirmed already done: net-value.ts uses liftFeasibilityBounds
 - [Phase 21]: ENG-19 edge-case tests pass immediately since guards exist from 21-01; tests document and verify existing behavior
 - [Phase 21]: ENG-16 confirmed: CostOfDelayCard removed, remaining CoDResults/calculateCostOfDelay actively used
+- [Phase 22]: guideEnabled added to v1.2 Zustand WizardState — persisted in sessionStorage via partialize/merge, defaults true per D-06
+- [Phase 22]: useTypewriter test: advance timers per-character via advanceChars(n) helper, not bulk advanceTimersByTime(n*30)
 
 ### Pending Todos
 
 1. **Add Test Costs for declarative verdict** (calculations) -- Backlog v2.1+
 2. **Implement binomial simulation (Exact) mode** (calculations) -- Deferred v2.1+
+
+### Roadmap Evolution
+
+- Phase 22.1 inserted after Phase 22: Stats engine correctness fixes (URGENT)
 
 ### Blockers/Concerns
 
@@ -91,8 +97,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:38:54.700Z
-Stopped at: Phase 22 UI-SPEC approved
+Last session: 2026-03-25T19:22:03.763Z
+Stopped at: Completed 22-01-PLAN.md
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference

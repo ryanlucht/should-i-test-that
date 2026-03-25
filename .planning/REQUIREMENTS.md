@@ -45,9 +45,9 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 > **BLOCKER:** Actual dialogue text content and section-by-section flow is pending PM input. Do NOT begin implementing GUIDE requirements until dialogue copy is provided.
 
-- [ ] **GUIDE-01**: Fixed-position overlay dialogue box with mascot avatar, typewriter text animation, and animated ellipsis indicating waiting for input
-- [ ] **GUIDE-02**: Dialogue text auto-advances as user navigates between calculator sections; contextual messages per section
-- [ ] **GUIDE-03**: Guidance on/off toggle persisted in sessionStorage via Zustand; defaults ON for new sessions
+- [x] **GUIDE-01**: Fixed-position overlay dialogue box with mascot avatar, typewriter text animation, and animated ellipsis indicating waiting for input
+- [x] **GUIDE-02**: Dialogue text auto-advances as user navigates between calculator sections; contextual messages per section
+- [x] **GUIDE-03**: Guidance on/off toggle persisted in sessionStorage via Zustand; defaults ON for new sessions
 
 ### Homepage — New Welcome Experience
 
@@ -141,9 +141,9 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 | ENG-17 | Phase 21 | Complete |
 | ENG-18 | Phase 21 | Complete |
 | ENG-19 | Phase 21 | Complete |
-| GUIDE-01 | Phase 22 | Pending |
-| GUIDE-02 | Phase 22 | Pending |
-| GUIDE-03 | Phase 22 | Pending |
+| GUIDE-01 | Phase 22 | Complete |
+| GUIDE-02 | Phase 22 | Complete |
+| GUIDE-03 | Phase 22 | Complete |
 | HOME-01 | Phase 23 | Pending |
 | HOME-02 | Phase 23 | Pending |
 | HOME-03 | Phase 23 | Pending |
