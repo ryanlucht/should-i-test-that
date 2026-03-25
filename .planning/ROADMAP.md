@@ -169,7 +169,7 @@ Plans:
 | 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
 | 21. Engine Cleanup | 2/2 | Complete    | 2026-03-24 |
 | 22. Learning Bits Guide Infrastructure | 2/2 | Complete    | 2026-03-25 |
-| 22.1. Stats Engine Correctness Fixes | 5/5 | Complete   | 2026-03-25 |
+| 22.1. Stats Engine Correctness Fixes | 5/5 | Complete    | 2026-03-25 |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
