@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 22.1-02-PLAN.md
-last_updated: "2026-03-25T20:26:28.367Z"
+stopped_at: Completed 22.1-05-PLAN.md
+last_updated: "2026-03-25T20:36:01.501Z"
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 14
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 22.1 (stats-engine-correctness-fixes) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 
 ## Milestone History
 
@@ -86,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 22.1]: Student-t scale uses jStat.studentt.inv(0.95, df) t-quantile calibration; buildPriorFromInputs is single source of truth for all prior construction
 - [Phase 22.1]: Worker uses <= (not <) for truncation gate boundary to match hook exactly
 - [Phase 22.1]: formatThreshold uses strict union type for scenario with safe runtime fallback (no | string)
+- [Phase 22.1]: Test 1 adjusted from plan: mu_L=0.05/L_hat=0.10 for >5% truncation effect (posterior near L_max)
+- [Phase 22.1]: Warning merging uses CalculationWarning.code as dedup key (sufficient for existing warning taxonomy)
 
 ### Pending Todos
 
@@ -102,8 +104,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:26:28.364Z
-Stopped at: Completed 22.1-02-PLAN.md
+Last session: 2026-03-25T20:36:01.498Z
+Stopped at: Completed 22.1-05-PLAN.md
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference

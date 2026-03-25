@@ -103,14 +103,14 @@ Plans:
   6. dailyTraffic label/tooltip clarifies total traffic before eligibility filtering
   7. Legacy calculateCostOfDelay and CoDResults removed from codebase
   8. Net-value warnings reach the UI warning renderer
-**Plans:** 2/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 - [x] 22.1-01-PLAN.md -- Centralize prior construction (buildPriorFromInputs) and fix Student-t double-division
 - [x] 22.1-02-PLAN.md -- Unit-aware threshold formatting and dailyTraffic label semantics fix
 - [ ] 22.1-03-PLAN.md -- Remove legacy Cost of Delay from hook, export button, and export card
-- [ ] 22.1-04-PLAN.md -- Worker truncation routing gate and dead truncated-normal.ts deletion
-- [ ] 22.1-05-PLAN.md -- Truncated-Normal posterior mean for Normal priors and net-value warning plumbing
+- [x] 22.1-04-PLAN.md -- Worker truncation routing gate and dead truncated-normal.ts deletion
+- [x] 22.1-05-PLAN.md -- Truncated-Normal posterior mean for Normal priors and net-value warning plumbing
 
 ### Phase 23: Homepage & Welcome Experience
 **Goal**: Users land on a new homepage with Learning Bits welcome dialogue, branded logo, and clear start/skip paths into the calculator
@@ -169,7 +169,7 @@ Plans:
 | 20. Engine Accuracy Fixes | 3/4 | Complete    | 2026-03-24 |
 | 21. Engine Cleanup | 2/2 | Complete    | 2026-03-24 |
 | 22. Learning Bits Guide Infrastructure | 2/2 | Complete    | 2026-03-25 |
-| 22.1. Stats Engine Correctness Fixes | 2/5 | In Progress|  |
+| 22.1. Stats Engine Correctness Fixes | 4/5 | In Progress|  |
 | 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
