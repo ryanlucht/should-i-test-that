@@ -43,12 +43,16 @@ key-files:
     - src/components/forms/PriorShapeForm.tsx
     - src/pages/CalculatorPage.tsx
     - src/hooks/useTypewriter.ts
+    - src/hooks/useTypewriter.test.ts
+    - src/hooks/useGuideMessages.ts
+    - src/hooks/useGuideMessages.test.ts
 
 key-decisions:
-  - "renderDialogueText helper: splits on /_([^_]+)_/g pattern inside LearningBitsOverlay to convert _word_ to <em> elements; processes displayed (sliced) text not full message to avoid typewriter reset"
-  - "highlight-pulse remount: key={shouldHighlight ? pulseKey : 'no-pulse'} forces DOM remount only on false→true transitions so animation replays each time the threshold is crossed"
-  - "useTypewriter matchMedia guard: added typeof window.matchMedia === 'function' check — jsdom provides window but not matchMedia, causing TypeError in App.test.tsx when CalculatorPage now renders the overlay"
-  - "Accordion validation: UncertaintyPriorForm already uses priorShapeFormRef.current?.validate() with optional chaining — when accordion is closed, null ref causes validation to skip (correct behavior since priorShape defaults to normal)"
+  - "Default prior button moved outside PriorShapeForm accordion into UncertaintyPriorForm — always visible above toggle link per PM feedback"
+  - "Typewriter speed reduced from 30ms to 12ms per character per PM feedback (faster, more fluid pacing)"
+  - "Added M8 results message at index 7 per PM request — triggers on results section scroll"
+  - "renderDialogueText helper: splits on /_([^_]+)_/g pattern inside LearningBitsOverlay to convert _word_ to <em> elements"
+  - "highlight-pulse remount: key={shouldHighlight ? pulseKey : 'no-pulse'} forces DOM remount only on false→true transitions"
 
 patterns-established:
   - "Pattern: Guide trigger callbacks — CalculatorPage owns trigger state, passes useCallback handlers to form components as optional props"
@@ -57,92 +61,46 @@ patterns-established:
 requirements-completed: [GUIDE-01, GUIDE-02, GUIDE-03]
 
 # Metrics
-duration: 6min
+duration: 12min
 completed: 2026-03-25
 ---
 
 # Phase 22 Plan 02: Learning Bits Guide UI Components Summary
 
-**Four guide components (Overlay, Avatar, Bubble, BouncingDots) built and wired into CalculatorPage with section-aware dialogue, accordion progressive disclosure, and highlight-pulse on off-center prior**
+**Four guide components (Overlay, Avatar, Bubble, BouncingDots) built and wired into CalculatorPage with 8-message section-aware dialogue, accordion progressive disclosure, and highlight-pulse on off-center prior**
 
 ## Performance
 
-- **Duration:** 6 min
-- **Started:** 2026-03-25T19:26:37Z
-- **Completed:** 2026-03-25T19:32:38Z (Tasks 1-3 complete; paused at Task 4 checkpoint)
-- **Tasks:** 3 of 4 complete (Task 4 is human-verify checkpoint)
-- **Files modified:** 9 (4 created, 5 modified)
+- **Duration:** ~12 min
+- **Tasks:** 4 (3 auto + 1 human checkpoint with fixes)
+- **Files modified:** 12 (4 created, 8 modified)
 
 ## Accomplishments
 
 - Created `src/components/guide/` directory with 4 components: LearningBitsOverlay (RPG dialog box with typewriter, sr-only accessibility, aria-live), LearningBitsAvatar (64px circular mascot), LearningBitsBubble (collapsed reopen button), BouncingDots (animated ellipsis)
-- Modified UncertaintyPriorForm: prior shape section wrapped in accordion (default closed, D-08), onPriorShapeAccordionOpen + onPriorBoundFocus callbacks added, highlight-pulse-container applied on implied lift when |mean| > 1% (D-09)
-- Modified ExperimentDesignForm: advanced timing wrapped in accordion (default closed, D-10), onAdvancedTimingOpen callback added
-- Modified PriorShapeForm: onShapeOptionClick prop for re-triggerable M3 on shape option clicks (D-12)
+- Modified UncertaintyPriorForm: prior shape section wrapped in accordion (default closed, D-08), "Fill with Recommended Default" button always visible above accordion, highlight-pulse on implied lift when |mean| > 1% (D-09)
+- Modified ExperimentDesignForm: advanced timing wrapped in accordion (default closed, D-10), onAdvancedTimingOpen callback
+- Modified PriorShapeForm: removed "Fill with Recommended Default" button (moved to parent), added onShapeOptionClick for re-triggerable M3
 - Modified CalculatorPage: guide state, trigger state, useGuideMessages hook, trigger callbacks, overlay/bubble conditional rendering
-- Auto-fixed: useTypewriter matchMedia guard for jsdom test environments
+- Sped up typewriter from 30ms to 12ms per PM feedback
+- Added M8 results dialogue message per PM request
+- 472 tests pass, TypeScript clean
 
 ## Task Commits
 
 1. **Task 1: Create guide components** - `4902516` (feat)
 2. **Task 2: Add accordion collapses and highlight pulse** - `c834dcb` (feat)
 3. **Task 3: Wire guide system in CalculatorPage** - `5faf165` (feat)
-
-Task 4 (human-verify) — awaiting checkpoint approval.
-
-## Files Created/Modified
-
-- `src/components/guide/LearningBitsAvatar.tsx` - 64px circular mascot avatar component
-- `src/components/guide/BouncingDots.tsx` - Three-dot animated ellipsis with animate-dot-bounce class
-- `src/components/guide/LearningBitsOverlay.tsx` - RPG dialog card: rpg-dialog-box, lb-font, useTypewriter, aria-live, sr-only, close button
-- `src/components/guide/LearningBitsBubble.tsx` - Collapsed avatar button, aria-label "Open Learning Bits guidance"
-- `src/components/forms/UncertaintyPriorForm.tsx` - Prior shape accordion (D-08), onPriorShapeAccordionOpen, onPriorBoundFocus, highlight-pulse
-- `src/components/forms/ExperimentDesignForm.tsx` - Advanced timing accordion (D-10), onAdvancedTimingOpen
-- `src/components/forms/PriorShapeForm.tsx` - onShapeOptionClick for re-triggerable M3 shape clicks
-- `src/pages/CalculatorPage.tsx` - Guide system orchestration: state, hooks, callbacks, overlay/bubble rendering
-- `src/hooks/useTypewriter.ts` - Added matchMedia existence guard for jsdom compatibility
-
-## Decisions Made
-
-- **renderDialogueText helper**: splits on `/_([^_]+)_/g` inside LearningBitsOverlay to convert `_word_` to `<em>` elements; processes the `displayed` (sliced) text not the full message, preventing typewriter reset on parent re-renders (Pitfall 4)
-- **Highlight-pulse remount**: `key={shouldHighlight ? pulseKey : 'no-pulse'}` forces DOM remount only on false→true transitions so the CSS animation replays on each threshold crossing
-- **useTypewriter matchMedia guard**: added `typeof window.matchMedia === 'function'` — jsdom provides a window object but not matchMedia, causing TypeError when App.test.tsx renders CalculatorPage with the overlay
-- **Accordion optional chaining retained**: UncertaintyPriorForm already uses `priorShapeFormRef.current?.validate()` — when accordion is closed and ref is null, validation correctly skips (priorShape defaults to 'normal' which is valid)
-
-## Deviations from Plan
-
-### Auto-fixed Issues
-
-**1. [Rule 1 - Bug] useTypewriter matchMedia TypeError in jsdom test environment**
-- **Found during:** Task 3 (CalculatorPage wiring, running tests)
-- **Issue:** `useTypewriter` called `window.matchMedia(...)` without checking if `matchMedia` exists. jsdom (vitest test environment) provides a `window` object but no `matchMedia`, causing `TypeError: window.matchMedia is not a function` when App.test.tsx rendered CalculatorPage (which now includes the overlay).
-- **Fix:** Added `typeof window.matchMedia === 'function'` guard in the `useRef` initializer — gracefully falls back to `false` (no reduced motion) in environments without matchMedia.
-- **Files modified:** src/hooks/useTypewriter.ts
-- **Committed in:** 5faf165 (Task 3 commit)
-
----
-
-**Total deviations:** 1 auto-fixed (1 Rule 1 bug)
-**Impact on plan:** Fix required for correctness in test environments. No scope creep.
+4. **Task 4: Human verification** - Approved with 2 fixes + 1 addition:
+   - `79a1536` — Moved default prior button above accordion, reduced typewriter to 12ms
+   - `77b5480` — Added M8 results dialogue message (8th message at index 7)
 
 ## Issues Encountered
 
-None beyond the auto-fixed matchMedia issue above.
-
-## Known Stubs
-
-None. All guide components use real data sources:
-- `LearningBitsOverlay` receives `messageText` from `useGuideMessages` which returns real dialogue content from `GUIDE_MESSAGES`
-- `guideEnabled` state is real Zustand state persisted in sessionStorage
-- All callbacks wire real trigger events to the guide message hook
-
-## Next Phase Readiness
-
-- Task 4 (human-verify) checkpoint pending — user needs to visually verify the guide overlay, close/reopen, section navigation, highlight pulse, accordion, and reduced-motion behavior
-- After Task 4 approval, plan 22-02 is complete and phase 22 is done
-- The Learning Bits guide system is fully operational and ready for phase 23 (Homepage & Welcome Experience)
+- Worktree merge conflicts due to v1.2 vs flat-store divergence — resolved by keeping HEAD structure
+- Default prior button inside accordion — PM caught it, moved to UncertaintyPriorForm above accordion
+- useTypewriter matchMedia TypeError in jsdom — auto-fixed with typeof guard
 
 ---
 *Phase: 22-learning-bits-guide-infrastructure*
-*Paused at checkpoint: Task 4 (human-verify)*
-*Completed tasks: 1-3 of 4*
+*Completed: 2026-03-25*
