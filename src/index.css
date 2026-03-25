@@ -233,4 +233,52 @@
   .hover-lift:hover {
     transform: none;
   }
+  .animate-dot-bounce {
+    animation: none;
+  }
+  .highlight-pulse-container {
+    animation: none;
+  }
+}
+
+/*
+ * Learning Bits Guide — RPG dialog box, animations, font utility
+ * Source: .planning/phases/22-learning-bits-guide-infrastructure/22-CONTEXT.md D-01, D-03, D-04, D-09
+ * CSS values from /tmp/LearningBitsMockup/LearningBitsMockup/code.html
+ */
+
+/* RPG dialog box: 3px solid purple border with offset shadow (D-01) */
+.rpg-dialog-box {
+  border: 3px solid #7C3AED;
+  box-shadow: 6px 6px 0 rgba(124, 58, 237, 0.2);
+}
+
+/* Bouncing dots waiting indicator: three dots with staggered animation (D-04) */
+@keyframes dot-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(-2px); opacity: 1; }
+}
+.animate-dot-bounce {
+  display: inline-block;
+  animation: dot-bounce 1.4s infinite ease-in-out;
+}
+.animate-dot-bounce:nth-child(2) { animation-delay: 0.2s; }
+.animate-dot-bounce:nth-child(3) { animation-delay: 0.4s; }
+
+/* Highlight pulse on implied expected lift display (D-09) */
+@keyframes highlight-pulse {
+  0%   { transform: scale(1.0); }
+  50%  { transform: scale(1.02); }
+  100% { transform: scale(1.0); }
+}
+.highlight-pulse-container {
+  border: 2px solid #7C3AED;
+  border-radius: 4px;
+  padding: 4px 8px;
+  animation: highlight-pulse 0.6s ease forwards;
+}
+
+/* Space Grotesk font utility — dialogue box only (D-03) */
+.lb-font {
+  font-family: 'Space Grotesk', sans-serif;
 }

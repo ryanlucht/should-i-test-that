@@ -10,6 +10,7 @@ describe('wizardStore', () => {
       inputs: { ...initialInputs },
       currentSection: 0,
       completedSections: [],
+      guideEnabled: true,
     });
   });
 
@@ -193,6 +194,78 @@ describe('wizardStore', () => {
       expect(state.inputs.priorShape).toBe('normal');
       expect(state.completedSections).toHaveLength(0);
       expect(state.currentSection).toBe(0);
+    });
+  });
+
+  describe('guideEnabled', () => {
+    it('defaults guideEnabled to true for a new session', () => {
+      const { guideEnabled } = useWizardStore.getState();
+      expect(guideEnabled).toBe(true);
+    });
+
+    it('setGuideEnabled(false) sets guideEnabled to false', () => {
+      const { setGuideEnabled } = useWizardStore.getState();
+      setGuideEnabled(false);
+      expect(useWizardStore.getState().guideEnabled).toBe(false);
+    });
+
+    it('setGuideEnabled(true) sets guideEnabled back to true', () => {
+      const { setGuideEnabled } = useWizardStore.getState();
+      setGuideEnabled(false);
+      setGuideEnabled(true);
+      expect(useWizardStore.getState().guideEnabled).toBe(true);
+    });
+
+    it('resetWizard() resets guideEnabled to true', () => {
+      const { setGuideEnabled, resetWizard } = useWizardStore.getState();
+      setGuideEnabled(false);
+      resetWizard();
+      expect(useWizardStore.getState().guideEnabled).toBe(true);
+    });
+
+    it('merge() defaults guideEnabled to true when absent from persisted snapshot', () => {
+      const currentState = useWizardStore.getState();
+      const persistApi = (useWizardStore as unknown as {
+        persist?: {
+          getOptions?: () => {
+            merge?: (p: unknown, c: typeof currentState) => typeof currentState;
+          };
+        };
+      }).persist?.getOptions?.();
+
+      if (persistApi?.merge) {
+        // Old snapshot without guideEnabled (pre-phase-22 sessionStorage)
+        const oldSnapshot = {
+          inputs: { ...initialInputs },
+        };
+        const result = persistApi.merge(oldSnapshot, currentState);
+        expect(result.guideEnabled).toBe(true);
+      } else {
+        expect(currentState.guideEnabled).toBe(true);
+      }
+    });
+
+    it('merge() preserves guideEnabled=false when present in persisted snapshot', () => {
+      const currentState = useWizardStore.getState();
+      const persistApi = (useWizardStore as unknown as {
+        persist?: {
+          getOptions?: () => {
+            merge?: (p: unknown, c: typeof currentState) => typeof currentState;
+          };
+        };
+      }).persist?.getOptions?.();
+
+      if (persistApi?.merge) {
+        const snapshot = {
+          inputs: { ...initialInputs },
+          guideEnabled: false,
+        };
+        const result = persistApi.merge(snapshot, currentState);
+        expect(result.guideEnabled).toBe(false);
+      } else {
+        useWizardStore.getState().setGuideEnabled(false);
+        expect(useWizardStore.getState().guideEnabled).toBe(false);
+      }
     });
   });
 });

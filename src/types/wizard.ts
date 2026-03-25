@@ -125,6 +125,9 @@ export interface WizardState {
   // Navigation (not persisted)
   currentSection: number;
   completedSections: number[];
+
+  // Guide state (persisted in sessionStorage via Zustand — D-06)
+  guideEnabled: boolean; // Per D-06: defaults ON for new sessions
 }
 
 /**
@@ -136,6 +139,9 @@ export interface WizardActions {
     key: K,
     value: WizardInputs[K]
   ) => void;
+
+  /** Enable or disable the Learning Bits guide dialogue (D-06) */
+  setGuideEnabled: (enabled: boolean) => void;
 
   /** Set the current active section */
   setCurrentSection: (section: number) => void;
