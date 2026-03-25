@@ -25,6 +25,7 @@ import {
   formatSmartCurrency,
   formatProbabilityPercent,
   formatPercentage,
+  formatThreshold,
 } from '@/lib/formatting';
 import { trackCalculationCompleted } from '@/lib/analytics';
 import { buildPriorFromInputs, DEFAULT_INTERVAL } from '@/lib/prior';
@@ -83,12 +84,6 @@ export function ResultsSection() {
   const priorHigh = inputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high;
   const priorMean = (priorLow + priorHigh) / 2;
 
-  // Get threshold for display
-  const thresholdLift =
-    inputs.thresholdScenario === 'any-positive'
-      ? 0
-      : inputs.thresholdValue ?? 0;
-
   return (
     <div className="space-y-6">
       {/* Primary Verdict - ADV-OUT-01, ADV-OUT-02 */}
@@ -135,14 +130,14 @@ export function ResultsSection() {
                 description={`Range: ${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
               />
 
-              {/* Threshold Summary */}
+              {/* Threshold Summary — uses formatThreshold for unit-aware display (audit P5) */}
               <SupportingCard
                 title="Threshold"
-                value={
-                  inputs.thresholdScenario === 'any-positive'
-                    ? 'Any positive'
-                    : `${thresholdLift > 0 ? '+' : ''}${thresholdLift}%`
-                }
+                value={formatThreshold({
+                  scenario: (inputs.thresholdScenario ?? 'any-positive') as 'any-positive' | 'minimum-lift' | 'accept-loss',
+                  unit: inputs.thresholdUnit,
+                  value: inputs.thresholdValue,
+                })}
                 description={
                   inputs.thresholdScenario !== 'any-positive'
                     ? `Your minimum bar to ship`

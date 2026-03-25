@@ -3,7 +3,7 @@
  *
  * Collects test parameters for EVSI calculation per 05-CONTEXT.md:
  * - Test duration in days (required)
- * - Daily eligible traffic (required, can auto-derive from annual visitors)
+ * - Total daily traffic before eligibility filtering (required, can auto-derive from annual visitors)
  * - Traffic split / variant allocation (default 50%)
  * - Eligibility fraction (default 100%)
  * - Conversion latency in days (default 0, visually de-emphasized)
@@ -187,9 +187,9 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
             {/* Daily Traffic (required, with inline derive option) */}
             <NumberInput
               name="dailyTraffic"
-              label="Daily traffic"
+              label="Total daily visitors"
               placeholder="5,000"
-              tooltip="Average daily visitors who can enter the experiment"
+              tooltip="Total daily visitors to the site or app, before experiment eligibility filtering. Use Eligible traffic below to specify the share that qualifies."
               error={errors.dailyTraffic?.message}
               labelSuffix={
                 canDeriveFromAnnual ? (

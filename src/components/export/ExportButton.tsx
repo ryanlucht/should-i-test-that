@@ -103,15 +103,17 @@ export function ExportButton(props: ExportButtonProps) {
     };
   }, [sharedInputs.priorIntervalLow, sharedInputs.priorIntervalHigh]);
 
-  // Derive threshold display values
+  // Derive threshold display values (includes unit for unit-aware formatting, audit P5)
   const thresholdDisplay = useMemo(() => {
     return {
       scenario: sharedInputs.thresholdScenario === 'any-positive'
         ? 'any-positive'
         : sharedInputs.thresholdScenario || 'minimum-lift',
+      unit: sharedInputs.thresholdUnit,
+      value: sharedInputs.thresholdValue ?? undefined,
       valuePercent: sharedInputs.thresholdValue ?? undefined,
     };
-  }, [sharedInputs.thresholdScenario, sharedInputs.thresholdValue]);
+  }, [sharedInputs.thresholdScenario, sharedInputs.thresholdValue, sharedInputs.thresholdUnit]);
 
   // Build prior distribution for chart
   const chartPrior: PriorDistribution = useMemo(() => {

@@ -24,6 +24,7 @@ import { PriorDistributionChart } from '@/components/charts/PriorDistributionCha
 import {
   formatSmartCurrency,
   formatPercentage,
+  formatThreshold,
 } from '@/lib/formatting';
 import type { PriorDistribution } from '@/lib/calculations';
 
@@ -65,6 +66,10 @@ interface ExportCardProps {
   /** Threshold scenario summary for display */
   threshold: {
     scenario: string;
+    /** Original unit of the threshold value ('dollars' or 'lift') — used by formatThreshold (audit P5) */
+    unit?: 'dollars' | 'lift' | null;
+    /** Raw threshold value — used by formatThreshold (audit P5) */
+    value?: number | null;
     valuePercent?: number;
     valueDollars?: number;
   };
@@ -135,11 +140,12 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% expected lift${priorShapeText}`;
     const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
 
-    // Format threshold display
-    const thresholdDisplay =
-      threshold.scenario === 'any-positive'
-        ? 'Any positive impact'
-        : `${threshold.valuePercent !== undefined && threshold.valuePercent > 0 ? '+' : ''}${threshold.valuePercent?.toFixed(1)}% lift`;
+    // Format threshold display — unit-aware via formatThreshold (audit P5)
+    const thresholdDisplay = formatThreshold({
+      scenario: threshold.scenario as 'any-positive' | 'minimum-lift' | 'accept-loss',
+      unit: threshold.unit,
+      value: threshold.value ?? threshold.valuePercent,
+    });
 
     // Format baseline metrics for display
     // Conversion rate: decimal to percentage (e.g., 0.025 -> "2.50%")
