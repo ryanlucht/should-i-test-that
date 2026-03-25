@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: "Paused at Task 4 checkpoint: 22-02-PLAN.md (human-verify)"
-last_updated: "2026-03-25T19:56:32.095Z"
+status: Ready to execute
+stopped_at: Completed 22.1-02-PLAN.md
+last_updated: "2026-03-25T20:26:28.367Z"
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 16
-  completed_plans: 10
+  completed_plans: 12
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 22 — learning-bits-guide-infrastructure
+**Current focus:** Phase 22.1 — stats-engine-correctness-fixes
 
 ## Current Position
 
-Phase: 22.1
-Plan: Not started
+Phase: 22.1 (stats-engine-correctness-fixes) — EXECUTING
+Plan: 4 of 5
 
 ## Milestone History
 
@@ -83,6 +83,9 @@ Recent decisions affecting current work:
 - [Phase 22]: useTypewriter test: advance timers per-character via advanceChars(n) helper, not bulk advanceTimersByTime(n*30)
 - [Phase 22]: renderDialogueText helper processes displayed (sliced) text not full message to prevent typewriter reset on parent re-renders
 - [Phase 22]: useTypewriter matchMedia guard: typeof window.matchMedia === 'function' added for jsdom test environment compatibility
+- [Phase 22.1]: Student-t scale uses jStat.studentt.inv(0.95, df) t-quantile calibration; buildPriorFromInputs is single source of truth for all prior construction
+- [Phase 22.1]: Worker uses <= (not <) for truncation gate boundary to match hook exactly
+- [Phase 22.1]: formatThreshold uses strict union type for scenario with safe runtime fallback (no | string)
 
 ### Pending Todos
 
@@ -99,8 +102,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:33:57.117Z
-Stopped at: Paused at Task 4 checkpoint: 22-02-PLAN.md (human-verify)
+Last session: 2026-03-25T20:26:28.364Z
+Stopped at: Completed 22.1-02-PLAN.md
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference
