@@ -123,6 +123,33 @@ describe('useGuideMessages', () => {
     expect(GUIDE_MESSAGES[6]).toContain('Some metrics take time to mature');
   });
 
+  it('does NOT advance message when scrolling to a disabled section', () => {
+    // Bug: scrolling past disabled sections triggered dialogue advancement.
+    // Only enabled (accessible) sections should trigger new messages.
+    const allEnabled = new Set(['baseline', 'uncertainty', 'threshold', 'test-design', 'results']);
+    const onlyBaselineEnabled = new Set(['baseline']);
+
+    const { result, rerender } = renderHook(
+      ({ section, trigger, enabled }: { section: string; trigger: GuideTrigger; enabled: Set<string> }) =>
+        useGuideMessages(section, trigger, enabled),
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None, enabled: onlyBaselineEnabled } }
+    );
+    expect(result.current.currentMessageIndex).toBe(0);
+
+    // Scroll to 'uncertainty' while it's still disabled — should NOT advance
+    act(() => {
+      rerender({ section: 'uncertainty', trigger: GuideTrigger.None, enabled: onlyBaselineEnabled });
+    });
+    expect(result.current.currentMessageIndex).toBe(0);
+
+    // Now enable uncertainty and scroll to it — should advance
+    const baselineAndUncertainty = new Set(['baseline', 'uncertainty']);
+    act(() => {
+      rerender({ section: 'uncertainty', trigger: GuideTrigger.None, enabled: baselineAndUncertainty });
+    });
+    expect(result.current.currentMessageIndex).toBe(1);
+  });
+
   it('does NOT regress message index when scrolling back to earlier section', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>

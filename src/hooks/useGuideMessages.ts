@@ -80,11 +80,16 @@ function sectionToMessageIndex(section: string): number | null {
  *
  * @param activeSection - Current section ID from useScrollSpy (e.g., 'baseline', 'uncertainty')
  * @param triggerEvent - User interaction event from GuideTrigger enum
+ * @param enabledSections - Set of section IDs that are currently accessible.
+ *   Scroll-based messages only fire for sections in this set, preventing
+ *   dialogue advancement when the user scrolls past disabled/grayed-out sections.
+ *   When omitted, all sections are treated as enabled (backward-compatible default).
  * @returns { currentMessageIndex, currentMessage }
  */
 export function useGuideMessages(
   activeSection: string,
-  triggerEvent: GuideTrigger
+  triggerEvent: GuideTrigger,
+  enabledSections?: Set<string>
 ): { currentMessageIndex: number; currentMessage: string } {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
@@ -93,6 +98,10 @@ export function useGuideMessages(
 
   // Effect: section scroll changes
   useEffect(() => {
+    // Skip if this section is disabled (grayed out / not yet accessible).
+    // Prevents dialogue from advancing when user scrolls past locked sections.
+    if (enabledSections && !enabledSections.has(activeSection)) return;
+
     const newIndex = sectionToMessageIndex(activeSection);
     if (newIndex === null) return; // e.g., 'results' — no message change
 
@@ -104,7 +113,7 @@ export function useGuideMessages(
       }
       return current;
     });
-  }, [activeSection]);
+  }, [activeSection, enabledSections]);
 
   // Effect: user interaction trigger events
   useEffect(() => {

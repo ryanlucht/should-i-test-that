@@ -101,8 +101,16 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   // Scroll spy tracks which section is visible
   const activeSection = useScrollSpy(sectionIds);
 
+  // Enabled sections: only sections the user can currently access (prior sections completed).
+  // Prevents guide dialogue from advancing when scrolling past disabled/grayed-out sections.
+  const enabledSections = useMemo(
+    () => new Set(sections.filter((_, i) => canAccessSection(i)).map((s) => s.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sections, completedSections]
+  );
+
   // Guide message routing: maps active section + trigger events to dialogue text
-  const { currentMessage } = useGuideMessages(activeSection, guideTrigger);
+  const { currentMessage } = useGuideMessages(activeSection, guideTrigger, enabledSections);
 
   // Trigger callbacks wired from form components to guide message system
   const handlePriorShapeAccordionOpen = useCallback(() => {
