@@ -1,58 +1,157 @@
 /**
  * Welcome Page
  *
- * Entry point for the calculator. Users proceed directly to
- * the EVSI calculator via the Get Started button.
+ * Homepage with the "Bubbly Pill" logo, Learning Bits welcome dialogue,
+ * dual start/skip CTAs, and footer.
  *
- * Design reference: .planning/phases/01-foundation-wizard-infrastructure/designs/welcome-screen.md
+ * Phase 23: Homepage & Welcome Experience
+ * Design decisions: 23-CONTEXT.md D-05 through D-13
+ *
+ * Layout:
+ *   BubblyPillLogo
+ *   +---------------------------------------------------------+
+ *   | [Avatar]  Learning Bits                                 |
+ *   |           [typewriter welcome text...]                  |
+ *   |           [bouncing dots when complete]                 |
+ *   +---------------------------------------------------------+
+ *   [ Start (with Guidance) ]
+ *   I know what I'm doing, just let me use the calculator...
+ *
+ *   Footer: Created by Ryan Lucht...
  */
 
+import React from 'react';
+import { BubblyPillLogo } from '@/components/BubblyPillLogo';
+import { useTypewriter } from '@/hooks/useTypewriter';
+import { LearningBitsAvatar } from '@/components/guide/LearningBitsAvatar';
+import { BouncingDots } from '@/components/guide/BouncingDots';
 import { Button } from '@/components/ui/button';
 
 interface WelcomePageProps {
-  /** Callback when user clicks "Get Started" */
-  onGetStarted: () => void;
+  /** Navigate to calculator WITH guidance enabled (D-10) */
+  onStartWithGuidance: () => void;
+  /** Navigate to calculator WITHOUT guidance (D-11) */
+  onSkipGuidance: () => void;
+}
+
+/**
+ * Welcome text for Learning Bits' opening monologue.
+ * Verbatim copy per D-06. _vibes_ renders as italic via renderDialogueText.
+ */
+const WELCOME_TEXT =
+  "You have a new idea to try, or some code that needs to be deployed. Should you go through the effort of A/B testing it first? Don't answer that question with _vibes_! We can make that determination empirically, by calculating the actual dollar value of the information we'd gain with a test. All we have to do is define the stakes of the decision, and come up with a plausible range of possible outcomes. I'll walk you through the entire calculation. Ready to start?";
+
+/**
+ * Renders dialogue text with _word_ patterns converted to <em> elements.
+ *
+ * Receives the `displayed` slice from useTypewriter (already sliced),
+ * not the full message string. This prevents typewriter reset on re-renders.
+ *
+ * Splits on /_([^_]+)_/g: text before match → plain span, match → <em>.
+ */
+function renderDialogueText(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const pattern = /_([^_]+)_/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    // Text before the italic marker
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={`text-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>
+      );
+    }
+    // Italic word
+    parts.push(
+      <em key={`em-${match.index}`} className="font-italic">
+        {match[1]}
+      </em>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining text after last match
+  if (lastIndex < text.length) {
+    parts.push(<span key={`text-${lastIndex}`}>{text.slice(lastIndex)}</span>);
+  }
+
+  return parts;
 }
 
 /**
  * Welcome Page Component
  *
- * Displays the hero section with title/description and a CTA button.
- * No mode selection -- single EVSI-based calculator experience.
+ * Displays the Bubbly Pill logo, Learning Bits dialogue card with typewriter
+ * animation, dual CTA buttons (start with guidance / skip), and footer.
+ *
+ * CTAs are always visible from the start — users can click anytime without
+ * waiting for the typewriter to finish (D-09).
  */
-export function WelcomePage({ onGetStarted }: WelcomePageProps) {
+export function WelcomePage({ onStartWithGuidance, onSkipGuidance }: WelcomePageProps) {
+  const { displayed, isComplete } = useTypewriter(WELCOME_TEXT);
+
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      {/* Main content - centered vertically and horizontally */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:px-6 md:px-12 lg:px-16">
-        <div className="w-full max-w-5xl">
-          {/* Hero Section - Design spec: headline 48px desktop, 36px tablet, 28px mobile */}
-          <div className="text-center mb-12">
-            <h1 className="text-[28px] sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight leading-tight">
-              Should I Test That?
-            </h1>
-            {/* Subheadline can be paragraph-length per design spec */}
-            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              Find out if your A/B test is worth running. Get a clear answer:
-              &ldquo;If you can test this for less than $X, it&apos;s worth
-              it.&rdquo;
-            </p>
+      {/* Main content — centered vertically and horizontally */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:px-6 md:px-12">
+        <div className="w-full max-w-2xl flex flex-col items-center">
+
+          {/* Logo section — Bubbly Pill logo above dialogue (D-05) */}
+          <div className="mb-8 sm:mb-12">
+            <BubblyPillLogo />
           </div>
 
-          {/* CTA Button - Design spec: min-width 200px, height 48px, purple bg */}
-          <div className="text-center">
+          {/* Dialogue card — inline/centered RPG dialog box (D-07)
+           * Same rpg-dialog-box styling as LearningBitsOverlay but NOT fixed positioned */}
+          <div className="w-full bg-white p-5 sm:p-6 rounded-lg rpg-dialog-box flex items-start gap-4 mb-8">
+            {/* Avatar — 64px circular mascot image */}
+            <LearningBitsAvatar />
+
+            {/* Dialogue text area */}
+            <div className="flex-1 pt-1" aria-live="polite">
+              {/* Character name — Space Grotesk bold per D-03/D-07 */}
+              <span className="font-bold text-primary block mb-1 text-sm lb-font">
+                Learning Bits
+              </span>
+
+              {/* Screen reader: full welcome text (strip markdown underscores) */}
+              <span className="sr-only">
+                {WELCOME_TEXT.replace(/_([^_]+)_/g, '$1')}
+              </span>
+
+              {/* Visual typewriter text — Space Grotesk per D-07, aria-hidden since sr-only above */}
+              <p className="text-sm leading-relaxed text-foreground lb-font" aria-hidden="true">
+                {renderDialogueText(displayed)}
+                {isComplete && <BouncingDots />}
+              </p>
+            </div>
+          </div>
+
+          {/* CTA section — always visible from the start (D-09) */}
+          <div className="flex flex-col items-center gap-3">
+            {/* Primary CTA — big purple button to start with guidance (D-10) */}
             <Button
               size="lg"
-              onClick={onGetStarted}
-              className="min-w-[200px] h-12 px-8 text-base font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              onClick={onStartWithGuidance}
+              className="min-w-[240px] h-12 px-8 text-base font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
-              Get Started
+              Start (with Guidance)
             </Button>
+
+            {/* Skip link — casual text link to skip guidance (D-11) */}
+            <button
+              type="button"
+              onClick={onSkipGuidance}
+              className="text-sm text-muted-foreground hover:text-foreground underline transition-colors max-w-sm text-center"
+            >
+              I know what I&apos;m doing, just let me use the calculator without Bits&apos; guidance
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer — credits Ryan Lucht and frontier AI models (D-13) */}
       <footer className="py-6 text-center text-sm text-muted-foreground">
         <p>
           Created by{' '}
@@ -64,7 +163,7 @@ export function WelcomePage({ onGetStarted }: WelcomePageProps) {
           >
             Ryan Lucht
           </a>
-          {' '}and 100% vibe-coded by Claude Opus 4.5, GPT-5.2 Pro, GPT-Codex-5.2, and Gemini 3 Pro.
+          {' '}with the assistance of frontier Claude Opus, GPT-Pro, Codex, and Gemini Pro models.
         </p>
       </footer>
     </div>
