@@ -1,41 +1,60 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import App from './App';
+import { useWizardStore } from '@/stores/wizardStore';
 
 describe('App', () => {
   beforeEach(() => {
     // Clear sessionStorage before each test to reset wizard state
     sessionStorage.clear();
+    // Reset Zustand store to defaults between tests
+    useWizardStore.setState({ guideEnabled: true });
   });
 
-  it('renders the Welcome page title', () => {
+  it('renders the Bubbly Pill logo text', () => {
     render(<App />);
-    expect(screen.getByText('Should I Test That?')).toBeInTheDocument();
+    // Logo renders "Should I", "Test", "That?" as separate spans
+    expect(screen.getByText('Should I')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.getByText('That?')).toBeInTheDocument();
   });
 
-  it('renders Get Started button', () => {
+  it('renders Start (with Guidance) button', () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: 'Get Started' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start (with Guidance)' })).toBeInTheDocument();
   });
 
-  it('navigates to Calculator page when Get Started is clicked', () => {
+  it('renders skip guidance link', () => {
     render(<App />);
-    const button = screen.getByRole('button', { name: 'Get Started' });
-    fireEvent.click(button);
-    // Calculator page has the progress indicator
+    expect(screen.getByRole('button', { name: /I know what I'm doing/i })).toBeInTheDocument();
+  });
+
+  it('navigates to calculator when Start (with Guidance) is clicked', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start (with Guidance)' }));
     expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
-    // First section should be visible
-    expect(screen.getByText('Baseline Metrics')).toBeInTheDocument();
   });
 
-  it('can navigate back from Calculator to Welcome', () => {
+  it('sets guideEnabled=true when Start (with Guidance) is clicked', () => {
+    // First set guideEnabled to false to verify it gets set back to true
+    useWizardStore.setState({ guideEnabled: false });
     render(<App />);
-    // Go to calculator
-    fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start (with Guidance)' }));
+    expect(useWizardStore.getState().guideEnabled).toBe(true);
+  });
+
+  it('navigates to calculator and sets guideEnabled=false when skip link is clicked', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /I know what I'm doing/i }));
     expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
-    // Header title is clickable to go back
+    expect(useWizardStore.getState().guideEnabled).toBe(false);
+  });
+
+  it('can navigate back from calculator to welcome', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start (with Guidance)' }));
+    expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Experiment Value Calculator' }));
-    // Should be back on welcome page
-    expect(screen.getByRole('button', { name: 'Get Started' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start (with Guidance)' })).toBeInTheDocument();
   });
 });
