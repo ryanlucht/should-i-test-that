@@ -121,7 +121,12 @@ Plans:
   2. "Bubbly Pill" Frutiger Aero logo with glossy purple pill on "Test" replaces the previous text title
   3. Start button launches calculator WITH guided flow enabled; "skip guidance" link launches calculator WITHOUT guided flow
   4. Footer credits Ryan Lucht and lists "frontier Claude Opus, GPT-Pro, Codex, and Gemini Pro models" (no Hubbard attribution)
-**Plans**: TBD
+**Plans:** 1/2 plans executed
+
+Plans:
+- [x] 23-01-PLAN.md -- Bubbly Pill logo, Noto Sans font, Frutiger Aero CSS, and WelcomePage rewrite with dialogue, CTAs, footer
+- [ ] 23-02-PLAN.md -- App.tsx routing wiring for dual navigation paths and integration test updates
+
 **UI hint**: yes
 
 ### Phase 24: Shareable Walkthrough URLs
@@ -170,7 +175,7 @@ Plans:
 | 21. Engine Cleanup | 2/2 | Complete    | 2026-03-24 |
 | 22. Learning Bits Guide Infrastructure | 2/2 | Complete    | 2026-03-25 |
 | 22.1. Stats Engine Correctness Fixes | 5/5 | Complete    | 2026-03-25 |
-| 23. Homepage & Welcome Experience | 0/TBD | Not started | - |
+| 23. Homepage & Welcome Experience | 1/2 | In Progress|  |
 | 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |

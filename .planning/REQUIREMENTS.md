@@ -51,10 +51,10 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 ### Homepage — New Welcome Experience
 
-- [ ] **HOME-01**: Learning Bits welcome sequence with animated typewriter text greeting user and explaining the tool's purpose
-- [ ] **HOME-02**: "Bubbly Pill" Frutiger Aero logo replaces text title (Noto Sans font, glossy purple pill on "Test")
-- [ ] **HOME-03**: Start button launches calculator WITH guided flow; "skip guidance" text link launches calculator WITHOUT guided flow
-- [ ] **HOME-04**: Footer updated — keep "Created by Ryan Lucht" credit, update model list to "frontier Claude Opus, GPT-Pro, Codex, and Gemini Pro models", remove Hubbard attribution
+- [x] **HOME-01**: Learning Bits welcome sequence with animated typewriter text greeting user and explaining the tool's purpose
+- [x] **HOME-02**: "Bubbly Pill" Frutiger Aero logo replaces text title (Noto Sans font, glossy purple pill on "Test")
+- [x] **HOME-03**: Start button launches calculator WITH guided flow; "skip guidance" text link launches calculator WITHOUT guided flow
+- [x] **HOME-04**: Footer updated — keep "Created by Ryan Lucht" credit, update model list to "frontier Claude Opus, GPT-Pro, Codex, and Gemini Pro models", remove Hubbard attribution
 
 ### Share — Shareable Walkthrough URLs
 
@@ -144,10 +144,10 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 | GUIDE-01 | Phase 22 | Complete |
 | GUIDE-02 | Phase 22 | Complete |
 | GUIDE-03 | Phase 22 | Complete |
-| HOME-01 | Phase 23 | Pending |
-| HOME-02 | Phase 23 | Pending |
-| HOME-03 | Phase 23 | Pending |
-| HOME-04 | Phase 23 | Pending |
+| HOME-01 | Phase 23 | Complete |
+| HOME-02 | Phase 23 | Complete |
+| HOME-03 | Phase 23 | Complete |
+| HOME-04 | Phase 23 | Complete |
 | SHARE-01 | Phase 24 | Pending |
 | SHARE-02 | Phase 24 | Pending |
 | SHARE-03 | Phase 24 | Pending |

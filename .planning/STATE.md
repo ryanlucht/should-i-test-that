@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Phase 23 context gathered
-last_updated: "2026-03-26T18:35:13.184Z"
+status: Ready to execute
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-03-26T18:59:41.484Z"
 progress:
   total_phases: 9
   completed_phases: 4
-  total_plans: 16
-  completed_plans: 15
+  total_plans: 18
+  completed_plans: 16
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Help users make better testing decisions by quantifying the value of information
-**Current focus:** Phase 22.1 — stats-engine-correctness-fixes
+**Current focus:** Phase 23 — homepage-welcome-experience
 
 ## Current Position
 
-Phase: 23
-Plan: Not started
+Phase: 23 (homepage-welcome-experience) — EXECUTING
+Plan: 2 of 2
 
 ## Milestone History
 
@@ -89,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 22.1]: Test 1 adjusted from plan: mu_L=0.05/L_hat=0.10 for >5% truncation effect (posterior near L_max)
 - [Phase 22.1]: Warning merging uses CalculationWarning.code as dedup key (sufficient for existing warning taxonomy)
 - [Phase 22.1]: Legacy CoD computation fully removed (not deprecated) per audit P7: stale math using raw prior mean
+- [Phase 23]: WelcomePage props changed from onGetStarted to onStartWithGuidance + onSkipGuidance — App.tsx wiring deferred to Plan 02
+- [Phase 23]: BubblyPillLogo uses CSS/HTML Frutiger Aero glass effect — frutiger-glass CSS class with gradient + ::before/::after pseudo-elements, Noto Sans font
 
 ### Pending Todos
 
@@ -105,8 +107,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-26T18:35:13.181Z
-Stopped at: Phase 23 context gathered
+Last session: 2026-03-26T18:59:41.481Z
+Stopped at: Completed 23-01-PLAN.md
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference
