@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
  * Per CONTEXT.md D-03: speed is executor discretion; 12ms for fast, fluid pacing
  * so users don't wait long on longer dialogue messages.
  */
-const CHAR_DELAY_MS = 12;
+const CHAR_DELAY_MS = 6;
 
 /**
  * useTypewriter

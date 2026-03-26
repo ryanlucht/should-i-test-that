@@ -39,7 +39,7 @@ interface WelcomePageProps {
  * Verbatim copy per D-06. _vibes_ renders as italic via renderDialogueText.
  */
 const WELCOME_TEXT =
-  "You have a new idea to try, or some code that needs to be deployed. Should you go through the effort of A/B testing it first? Don't answer that question with _vibes_! We can make that determination empirically, by calculating the actual dollar value of the information we'd gain with a test. All we have to do is define the stakes of the decision, and come up with a plausible range of possible outcomes. I'll walk you through the entire calculation. Ready to start?";
+  "You have a new idea to try, or some code that needs to be deployed. Should you go through the effort of A/B testing it first?\n\nDon't answer that question with _vibes_! We can make that determination empirically, by calculating the actual dollar value of the information we'd gain with a test. All we have to do is define the stakes of the decision, and come up with a plausible range of possible outcomes.\n\nI'll walk you through the entire calculation. Ready to start?";
 
 /**
  * Renders dialogue text with _word_ patterns converted to <em> elements.
@@ -80,6 +80,19 @@ function renderDialogueText(text: string): React.ReactNode[] {
 }
 
 /**
+ * Splits text on double-newlines into <p> elements, applying renderDialogueText
+ * to each paragraph for italic markup support.
+ */
+function renderDialogueParagraphs(text: string, keyPrefix: string): React.ReactNode[] {
+  const paragraphs = text.split('\n\n');
+  return paragraphs.map((para, i) => (
+    <p key={`${keyPrefix}-p-${i}`} className={i > 0 ? 'mt-2' : undefined}>
+      {renderDialogueText(para)}
+    </p>
+  ));
+}
+
+/**
  * Welcome Page Component
  *
  * Displays the Bubbly Pill logo, Learning Bits dialogue card with typewriter
@@ -103,13 +116,15 @@ export function WelcomePage({ onStartWithGuidance, onSkipGuidance }: WelcomePage
           </div>
 
           {/* Dialogue card — inline/centered RPG dialog box (D-07)
-           * Same rpg-dialog-box styling as LearningBitsOverlay but NOT fixed positioned */}
+           * Same rpg-dialog-box styling as LearningBitsOverlay but NOT fixed positioned.
+           * Uses a hidden full-text div to reserve height so the card doesn't
+           * grow/shrink as the typewriter reveals characters. */}
           <div className="w-full bg-white p-5 sm:p-6 rounded-lg rpg-dialog-box flex items-start gap-4 mb-8">
             {/* Avatar — 64px circular mascot image */}
             <LearningBitsAvatar />
 
-            {/* Dialogue text area */}
-            <div className="flex-1 pt-1" aria-live="polite">
+            {/* Dialogue text area — relative container for height reservation */}
+            <div className="flex-1 pt-1 relative" aria-live="polite">
               {/* Character name — Space Grotesk bold per D-03/D-07 */}
               <span className="font-bold text-primary block mb-1 text-sm lb-font">
                 Learning Bits
@@ -120,11 +135,17 @@ export function WelcomePage({ onStartWithGuidance, onSkipGuidance }: WelcomePage
                 {WELCOME_TEXT.replace(/_([^_]+)_/g, '$1')}
               </span>
 
-              {/* Visual typewriter text — Space Grotesk per D-07, aria-hidden since sr-only above */}
-              <p className="text-sm leading-relaxed text-foreground lb-font" aria-hidden="true">
-                {renderDialogueText(displayed)}
+              {/* Hidden full text — reserves the card's final height from the start,
+                * preventing layout shifts as the typewriter reveals characters */}
+              <div className="text-sm leading-relaxed lb-font invisible" aria-hidden="true">
+                {renderDialogueParagraphs(WELCOME_TEXT.replace(/_([^_]+)_/g, '$1'), 'reserve')}
+              </div>
+
+              {/* Visible typewriter text — absolutely positioned over the hidden text */}
+              <div className="text-sm leading-relaxed text-foreground lb-font absolute top-0 left-0 right-0 pt-[calc(1.25rem+0.25rem)]" aria-hidden="true">
+                {renderDialogueParagraphs(displayed, 'visible')}
                 {isComplete && <BouncingDots />}
-              </p>
+              </div>
             </div>
           </div>
 
