@@ -282,3 +282,59 @@
 .lb-font {
   font-family: 'Space Grotesk', sans-serif;
 }
+
+/* Bubbly Pill Logo — Frutiger Aero glass effect (D-02)
+ * Purple gradient pill with specular highlight and bottom reflection.
+ * Reference: /tmp/LogoMockup/code.html
+ */
+.frutiger-glass {
+  background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 40%, #6d28d9 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Specular highlight — curved top shine (D-02 ::before) */
+.frutiger-glass::before {
+  content: '';
+  position: absolute;
+  top: 4%;
+  left: 5%;
+  width: 90%;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 80%, transparent 100%);
+  border-radius: 50% 50% 45% 45% / 100% 100% 30% 30%;
+  pointer-events: none;
+}
+
+/* Bottom reflection — soft glow (D-02 ::after) */
+.frutiger-glass::after {
+  content: '';
+  position: absolute;
+  bottom: 5%;
+  left: 15%;
+  width: 70%;
+  height: 15%;
+  background: rgba(255,255,255,0.15);
+  filter: blur(4px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Noto Sans font utility for the logo (D-02) */
+.logo-font {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+/* Purple text glow for logo text (from reference mockup) */
+.text-glow {
+  text-shadow: 0 0 15px rgba(124, 58, 237, 0.2);
+}
+
+/* Pill drop-shadow for depth (from reference mockup) */
+.pill-shadow {
+  filter: drop-shadow(0 10px 15px rgba(124, 58, 237, 0.3));
+}
