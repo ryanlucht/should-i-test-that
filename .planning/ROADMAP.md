@@ -142,8 +142,8 @@ Plans:
 
 Plans:
 - [ ] 24-01-PLAN.md -- URL codec: encode/decode WizardInputs with base64url JSON, short keys, and schema versioning (TDD)
-- [ ] 24-02-PLAN.md -- Share button in EVSIVerdictCard with clipboard copy and URL hydration in App.tsx
-- [ ] 24-03-PLAN.md -- Modified-field visual indicators: sharedBaseline store, useSharedDiff hook, form input styling
+- [ ] 24-02-PLAN.md -- Store sharedBaseline extension, share button in EVSIVerdictCard with clipboard copy, URL hydration in App.tsx
+- [ ] 24-03-PLAN.md -- Modified-field visual indicators: useSharedDiff hook and accessible form input styling
 
 **UI hint**: yes
 
