@@ -128,6 +128,13 @@ export interface WizardState {
 
   // Guide state (persisted in sessionStorage via Zustand — D-06)
   guideEnabled: boolean; // Per D-06: defaults ON for new sessions
+
+  /**
+   * Snapshot of inputs from a shared URL, used for modified-field visual
+   * indicators (D-08). Transient -- not persisted to sessionStorage.
+   * Set during URL hydration in App.tsx; null for regular sessions.
+   */
+  sharedBaseline: WizardInputs | null;
 }
 
 /**
@@ -154,6 +161,9 @@ export interface WizardActions {
 
   /** Reset all wizard state to initial values */
   resetWizard: () => void;
+
+  /** Store the shared URL's inputs as the baseline for diff tracking (D-08) */
+  setSharedBaseline: (baseline: WizardInputs | null) => void;
 }
 
 /**

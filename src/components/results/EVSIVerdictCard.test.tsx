@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { useWizardStore } from '@/stores/wizardStore';
 import { initialInputs } from '@/types/wizard';
@@ -176,8 +176,8 @@ describe('EVSIVerdictCard', () => {
       const shareButton = screen.getByRole('button', { name: /Share This Analysis/ });
       await act(async () => {
         fireEvent.click(shareButton);
-        // Allow async clipboard write to settle
-        await vi.runAllMicrotasksAsync();
+        // Flush microtasks (resolve the clipboard Promise)
+        await Promise.resolve();
       });
 
       expect(screen.getByText('Copied!')).toBeInTheDocument();
@@ -190,7 +190,8 @@ describe('EVSIVerdictCard', () => {
       const shareButton = screen.getByRole('button', { name: /Share This Analysis/ });
       await act(async () => {
         fireEvent.click(shareButton);
-        await vi.runAllMicrotasksAsync();
+        // Flush microtasks (resolve the clipboard Promise)
+        await Promise.resolve();
       });
 
       // Verify "Copied!" state
@@ -199,7 +200,6 @@ describe('EVSIVerdictCard', () => {
       // Advance past 2000ms timeout
       await act(async () => {
         vi.advanceTimersByTime(2000);
-        await vi.runAllMicrotasksAsync();
       });
 
       // Should revert to original text
@@ -222,7 +222,9 @@ describe('EVSIVerdictCard', () => {
       const shareButton = screen.getByRole('button', { name: /Share This Analysis/ });
       await act(async () => {
         fireEvent.click(shareButton);
-        await vi.runAllMicrotasksAsync();
+        // Flush microtasks (let rejection propagate)
+        await Promise.resolve();
+        await Promise.resolve(); // Extra tick for rejection handler
       });
 
       expect(screen.getByText(/Unable to copy/)).toBeInTheDocument();

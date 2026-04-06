@@ -10,13 +10,26 @@
  * - When negative: max test budget is $0, delay/exposure costs outweigh learning
  * - When positive: keep existing "up to $X, test it" messaging
  *
+ * Per D-01/D-02/D-03/D-04/D-05 (Phase 24 share button):
+ * - Share button inside EVSIVerdictCard (D-01)
+ * - Button only visible when results are computed (D-04)
+ * - Uses outline variant (D-05)
+ * - Shows "Share This Analysis (I'll explain it for you!)" with link icon (D-02)
+ * - After click: checkmark + "Copied!" for 2 seconds, then reverts (D-03)
+ * - Clipboard failure: shows "Unable to copy" error feedback (D-03)
+ *
  * Requirements covered:
  * - ENG-08: Honest negative net value display
+ * - SHARE-02: Share button with clipboard copy and feedback
  */
 
+import { useState } from 'react';
 import { formatSmartCurrency } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Link2, Check, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useWizardStore } from '@/stores/wizardStore';
+import { encodeWizardState } from '@/lib/url-codec';
 
 interface EVSIVerdictCardProps {
   /** Net value from integrated simulation (can be negative) */
@@ -34,6 +47,36 @@ export function EVSIVerdictCard({
 }: EVSIVerdictCardProps) {
   // Display the raw value - no clamping. Negative values are honest.
   const displayValue = netValueDollars;
+
+  // Clipboard copy state: 'idle' | 'copied' | 'error'
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+
+  // Read current inputs from store to encode into the share URL
+  const inputs = useWizardStore((state) => state.inputs);
+
+  /**
+   * Handle share button click: encode current inputs into a URL hash
+   * fragment, copy to clipboard, and show feedback for 2 seconds.
+   *
+   * On clipboard success: shows "Copied!" with checkmark
+   * On clipboard failure: shows "Unable to copy" with alert icon
+   * Both states revert to idle after 2000ms
+   */
+  const handleShare = async () => {
+    // Encode all current wizard inputs into a compact base64url string
+    const encoded = encodeWizardState(inputs);
+    // Build the full shareable URL with #s= hash fragment
+    const url = `${window.location.origin}${window.location.pathname}#s=${encoded}`;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyState('copied');
+      setTimeout(() => setCopyState('idle'), 2000);
+    } catch {
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 2000);
+    }
+  };
 
   // Determine card styling based on state
   // Warning style for negative net value (amber border)
@@ -113,6 +156,33 @@ export function EVSIVerdictCard({
             )}
           </p>
         </div>
+      )}
+
+      {/* Share button - only visible when results are computed (D-04) */}
+      {!isLoading && !error && displayValue !== null && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleShare}
+          className="w-full"
+        >
+          {copyState === 'copied' ? (
+            <>
+              <Check className="h-4 w-4 mr-1.5" />
+              Copied!
+            </>
+          ) : copyState === 'error' ? (
+            <>
+              <AlertCircle className="h-4 w-4 mr-1.5" />
+              Unable to copy
+            </>
+          ) : (
+            <>
+              <Link2 className="h-4 w-4 mr-1.5" />
+              Share This Analysis (I&apos;ll explain it for you!)
+            </>
+          )}
+        </Button>
       )}
     </div>
   );

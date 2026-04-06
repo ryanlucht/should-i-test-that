@@ -32,6 +32,7 @@ export const useWizardStore = create<WizardStore>()(
       currentSection: 0,
       completedSections: [],
       guideEnabled: true, // Default ON for new sessions (D-06)
+      sharedBaseline: null, // Transient — only set when arriving from a shared URL (D-08)
 
       /**
        * Update an input value in the flat inputs object
@@ -92,6 +93,15 @@ export const useWizardStore = create<WizardStore>()(
       },
 
       /**
+       * Store the shared URL's inputs as the baseline for modified-field
+       * diff tracking (D-08). Transient — not included in partialize.
+       * Called during URL hydration; pass null to clear.
+       */
+      setSharedBaseline: (baseline) => {
+        set({ sharedBaseline: baseline });
+      },
+
+      /**
        * Reset all wizard state to initial values
        * Used when user wants to start over
        */
@@ -101,6 +111,7 @@ export const useWizardStore = create<WizardStore>()(
           currentSection: 0,
           completedSections: [],
           guideEnabled: true, // Reset guide to default ON (D-06)
+          sharedBaseline: null, // Clear baseline on reset
         });
       },
     }),
