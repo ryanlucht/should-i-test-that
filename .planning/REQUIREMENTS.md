@@ -58,10 +58,10 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 
 ### Share — Shareable Walkthrough URLs
 
-- [ ] **SHARE-01**: All calculator inputs encoded into a shareable URL via base64url JSON with short keys
+- [x] **SHARE-01**: All calculator inputs encoded into a shareable URL via base64url JSON with short keys
 - [ ] **SHARE-02**: Shared URLs enable Learning Bits guided flow for recipients by default
 - [ ] **SHARE-03**: Share button in results section with copy-to-clipboard and "Copied!" feedback
-- [ ] **SHARE-04**: Schema version integer in encoded state with migration chain so old URLs work after future schema changes
+- [x] **SHARE-04**: Schema version integer in encoded state with migration chain so old URLs work after future schema changes
 
 ### Accessibility
 
@@ -148,10 +148,10 @@ Requirements for the Learning Bits milestone — guided experience, engine overh
 | HOME-02 | Phase 23 | Complete |
 | HOME-03 | Phase 23 | Complete |
 | HOME-04 | Phase 23 | Complete |
-| SHARE-01 | Phase 24 | Pending |
+| SHARE-01 | Phase 24 | Complete |
 | SHARE-02 | Phase 24 | Pending |
 | SHARE-03 | Phase 24 | Pending |
-| SHARE-04 | Phase 24 | Pending |
+| SHARE-04 | Phase 24 | Complete |
 | A11Y-01 | Phase 25 | Pending |
 | A11Y-02 | Phase 25 | Pending |
 | EXPORT-01 | Phase 25 | Pending |
