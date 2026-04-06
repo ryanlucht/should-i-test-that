@@ -1,17 +1,59 @@
 /**
  * EVSIVerdictCard Tests
  *
- * Tests for ENG-08: Honest negative net value display
- * - D-06: Show actual negative dollar value (not clamped)
- * - D-07: Negative messaging + max test budget $0
- * - D-08: Positive messaging preserved
+ * Tests for:
+ * - ENG-08: Honest negative net value display
+ * - SHARE-02: Share button with clipboard copy and feedback states
  */
 
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { EVSIVerdictCard } from './EVSIVerdictCard';
+import { useWizardStore } from '@/stores/wizardStore';
+import { initialInputs } from '@/types/wizard';
+
+// Mock the url-codec module so tests don't depend on encoding logic
+vi.mock('@/lib/url-codec', () => ({
+  encodeWizardState: vi.fn().mockReturnValue('encoded-test-string'),
+}));
+
+// Mock useWizardStore to provide controlled inputs for share button tests
+vi.mock('@/stores/wizardStore', () => ({
+  useWizardStore: vi.fn(),
+}));
+
+const mockInputs = {
+  ...initialInputs,
+  baselineConversionRate: 0.05,
+  annualVisitors: 100000,
+  valuePerConversion: 50,
+};
 
 describe('EVSIVerdictCard', () => {
+  beforeEach(() => {
+    // Default mock: store returns test inputs
+    (useWizardStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (selector: (state: { inputs: typeof mockInputs }) => unknown) =>
+        selector({ inputs: mockInputs })
+    );
+
+    // Default clipboard mock: resolves successfully
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+      writable: true,
+    });
+
+    // Use fake timers for 2-second revert tests
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
   describe('positive net value (D-08)', () => {
     it('shows "up to" and formatted positive value', () => {
       // Use value < $1000 to avoid compact formatting (e.g., "$1K")
@@ -94,6 +136,96 @@ describe('EVSIVerdictCard', () => {
       );
 
       expect(screen.getByText(/up to/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Share button visibility (Tests B1-B3, per D-04)', () => {
+    // Test B1: No share button when netValueDollars is null
+    it('B1: Share button is NOT rendered when netValueDollars is null', () => {
+      render(<EVSIVerdictCard netValueDollars={null} isLoading={false} />);
+      expect(screen.queryByText(/Share This Analysis/)).not.toBeInTheDocument();
+    });
+
+    // Test B2: No share button when isLoading is true
+    it('B2: Share button is NOT rendered when isLoading is true', () => {
+      render(<EVSIVerdictCard netValueDollars={750} isLoading={true} />);
+      expect(screen.queryByText(/Share This Analysis/)).not.toBeInTheDocument();
+    });
+
+    // Test B3: Share button IS rendered when results available
+    it('B3: Share button IS rendered when netValueDollars is a number and isLoading is false', () => {
+      render(<EVSIVerdictCard netValueDollars={750} isLoading={false} />);
+      expect(screen.getByText(/Share This Analysis/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Share button text (Test B4, per D-02)', () => {
+    // Test B4: Button text contains "Share This Analysis"
+    it('B4: Share button text contains "Share This Analysis"', () => {
+      render(<EVSIVerdictCard netValueDollars={750} isLoading={false} />);
+      const button = screen.getByRole('button', { name: /Share This Analysis/ });
+      expect(button).toBeInTheDocument();
+    });
+  });
+
+  describe('Share button feedback states (Tests B5-B7, per D-03)', () => {
+    // Test B5: After clicking, button shows "Copied!"
+    it('B5: After clicking share button, button text changes to "Copied!"', async () => {
+      render(<EVSIVerdictCard netValueDollars={750} isLoading={false} />);
+
+      const shareButton = screen.getByRole('button', { name: /Share This Analysis/ });
+      await act(async () => {
+        fireEvent.click(shareButton);
+        // Allow async clipboard write to settle
+        await vi.runAllMicrotasksAsync();
+      });
+
+      expect(screen.getByText('Copied!')).toBeInTheDocument();
+    });
+
+    // Test B6: After 2 seconds, button reverts to original state
+    it('B6: After 2 seconds, button text reverts to "Share This Analysis"', async () => {
+      render(<EVSIVerdictCard netValueDollars={750} isLoading={false} />);
+
+      const shareButton = screen.getByRole('button', { name: /Share This Analysis/ });
+      await act(async () => {
+        fireEvent.click(shareButton);
+        await vi.runAllMicrotasksAsync();
+      });
+
+      // Verify "Copied!" state
+      expect(screen.getByText('Copied!')).toBeInTheDocument();
+
+      // Advance past 2000ms timeout
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+        await vi.runAllMicrotasksAsync();
+      });
+
+      // Should revert to original text
+      expect(screen.getByText(/Share This Analysis/)).toBeInTheDocument();
+      expect(screen.queryByText('Copied!')).not.toBeInTheDocument();
+    });
+
+    // Test B7: Clipboard failure shows "Unable to copy"
+    it('B7: When navigator.clipboard.writeText rejects, button shows "Unable to copy" error text', async () => {
+      // Override clipboard mock to reject
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {
+          writeText: vi.fn().mockRejectedValue(new Error('Permission denied')),
+        },
+        writable: true,
+      });
+
+      render(<EVSIVerdictCard netValueDollars={750} isLoading={false} />);
+
+      const shareButton = screen.getByRole('button', { name: /Share This Analysis/ });
+      await act(async () => {
+        fireEvent.click(shareButton);
+        await vi.runAllMicrotasksAsync();
+      });
+
+      expect(screen.getByText(/Unable to copy/)).toBeInTheDocument();
     });
   });
 });
