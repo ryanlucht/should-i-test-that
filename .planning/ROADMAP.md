@@ -138,7 +138,13 @@ Plans:
   2. Opening a shared URL hydrates the calculator with the sender's inputs and enables Learning Bits guided flow by default
   3. Share button in results section copies URL to clipboard with "Copied!" feedback that resets after 2 seconds
   4. Encoded state includes a schema version integer; URLs created today will still decode correctly after future schema changes
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 24-01-PLAN.md -- URL codec: encode/decode WizardInputs with base64url JSON, short keys, and schema versioning (TDD)
+- [ ] 24-02-PLAN.md -- Share button in EVSIVerdictCard with clipboard copy and URL hydration in App.tsx
+- [ ] 24-03-PLAN.md -- Modified-field visual indicators: sharedBaseline store, useSharedDiff hook, form input styling
+
 **UI hint**: yes
 
 ### Phase 25: Polish, Accessibility & Export
@@ -176,7 +182,7 @@ Plans:
 | 22. Learning Bits Guide Infrastructure | 2/2 | Complete    | 2026-03-25 |
 | 22.1. Stats Engine Correctness Fixes | 5/5 | Complete    | 2026-03-25 |
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
-| 24. Shareable Walkthrough URLs | 0/TBD | Not started | - |
+| 24. Shareable Walkthrough URLs | 0/3 | Not started | - |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
