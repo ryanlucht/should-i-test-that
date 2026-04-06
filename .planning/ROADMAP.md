@@ -182,7 +182,7 @@ Plans:
 | 22. Learning Bits Guide Infrastructure | 2/2 | Complete    | 2026-03-25 |
 | 22.1. Stats Engine Correctness Fixes | 5/5 | Complete    | 2026-03-25 |
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
-| 24. Shareable Walkthrough URLs | 3/3 | Complete   | 2026-04-06 |
+| 24. Shareable Walkthrough URLs | 3/3 | Complete    | 2026-04-06 |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
