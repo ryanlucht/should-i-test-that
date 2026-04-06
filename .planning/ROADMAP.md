@@ -17,7 +17,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 22: Learning Bits Guide Infrastructure** - Build dialogue component, typewriter hook, toggle, and section-aware state (BLOCKED on PM content for dialogue text) (completed 2026-03-25)
 - [x] **Phase 22.1: Stats Engine Correctness Fixes** - Fix remaining audit findings: Student-t double-division, worker truncation routing, truncated posterior mean, centralized prior builder, threshold formatting, traffic label semantics, legacy CoD removal, warning plumbing (completed 2026-03-25)
 - [x] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update (completed 2026-03-26)
-- [ ] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard
+- [x] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard (completed 2026-04-06)
 - [ ] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification
 - [ ] **Phase 26: AWS Deployment** - Serverless deployment following Datadog community-golden-paths
 
@@ -138,12 +138,12 @@ Plans:
   2. Opening a shared URL hydrates the calculator with the sender's inputs and enables Learning Bits guided flow by default
   3. Share button in results section copies URL to clipboard with "Copied!" feedback that resets after 2 seconds
   4. Encoded state includes a schema version integer; URLs created today will still decode correctly after future schema changes
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 24-01-PLAN.md -- URL codec: encode/decode WizardInputs with base64url JSON, short keys, and schema versioning (TDD)
 - [x] 24-02-PLAN.md -- Store sharedBaseline extension, share button in EVSIVerdictCard with clipboard copy, URL hydration in App.tsx
-- [ ] 24-03-PLAN.md -- Modified-field visual indicators: useSharedDiff hook and accessible form input styling
+- [x] 24-03-PLAN.md -- Modified-field visual indicators: useSharedDiff hook and accessible form input styling
 
 **UI hint**: yes
 
@@ -182,7 +182,7 @@ Plans:
 | 22. Learning Bits Guide Infrastructure | 2/2 | Complete    | 2026-03-25 |
 | 22.1. Stats Engine Correctness Fixes | 5/5 | Complete    | 2026-03-25 |
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
-| 24. Shareable Walkthrough URLs | 2/3 | In Progress|  |
+| 24. Shareable Walkthrough URLs | 3/3 | Complete   | 2026-04-06 |
 | 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
