@@ -15,6 +15,20 @@ import type { WizardInputs } from './url-codec';
 import { initialInputs } from './url-codec';
 
 // ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Decodes a base64url string to a JSON string for test inspection.
+ * Inverse of the URL-safe base64 encoding used by encodeWizardState.
+ */
+function decodeBase64Url(encoded: string): string {
+  const standard = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  const paddingNeeded = (4 - (standard.length % 4)) % 4;
+  return atob(standard + '='.repeat(paddingNeeded));
+}
+
+// ---------------------------------------------------------------------------
 // Test fixtures
 // ---------------------------------------------------------------------------
 
@@ -89,10 +103,7 @@ describe('encodeWizardState', () => {
 
   it('should include schema version "v":1 in the encoded payload', () => {
     const encoded = encodeWizardState(typicalScenario);
-    // Decode the base64url to inspect the JSON
-    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice((encoded.length * 3) % 4);
-    const json = atob(padded);
-    const payload = JSON.parse(json);
+    const payload = JSON.parse(decodeBase64Url(encoded));
     expect(payload.v).toBe(1);
   });
 
@@ -112,9 +123,7 @@ describe('encodeWizardState', () => {
 
   it('omits null fields from the encoded payload', () => {
     const encoded = encodeWizardState(typicalScenario);
-    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice((encoded.length * 3) % 4);
-    const json = atob(padded);
-    const payload = JSON.parse(json);
+    const payload = JSON.parse(decodeBase64Url(encoded));
     // studentTDf, thresholdUnit, thresholdValue are null in typicalScenario
     expect(payload).not.toHaveProperty('df'); // studentTDf short key
     expect(payload).not.toHaveProperty('tu'); // thresholdUnit short key
@@ -123,9 +132,7 @@ describe('encodeWizardState', () => {
 
   it('omits default values from the encoded payload', () => {
     const encoded = encodeWizardState(typicalScenario);
-    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice((encoded.length * 3) % 4);
-    const json = atob(padded);
-    const payload = JSON.parse(json);
+    const payload = JSON.parse(decodeBase64Url(encoded));
     // Default values that should be omitted:
     // visitorUnitLabel='visitors', priorShape='normal', trafficSplit=0.5,
     // eligibilityFraction=1.0, decisionLatencyDays=0
@@ -138,9 +145,7 @@ describe('encodeWizardState', () => {
 
   it('uses short keys (1-2 chars) in the encoded payload', () => {
     const encoded = encodeWizardState(allFieldsScenario);
-    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice((encoded.length * 3) % 4);
-    const json = atob(padded);
-    const payload = JSON.parse(json);
+    const payload = JSON.parse(decodeBase64Url(encoded));
     // No full field names should appear
     expect(payload).not.toHaveProperty('baselineConversionRate');
     expect(payload).not.toHaveProperty('annualVisitors');
