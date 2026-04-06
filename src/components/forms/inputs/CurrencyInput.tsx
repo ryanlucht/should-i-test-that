@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { InfoTooltip } from './InfoTooltip';
 import { formatCurrency, parseCurrency } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
+import { useSharedDiff } from '@/hooks/useSharedDiff';
+import type { WizardInputs } from '@/types/wizard';
 
 export interface CurrencyInputProps {
   /** Field name for react-hook-form */
@@ -47,6 +49,10 @@ export function CurrencyInput({
   // Local string state while focused to allow typing decimals (e.g., "50.99" won't be stripped to "50")
   const [displayValue, setDisplayValue] = useState<string>('');
   const { control } = useFormContext();
+
+  // Determine if this field has been modified from the shared URL baseline (D-08)
+  const { isFieldModified } = useSharedDiff();
+  const isModified = isFieldModified(name as keyof WizardInputs);
 
   /**
    * Format value for display when NOT focused (blurred state)
@@ -93,10 +99,16 @@ export function CurrencyInput({
         };
 
         return (
-          <div className="space-y-2">
+          <div className={cn("space-y-2", isModified && "border-l-2 border-l-primary/40 pl-2 rounded-sm")}>
             <div className="flex items-center gap-1.5">
               <Label htmlFor={name}>{label}</Label>
               {tooltip && <InfoTooltip content={tooltip} />}
+              {isModified && (
+                <span className="text-xs text-primary/60 font-normal ml-1">
+                  (edited)
+                  <span className="sr-only">This field has been modified from the shared analysis</span>
+                </span>
+              )}
             </div>
 
             <div className="relative">
