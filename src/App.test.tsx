@@ -1,14 +1,40 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import App from './App';
 import { useWizardStore } from '@/stores/wizardStore';
+import { initialInputs } from '@/types/wizard';
+
+// Mock the url-codec module so tests control what decodeWizardState returns
+vi.mock('@/lib/url-codec', () => ({
+  decodeWizardState: vi.fn(),
+  encodeWizardState: vi.fn().mockReturnValue('encoded-test-string'),
+}));
+
+import { decodeWizardState } from '@/lib/url-codec';
 
 describe('App', () => {
   beforeEach(() => {
     // Clear sessionStorage before each test to reset wizard state
     sessionStorage.clear();
     // Reset Zustand store to defaults between tests
-    useWizardStore.setState({ guideEnabled: true });
+    useWizardStore.setState({
+      inputs: { ...initialInputs },
+      guideEnabled: true,
+      currentSection: 0,
+      completedSections: [],
+      sharedBaseline: null,
+    });
+    // Reset URL hash to empty
+    window.location.hash = '';
+    // Reset mock
+    vi.mocked(decodeWizardState).mockReset();
+    // Mock replaceState
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.location.hash = '';
   });
 
   it('renders the Bubbly Pill logo text', () => {
@@ -56,5 +82,120 @@ describe('App', () => {
     expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Experiment Value Calculator' }));
     expect(screen.getByRole('button', { name: 'Start (with Guidance)' })).toBeInTheDocument();
+  });
+
+  describe('URL hydration', () => {
+    // Test H1: No hash = welcome page (already covered by above tests, verified here explicitly)
+    it('H1: When URL has no hash fragment, App renders the welcome page normally', () => {
+      window.location.hash = '';
+      render(<App />);
+      expect(screen.getByRole('button', { name: 'Start (with Guidance)' })).toBeInTheDocument();
+    });
+
+    // Test H2: Invalid hash = welcome page (decodeWizardState returns null)
+    it('H2: When URL hash has invalid encoded string, App renders the welcome page normally', () => {
+      window.location.hash = '#s=garbage';
+      vi.mocked(decodeWizardState).mockReturnValue(null);
+
+      render(<App />);
+      expect(screen.getByRole('button', { name: 'Start (with Guidance)' })).toBeInTheDocument();
+    });
+
+    // Test H3: Valid hash = calculator page directly (skip welcome)
+    it('H3: When URL hash is "#s={validEncoded}", App skips the welcome page and renders the calculator page directly', () => {
+      window.location.hash = '#s=validEncoded';
+      vi.mocked(decodeWizardState).mockReturnValue({ ...initialInputs });
+
+      render(<App />);
+      expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Start (with Guidance)' })).not.toBeInTheDocument();
+    });
+
+    // Test H4: Valid hash = guideEnabled set to true
+    it('H4: When URL hash is "#s={validEncoded}", guideEnabled is set to true in the store', () => {
+      window.location.hash = '#s=validEncoded';
+      // Start with guideEnabled=false to verify it gets set
+      useWizardStore.setState({ guideEnabled: false });
+      vi.mocked(decodeWizardState).mockReturnValue({ ...initialInputs });
+
+      render(<App />);
+      expect(useWizardStore.getState().guideEnabled).toBe(true);
+    });
+
+    // Test H5: All section fields populated = sections 0-3 marked complete
+    it('H5: When URL hash has all baseline fields populated, sections 0-3 are marked complete', () => {
+      window.location.hash = '#s=validEncoded';
+      // Decoded inputs with all required fields for sections 0-3
+      const allFieldsInputs = {
+        ...initialInputs,
+        // Section 0 (Baseline): baselineConversionRate, annualVisitors, valuePerConversion
+        baselineConversionRate: 0.05,
+        annualVisitors: 100000,
+        valuePerConversion: 50,
+        // Section 1 (Uncertainty): priorType
+        priorType: 'default' as const,
+        // Section 2 (Threshold): thresholdScenario
+        thresholdScenario: 'any-positive' as const,
+        // Section 3 (Test Design): testDurationDays, dailyTraffic
+        testDurationDays: 14,
+        dailyTraffic: 2000,
+      };
+      vi.mocked(decodeWizardState).mockReturnValue(allFieldsInputs);
+
+      render(<App />);
+
+      const { completedSections } = useWizardStore.getState();
+      expect(completedSections).toContain(0);
+      expect(completedSections).toContain(1);
+      expect(completedSections).toContain(2);
+      expect(completedSections).toContain(3);
+    });
+
+    // Test H6: Only section 0 fields populated = only section 0 marked complete (smart completion)
+    it('H6: When only section 0 fields are populated, only section 0 is marked complete', () => {
+      window.location.hash = '#s=validEncoded';
+      // Only section 0 fields provided; sections 1-3 fields remain null
+      const section0OnlyInputs = {
+        ...initialInputs,
+        baselineConversionRate: 0.05,
+        annualVisitors: 100000,
+        valuePerConversion: 50,
+        // priorType, thresholdScenario, testDurationDays, dailyTraffic all remain null
+      };
+      vi.mocked(decodeWizardState).mockReturnValue(section0OnlyInputs);
+
+      render(<App />);
+
+      const { completedSections } = useWizardStore.getState();
+      expect(completedSections).toContain(0);
+      expect(completedSections).not.toContain(1);
+      expect(completedSections).not.toContain(2);
+      expect(completedSections).not.toContain(3);
+    });
+
+    // Test H7: setSharedBaseline called with decoded inputs
+    it('H7: When URL hash is valid, setSharedBaseline is called with the decoded inputs', () => {
+      window.location.hash = '#s=validEncoded';
+      const decodedInputs = { ...initialInputs, baselineConversionRate: 0.05 };
+      vi.mocked(decodeWizardState).mockReturnValue(decodedInputs);
+
+      render(<App />);
+
+      expect(useWizardStore.getState().sharedBaseline).toEqual(decodedInputs);
+    });
+
+    // Test H8: URL hash cleaned after successful hydration
+    it('H8: After successful hydration, URL hash is cleaned (window.history.replaceState called)', () => {
+      window.location.hash = '#s=validEncoded';
+      vi.mocked(decodeWizardState).mockReturnValue({ ...initialInputs });
+
+      render(<App />);
+
+      expect(window.history.replaceState).toHaveBeenCalledWith(
+        null,
+        '',
+        window.location.pathname
+      );
+    });
   });
 });
