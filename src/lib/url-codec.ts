@@ -16,81 +16,8 @@
  * to bring it up to the current schema before validation.
  */
 
-// ---------------------------------------------------------------------------
-// WizardInputs type (flat structure for EVSI-only mode)
-// ---------------------------------------------------------------------------
-
-/**
- * All wizard inputs in a single flat structure.
- * Re-exported here so callers can import from a single location.
- */
-export interface WizardInputs {
-  // --- Baseline Metrics ---
-  /** Baseline conversion rate as a decimal (e.g., 0.05 for 5%) */
-  baselineConversionRate: number | null;
-  /** Annual visitors/traffic */
-  annualVisitors: number | null;
-  /** User-editable label for visitors (visitors/sessions/leads/etc.) */
-  visitorUnitLabel: string;
-  /** Revenue or value per conversion in dollars */
-  valuePerConversion: number | null;
-
-  // --- Prior / Uncertainty ---
-  /** Prior type selection: 'default' uses N(0, 0.05), 'custom' uses interval bounds */
-  priorType: 'default' | 'custom' | null;
-  /** Lower bound of 90% credible interval (percentage form, e.g., -5 for -5%) */
-  priorIntervalLow: number | null;
-  /** Upper bound of 90% credible interval (percentage form, e.g., 10 for 10%) */
-  priorIntervalHigh: number | null;
-  /** Prior distribution shape */
-  priorShape: 'normal' | 'student-t' | 'uniform' | null;
-  /** Degrees of freedom for Student-t distribution (3=Heavy, 5=Moderate, 10=Near-normal) */
-  studentTDf: 3 | 5 | 10 | null;
-
-  // --- Threshold ---
-  /** Threshold scenario */
-  thresholdScenario: 'any-positive' | 'minimum-lift' | 'accept-loss' | null;
-  /** Threshold unit when applicable */
-  thresholdUnit: 'dollars' | 'lift' | null;
-  /** Threshold value in the selected unit */
-  thresholdValue: number | null;
-
-  // --- Experiment Design ---
-  /** Test duration in days */
-  testDurationDays: number | null;
-  /** Daily traffic eligible for the experiment */
-  dailyTraffic: number | null;
-  /** Fraction of traffic seeing the variant (e.g., 0.5 for 50/50 split) */
-  trafficSplit: number | null;
-  /** Fraction of all traffic eligible for the experiment (e.g., 1.0 for 100%) */
-  eligibilityFraction: number | null;
-  /** Days after test ends before you can ship the decision */
-  decisionLatencyDays: number | null;
-}
-
-/**
- * Initial values for all wizard inputs.
- * Fields with these default values are omitted from encoding to minimize URL length.
- */
-export const initialInputs: WizardInputs = {
-  baselineConversionRate: null,
-  annualVisitors: null,
-  visitorUnitLabel: 'visitors',
-  valuePerConversion: null,
-  priorType: null,
-  priorIntervalLow: null,
-  priorIntervalHigh: null,
-  priorShape: 'normal',
-  studentTDf: null,
-  thresholdScenario: null,
-  thresholdUnit: null,
-  thresholdValue: null,
-  testDurationDays: null,
-  dailyTraffic: null,
-  trafficSplit: 0.5,
-  eligibilityFraction: 1.0,
-  decisionLatencyDays: 0,
-};
+import type { WizardInputs } from '@/types/wizard';
+import { initialInputs } from '@/types/wizard';
 
 // ---------------------------------------------------------------------------
 // Short key mapping

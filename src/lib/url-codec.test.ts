@@ -11,8 +11,8 @@ import {
   decodeWizardState,
   SCHEMA_VERSION,
 } from './url-codec';
-import type { WizardInputs } from './url-codec';
-import { initialInputs } from './url-codec';
+import type { WizardInputs } from '@/types/wizard';
+import { initialInputs } from '@/types/wizard';
 
 // ---------------------------------------------------------------------------
 // Test helpers
