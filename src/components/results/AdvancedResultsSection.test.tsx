@@ -83,6 +83,9 @@ describe('ResultsSection accessibility', () => {
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
         inputs: sampleInputs,
+        sharedNetValue: null,
+        analysisName: '',
+        setAnalysisName: vi.fn(),
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
@@ -107,6 +110,9 @@ describe('ResultsSection accessibility', () => {
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
         inputs: sampleInputs,
+        sharedNetValue: null,
+        analysisName: '',
+        setAnalysisName: vi.fn(),
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
@@ -131,6 +137,9 @@ describe('ResultsSection accessibility', () => {
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
         inputs: sampleInputs,
+        sharedNetValue: null,
+        analysisName: '',
+        setAnalysisName: vi.fn(),
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
@@ -154,6 +163,9 @@ describe('ResultsSection accessibility', () => {
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
         inputs: sampleInputs,
+        sharedNetValue: null,
+        analysisName: '',
+        setAnalysisName: vi.fn(),
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
@@ -183,6 +195,9 @@ describe('ResultsSection accessibility', () => {
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
         inputs: sampleInputs,
+        sharedNetValue: null,
+        analysisName: '',
+        setAnalysisName: vi.fn(),
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
