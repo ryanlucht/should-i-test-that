@@ -19,6 +19,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update (completed 2026-03-26)
 - [x] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard (completed 2026-04-06)
 - [x] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification (completed 2026-04-08)
+- [ ] **Phase 25.1: Results Card Improvements** - Plain-English waterfall, directional decision impact, card renames, FAQ accordion explainers
 - [ ] **Phase 26: AWS Deployment** - Serverless deployment following Datadog community-golden-paths
 
 ## Phase Details
@@ -161,6 +162,28 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 25.1: Results Card Improvements (INSERTED)
+
+**Goal:** Results page is understandable to non-statisticians: plain-English waterfall explains why the calculator produced its value, directional decision impact replaces abstract P(Decision Change), card labels use plain language, and FAQ accordions answer follow-up questions on demand
+**Requirements**: RCI-01, RCI-02, RCI-03, RCI-04, RCI-05, RCI-06
+**Depends on:** Phase 25
+**Success Criteria** (what must be TRUE):
+  1. Six-step "Why this result?" waterfall narrative is visible by default below the verdict headline
+  2. "Threshold" card renamed to "Shipping rule" throughout the results section
+  3. Single P(Decision Change) metric replaced with directional "Stops you from shipping" and "Convinces you to ship" rows
+  4. Statistical Interpretation callout uses mainDecisionMechanism phrasing per SPEC
+  5. Four FAQ accordion explainers are collapsed by default and expand independently with dynamic content
+  6. A non-statistician can answer: what to do, why worth money, why this much, waiting cost, and directional protection
+**Plans:** 4 plans
+
+Plans:
+- [ ] 25.1-01-PLAN.md -- Add pStopsShip/pConvincesShip directional probabilities to engine types, MC loops, fast-path, and hook
+- [ ] 25.1-02-PLAN.md -- WaterfallBlock component, SupportingCard grid updates (Shipping rule, Decision impact), Statistical Interpretation update, layout reorder
+- [ ] 25.1-03-PLAN.md -- FAQAccordion component with four collapsed explainers, wire into ResultsSection, remove EVSI Intuition block
+- [ ] 25.1-04-PLAN.md -- PM visual review checkpoint for results page redesign
+
+**UI hint**: yes
+
 ### Phase 26: AWS Deployment
 **Goal**: Application is deployed to AWS serverless infrastructure with working Datadog instrumentation
 **Depends on**: Phase 25 (deploy the finished product)
@@ -172,7 +195,7 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 26
+**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 25.1 > 26
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -184,6 +207,7 @@ Plans:
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
 | 24. Shareable Walkthrough URLs | 3/3 | Complete    | 2026-04-06 |
 | 25. Polish, Accessibility & Export | 3/3 | Complete    | 2026-04-08 |
+| 25.1. Results Card Improvements | 0/4 | In Progress | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
 ## Coverage Validation
@@ -241,9 +265,15 @@ Plans:
 | POL-03 | 25 | Yes |
 | POL-04 | 25 | Yes |
 | DD-01 | 25 | Yes |
+| RCI-01 | 25.1 | Yes |
+| RCI-02 | 25.1 | Yes |
+| RCI-03 | 25.1 | Yes |
+| RCI-04 | 25.1 | Yes |
+| RCI-05 | 25.1 | Yes |
+| RCI-06 | 25.1 | Yes |
 | DEPLOY-01 | 26 | Yes |
 
-**Coverage:** 52/52 requirements mapped (100%)
+**Coverage:** 58/58 requirements mapped (100%)
 
 ---
 *Roadmap created: 2026-03-23*
