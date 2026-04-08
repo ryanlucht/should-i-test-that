@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { datadogRum } from '@datadog/browser-rum'
+import { getOrCreateAnonymousId } from './lib/analytics'
 import './index.css'
 import App from './App.tsx'
 
@@ -26,6 +27,13 @@ if (import.meta.env.PROD) {
     trackLongTasks: true,
     // Mask user input in replays for privacy (e.g., form fields)
     defaultPrivacyLevel: 'mask-user-input',
+  })
+
+  // Set anonymous user ID for Datadog PA Users view (DD-01).
+  // Called after init() per Datadog SDK requirements — setUser()
+  // requires an active session from init().
+  datadogRum.setUser({
+    id: getOrCreateAnonymousId(),
   })
 }
 

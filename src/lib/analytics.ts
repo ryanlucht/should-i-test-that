@@ -13,6 +13,30 @@
 import { datadogRum } from '@datadog/browser-rum';
 
 /**
+ * Anonymous user identification for Datadog Product Analytics (DD-01).
+ *
+ * Generates a cryptographically random UUID on first visit and stores it
+ * in localStorage under 'dd_anonymous_id'. Subsequent visits return the
+ * same UUID, giving Datadog PA a stable user identifier without PII.
+ *
+ * Uses crypto.randomUUID() (available in all modern browsers).
+ * Falls back to a timestamp-based ID if crypto API is unavailable.
+ */
+const ANONYMOUS_ID_KEY = 'dd_anonymous_id';
+
+export function getOrCreateAnonymousId(): string {
+  const existing = localStorage.getItem(ANONYMOUS_ID_KEY);
+  if (existing) return existing;
+
+  const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `anon-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  localStorage.setItem(ANONYMOUS_ID_KEY, id);
+  return id;
+}
+
+/**
  * Track wizard step completion (OBS-05)
  *
  * @param stepName - The name/id of the completed step (e.g., 'baseline', 'uncertainty')

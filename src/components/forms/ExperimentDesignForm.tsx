@@ -56,6 +56,12 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
     // Accordion state for advanced timing section (D-10 — default closed)
     const [advancedTimingOpen, setAdvancedTimingOpen] = useState(false);
 
+    // Auto-derive daily traffic state (POL-03)
+    // derivedHint: shown when auto-fill happens, cleared on manual edit
+    // derivedValue: tracks the auto-filled value to detect manual edits
+    const [derivedHint, setDerivedHint] = useState<string | null>(null);
+    const [derivedValue, setDerivedValue] = useState<number | null>(null);
+
     // Initialize form with react-hook-form and Zod validation
     const methods = useForm<ExperimentDesignFormData>({
       resolver: zodResolver(experimentDesignSchema),
@@ -134,6 +140,33 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
     // Check if we can show the derive button
     const canDeriveFromAnnual = inputs.annualVisitors !== null && inputs.annualVisitors > 0;
 
+    // Per D-01: Auto-derive daily traffic from annual visitors when daily traffic is empty
+    // Per D-02: Never overwrite — only when dailyTraffic is null (empty)
+    useEffect(() => {
+      if (
+        inputs.annualVisitors !== null &&
+        inputs.annualVisitors > 0 &&
+        inputs.dailyTraffic === null
+      ) {
+        const derived = Math.round(inputs.annualVisitors / 365);
+        setValue('dailyTraffic', derived);
+        setInput('dailyTraffic', derived);
+        setDerivedValue(derived);
+        setDerivedHint('(derived from annual visitors)');
+      }
+    }, [inputs.annualVisitors, inputs.dailyTraffic, setValue, setInput]);
+
+    // Clear hint when user manually edits the daily traffic field (D-03)
+    useEffect(() => {
+      if (
+        derivedValue !== null &&
+        inputs.dailyTraffic !== null &&
+        inputs.dailyTraffic !== derivedValue
+      ) {
+        setDerivedHint(null);
+      }
+    }, [inputs.dailyTraffic, derivedValue]);
+
     // Sync form with store changes (e.g., if store is reset)
     // Use != null to check for both null AND undefined (handles stale session data)
     useEffect(() => {
@@ -192,6 +225,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
               placeholder="5,000"
               tooltip="Total daily visitors to the site or app, before experiment eligibility filtering. Use Eligible traffic below to specify the share that qualifies."
               error={errors.dailyTraffic?.message}
+              helpText={derivedHint ?? undefined}
               labelSuffix={
                 canDeriveFromAnnual ? (
                   <button
