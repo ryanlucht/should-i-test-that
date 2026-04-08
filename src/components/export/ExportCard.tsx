@@ -126,9 +126,6 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     },
     ref
   ) {
-    // Mode badge display text
-    const modeBadge = mode === 'basic' ? 'Basic Mode' : 'Advanced Mode';
-
     // Format the primary verdict value
     const formattedValue = formatSmartCurrency(verdictValue);
 
@@ -177,41 +174,68 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         }}
       >
-        {/* Header: Title + Mode Badge */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '32px',
-          }}
-        >
-          <h1
-            style={{
-              fontSize: '36px',
-              fontWeight: '700',
-              color: '#111827', // text-foreground
-              margin: 0,
-              maxWidth: '800px',
-              lineHeight: '1.2',
-            }}
-          >
-            {title}
-          </h1>
-          <span
-            style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#7C3AED', // Purple accent
-              backgroundColor: '#F3E8FF', // Purple-50
-              padding: '6px 12px',
-              borderRadius: '9999px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {modeBadge}
+        {/* Logo branding — EXPORT-01 (D-05)
+          * Recreated with inline styles for html-to-image compatibility.
+          * CSS pseudo-elements and Tailwind classes don't reliably capture
+          * in html-to-image, so all styling is inline. */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          gap: '12px',
+          marginBottom: '16px',
+        }}>
+          {/* "Should I" text */}
+          <span style={{
+            fontSize: '28px',
+            fontWeight: '800',
+            color: '#7C3AED',
+            fontFamily: '"Noto Sans", sans-serif',
+            letterSpacing: '-0.02em',
+          }}>
+            Should I
+          </span>
+
+          {/* Purple pill with "Test" */}
+          <span style={{
+            fontSize: '28px',
+            fontWeight: '800',
+            color: '#FFFFFF',
+            fontFamily: '"Noto Sans", sans-serif',
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(135deg, #9333EA 0%, #7C3AED 50%, #6D28D9 100%)',
+            padding: '4px 20px',
+            borderRadius: '9999px',
+            display: 'inline-block',
+            boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)',
+          }}>
+            Test
+          </span>
+
+          {/* "That?" text */}
+          <span style={{
+            fontSize: '28px',
+            fontWeight: '800',
+            color: '#7C3AED',
+            fontFamily: '"Noto Sans", sans-serif',
+            letterSpacing: '-0.02em',
+          }}>
+            That?
           </span>
         </div>
+
+        {/* Analysis title — only shown when user provides a custom name */}
+        {title !== 'Should I Test That?' && (
+          <h1 style={{
+            fontSize: '28px',
+            fontWeight: '700',
+            color: '#111827',
+            margin: '0 0 24px 0',
+            lineHeight: '1.2',
+          }}>
+            {title}
+          </h1>
+        )}
 
         {/* Verdict Section */}
         <div
@@ -525,7 +549,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
               margin: 0,
             }}
           >
-            Created with Should I Test That?
+            shoulditestthat.com
           </p>
         </div>
       </div>
