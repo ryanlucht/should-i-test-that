@@ -20,6 +20,7 @@ import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { ValueBreakdownCard } from './ValueBreakdownCard';
 import { SupportingCard } from './SupportingCard';
 import { WaterfallBlock } from './WaterfallBlock';
+import { FAQAccordion } from './FAQAccordion';
 import { ExportButton } from '@/components/export/ExportButton';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, Info } from 'lucide-react';
@@ -226,26 +227,17 @@ export function ResultsSection() {
             );
           })()}
 
-          {/* EVSI Intuition */}
-          <div className="rounded-xl border bg-muted/30 border-muted p-4 space-y-2">
-            <p className="text-sm font-semibold text-foreground">
-              How to interpret {formatSmartCurrency(results.netValueDollars)}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI (Expected Value of Sample Information) represents
-              the expected improvement in your decision from running this test.
-              However, running a test has timing costs: during the test period,
-              only the variant group receives treatment, and during decision latency,
-              nobody does.{' '}
-              {results.netValueDollars >= 0 ? (
-                <>The net {formatSmartCurrency(results.netValueDollars)} accounts
-                for these timing effects and is the most you should pay to run this test.</>
-              ) : (
-                <>The net {formatSmartCurrency(results.netValueDollars)} indicates
-                the timing costs outweigh the expected learning from this test.</>
-              )}
-            </p>
-          </div>
+          {/* FAQ Accordion explainers -- collapsed by default per D-02 */}
+          <FAQAccordion
+            traffic={inputs.dailyTraffic ?? 0}
+            valuePerConversion={inputs.valuePerConversion ?? 0}
+            priorLow={priorLow}
+            priorHigh={priorHigh}
+            pDecisionChange={results.evsi.probabilityTestChangesDecision}
+            testValue={results.evsi.evsiDollars}
+            timingCost={results.evsi.evsiDollars - results.netValueDollars}
+            netValue={results.netValueDollars}
+          />
 
           {/* PNG Export - EXPORT-01 through EXPORT-04 */}
           {/* Analysis name field — per D-06, D-08 */}

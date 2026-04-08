@@ -246,4 +246,17 @@ describe('AdvancedResultsSection card content (RCI-03, RCI-04, RCI-05)', () => {
 
     expect(screen.getByText(/give you confidence to ship when upside is uncertain/)).toBeInTheDocument();
   });
+
+  it('does not render EVSI Intuition block', () => {
+    render(<AdvancedResultsSection />);
+
+    expect(screen.queryByText(/How to interpret/)).not.toBeInTheDocument();
+  });
+
+  it('renders FAQ accordion section', () => {
+    render(<AdvancedResultsSection />);
+
+    expect(screen.getByText("What's driving the value you've calculated?")).toBeInTheDocument();
+    expect(screen.getByText("How is the value of better decisions calculated?")).toBeInTheDocument();
+  });
 });
