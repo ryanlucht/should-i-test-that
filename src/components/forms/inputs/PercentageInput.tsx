@@ -32,6 +32,10 @@ export interface PercentageInputProps {
   error?: string;
   /** Invisible spacer text to align with adjacent inputs that have suffixes (e.g., "days") */
   alignWithSuffix?: string;
+  /** Descriptive aria-label including purpose and units (e.g., "Baseline conversion rate, percentage").
+   * When provided, overrides the default accessible name from the associated <Label>.
+   * Use when the label text alone is insufficient for screen readers. */
+  ariaLabel?: string;
 }
 
 /**
@@ -46,6 +50,7 @@ export function PercentageInput({
   tooltip,
   error,
   alignWithSuffix,
+  ariaLabel,
 }: PercentageInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
@@ -124,6 +129,7 @@ export function PercentageInput({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onFocus={handleFocus}
+                aria-label={ariaLabel}
                 aria-invalid={!!error}
                 aria-describedby={error ? `${name}-error` : helpText ? `${name}-help` : undefined}
                 className={cn(

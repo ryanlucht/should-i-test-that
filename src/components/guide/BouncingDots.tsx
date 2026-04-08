@@ -12,9 +12,9 @@
 export function BouncingDots() {
   return (
     <span className="inline-flex items-center gap-0.5 ml-1" aria-hidden="true">
-      <span className="animate-dot-bounce text-primary font-bold">&middot;</span>
-      <span className="animate-dot-bounce text-primary font-bold">&middot;</span>
-      <span className="animate-dot-bounce text-primary font-bold">&middot;</span>
+      <span className="animate-dot-bounce motion-reduce:animate-none text-primary font-bold">&middot;</span>
+      <span className="animate-dot-bounce motion-reduce:animate-none text-primary font-bold">&middot;</span>
+      <span className="animate-dot-bounce motion-reduce:animate-none text-primary font-bold">&middot;</span>
     </span>
   );
 }

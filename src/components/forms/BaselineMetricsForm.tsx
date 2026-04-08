@@ -164,6 +164,7 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
               placeholder="3.2%"
               tooltip="This is your current conversion rate for the metric and audience/targeting you'd be testing. Ideally, choose a metric that is a revenue-generating event (e.g., visitors to signups)."
               error={errors.baselineConversionRate?.message}
+              ariaLabel="Baseline conversion rate, percentage"
             />
 
             {/* Annual Visitors */}
@@ -175,6 +176,7 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
               error={errors.annualVisitors?.message}
               unitLabelValue={unitLabel}
               onUnitLabelChange={handleUnitLabelChange}
+              ariaLabel="Annual visitors, number"
             />
 
             {/* Value per Conversion */}
@@ -184,6 +186,7 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
               placeholder="$50"
               tooltip="Put the business value of one conversion in dollars. Examples: average order value, gross margin per purchase, first-year LTV, or a blended estimate. Pick one that matches how you evaluate impact."
               error={errors.valuePerConversion?.message}
+              ariaLabel="Value per conversion, US dollars"
             />
           </div>
         </form>

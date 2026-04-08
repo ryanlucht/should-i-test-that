@@ -182,6 +182,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
               tooltip="Enter duration in days. Longer tests = more data = less noise."
               error={errors.testDurationDays?.message}
               suffix="days"
+              ariaLabel="Test duration in days"
             />
 
             {/* Daily Traffic (required, with inline derive option) */}
@@ -202,6 +203,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
                   </button>
                 ) : undefined
               }
+              ariaLabel="Total daily visitors, number"
             />
 
             {/* Traffic Split (pre-filled 50%) */}
@@ -212,6 +214,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
               tooltip="Percentage of traffic seeing the variant (50% = standard A/B)"
               error={errors.trafficSplit?.message}
               alignWithSuffix="days"
+              ariaLabel="Variant allocation, percentage of traffic"
             />
 
             {/* Eligibility Fraction (pre-filled 100%) */}
@@ -221,6 +224,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
               placeholder="100%"
               tooltip="What fraction of all traffic is eligible for this experiment?"
               error={errors.eligibilityFraction?.message}
+              ariaLabel="Eligible traffic, percentage"
             />
           </div>
 
@@ -252,6 +256,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
                     tooltip="Time needed for analysis, review, and deployment after the test concludes."
                     error={errors.decisionLatencyDays?.message}
                     suffix="days"
+                    ariaLabel="Decision latency in days"
                   />
                 </div>
               </div>

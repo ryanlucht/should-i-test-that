@@ -154,6 +154,14 @@ export function PriorDistributionChart({
   const areaType = prior.type === 'uniform' ? 'stepAfter' : 'monotone';
 
   return (
+    <div
+      role="img"
+      aria-label="Prior distribution density chart showing the probability distribution of expected lift from the experiment. The x-axis shows percentage lift and the y-axis shows probability density."
+    >
+      {/* Screen reader text: dynamic description of the distribution */}
+      <span className="sr-only">
+        Distribution chart for a {prior.type} prior centered at {((prior.mu_L ?? 0) * 100).toFixed(1)}% expected lift.
+      </span>
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart
         data={chartData}
@@ -237,6 +245,7 @@ export function PriorDistributionChart({
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 

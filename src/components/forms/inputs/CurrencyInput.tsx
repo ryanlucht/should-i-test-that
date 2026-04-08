@@ -30,6 +30,10 @@ export interface CurrencyInputProps {
   tooltip?: React.ReactNode;
   /** Error message to display */
   error?: string;
+  /** Descriptive aria-label including purpose and units (e.g., "Value per conversion, US dollars").
+   * When provided, overrides the default accessible name from the associated <Label>.
+   * Use when the label text alone is insufficient for screen readers. */
+  ariaLabel?: string;
 }
 
 /**
@@ -43,6 +47,7 @@ export function CurrencyInput({
   helpText,
   tooltip,
   error,
+  ariaLabel,
 }: CurrencyInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
@@ -121,6 +126,7 @@ export function CurrencyInput({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onFocus={handleFocus}
+                aria-label={ariaLabel}
                 aria-invalid={!!error}
                 aria-describedby={error ? `${name}-error` : helpText ? `${name}-help` : undefined}
                 className={cn(

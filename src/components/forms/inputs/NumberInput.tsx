@@ -40,6 +40,10 @@ export interface NumberInputProps {
   suffix?: string;
   /** Extra content rendered inline with the label (e.g., action buttons) */
   labelSuffix?: React.ReactNode;
+  /** Descriptive aria-label including purpose and units (e.g., "Test duration in days").
+   * When provided, overrides the default accessible name from the associated <Label>.
+   * Use when the label text alone is insufficient for screen readers. */
+  ariaLabel?: string;
 }
 
 /**
@@ -57,6 +61,7 @@ export function NumberInput({
   onUnitLabelChange,
   suffix,
   labelSuffix,
+  ariaLabel,
 }: NumberInputProps) {
   // Track whether input is focused for formatting behavior
   const [isFocused, setIsFocused] = useState(false);
@@ -139,6 +144,7 @@ export function NumberInput({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onFocus={handleFocus}
+                aria-label={ariaLabel}
                 aria-invalid={!!error}
                 aria-describedby={error ? `${name}-error` : helpText ? `${name}-help` : undefined}
                 className={cn(
