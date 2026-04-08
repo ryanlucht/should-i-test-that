@@ -19,6 +19,7 @@ import { useWizardStore } from '@/stores/wizardStore';
 import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { ValueBreakdownCard } from './ValueBreakdownCard';
 import { SupportingCard } from './SupportingCard';
+import { WaterfallBlock } from './WaterfallBlock';
 import { ExportButton } from '@/components/export/ExportButton';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, Info } from 'lucide-react';
@@ -107,25 +108,36 @@ export function ResultsSection() {
         isLoading={sharedNetValue !== null ? false : loading}
       />
 
-      {/* Calculation Warnings - Accuracy-08 */}
-      {results?.warnings && results.warnings.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-800">
-              {results.warnings.map((warning, index) => (
-                <p key={warning.code} className={index > 0 ? 'mt-2' : ''}>
-                  {warning.message}
-                </p>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Supporting Metrics - ADV-OUT-03 through ADV-OUT-07 */}
       {results && (
         <>
+          {/* "Why this result?" waterfall -- visible by default per RCI-02/D-05 */}
+          <WaterfallBlock
+            defaultDecision={results.evsi.defaultDecision}
+            priorLow={priorLow}
+            priorHigh={priorHigh}
+            pDecisionChange={results.evsi.probabilityTestChangesDecision}
+            testValue={results.evsi.evsiDollars}
+            timingCost={results.evsi.evsiDollars - results.netValueDollars}
+            netValue={results.netValueDollars}
+          />
+
+          {/* Calculation Warnings - Accuracy-08 */}
+          {results.warnings && results.warnings.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  {results.warnings.map((warning, index) => (
+                    <p key={warning.code} className={index > 0 ? 'mt-2' : ''}>
+                      {warning.message}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Value Breakdown Card - replaces separate EVSI/CoD/NetValue cards */}
           <ValueBreakdownCard
             evsiDollars={results.evsi.evsiDollars}
@@ -145,9 +157,9 @@ export function ResultsSection() {
                 description={`Range: ${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
               />
 
-              {/* Threshold Summary — uses formatThreshold for unit-aware display (audit P5) */}
+              {/* Shipping rule — renamed from Threshold per RCI-03/D-05 */}
               <SupportingCard
-                title="Threshold"
+                title="Shipping rule"
                 value={formatThreshold({
                   scenario: (inputs.thresholdScenario ?? 'any-positive') as 'any-positive' | 'minimum-lift' | 'accept-loss',
                   unit: inputs.thresholdUnit,
@@ -155,53 +167,64 @@ export function ResultsSection() {
                 })}
                 description={
                   inputs.thresholdScenario !== 'any-positive'
-                    ? `Your minimum bar to deploy`
+                    ? 'Your minimum bar to deploy'
                     : 'Deploy if it helps'
                 }
               />
 
-              {/* Probability test changes decision - ADV-OUT-07 */}
+              {/* Decision impact — directional split per RCI-04/D-05 */}
               <SupportingCard
-                title="P(Decision Change)"
-                value={formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)}
-                description={
-                  results.evsi.probabilityTestChangesDecision > 0.2
-                    ? 'Test likely to influence decision'
-                    : 'Test unlikely to change mind'
-                }
+                title="Decision impact"
                 variant={results.evsi.probabilityTestChangesDecision > 0.2 ? 'highlight' : 'default'}
-              />
+              >
+                <div className="space-y-1.5">
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Stops you from shipping</span>
+                    <span className="text-lg font-bold text-foreground">
+                      {formatProbabilityPercent(results.evsi.pStopsShip ?? 0)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Convinces you to ship</span>
+                    <span className="text-lg font-bold text-foreground">
+                      {formatProbabilityPercent(results.evsi.pConvincesShip ?? 0)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  Total chance the test changes your action: {formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)}
+                </div>
+              </SupportingCard>
             </div>
           </div>
 
-          {/* Statistical Interpretation Callout - POL-04 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-blue-900">
-                Statistical Interpretation
-              </h4>
-              <p className="text-sm text-blue-800 leading-relaxed">
-                {results.evsi.defaultDecision === 'ship' ? (
-                  <>
-                    Based on your prior belief (mean: {priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%),
-                    the default decision without testing is to <strong>ship</strong>.
-                    {results.evsi.probabilityTestChangesDecision > 0.2 && (
-                      <> The test has a {formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)} chance of changing this decision.</>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    Based on your prior belief (mean: {priorMean > 0 ? '+' : ''}{priorMean.toFixed(1)}%),
-                    the default decision without testing is to <strong>not ship</strong>.
-                    {results.evsi.probabilityTestChangesDecision > 0.2 && (
-                      <> The test has a {formatProbabilityPercent(results.evsi.probabilityTestChangesDecision)} chance of changing this decision.</>
-                    )}
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
+          {/* Statistical Interpretation Callout - POL-04 / RCI-05 */}
+          {(() => {
+            // Derive main decision mechanism from default decision (per UI-SPEC)
+            // If defaultDecision='ship', the test's primary value is preventing bad ships
+            // If defaultDecision='dont-ship', the test's primary value is enabling good ships
+            const mainDecisionMechanism = results.evsi.defaultDecision === 'ship'
+              ? 'stop you from shipping when downside is plausible'
+              : 'give you confidence to ship when upside is uncertain';
+
+            return (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-blue-900">
+                    Statistical Interpretation
+                  </h4>
+                  <p className="text-sm text-blue-800 leading-relaxed">
+                    Based on your prior belief, the default decision without testing is to{' '}
+                    <strong>{results.evsi.defaultDecision === 'ship' ? 'ship' : 'not ship'}</strong>.
+                    {' '}This test is mainly valuable because it can{' '}
+                    <strong>{mainDecisionMechanism}</strong>{' '}
+                    in a meaningful share of outcomes.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* EVSI Intuition */}
           <div className="rounded-xl border bg-muted/30 border-muted p-4 space-y-2">
