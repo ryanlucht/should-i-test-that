@@ -78,7 +78,7 @@ One-liner: PNG exports now show inline-styled "Should I [Test] That?" logo and a
 - Font: `"Noto Sans", sans-serif` (matches BubblyPillLogo CSS component)
 - Analysis title (custom name) renders only when `title !== 'Should I Test That?'`
 - Mode badge (`<span>` with "Basic Mode" / "Advanced Mode") removed — obsolete since Phase 19
-- Footer updated from "Created with Should I Test That?" to "shoulditestthat.com"
+- Footer text set to "shoulditestthat.com" (subsequently reverted — see Deviations)
 
 **Commit:** `b8a398a`
 
@@ -94,7 +94,7 @@ Task 3 is a `checkpoint:human-verify` gate — execution stopped here per plan i
    - PNG header shows "Should I [Test] That?" logo with purple pill
    - Analysis name appears as title below logo
    - No "Advanced Mode" badge is visible
-   - Footer says "shoulditestthat.com"
+   - Footer says "Created with Should I Test That?"
 4. Clear the analysis name and export again:
    - Filename: `should-i-test-that_2026-04-08.png`
    - No custom title below logo
@@ -109,6 +109,13 @@ Task 3 is a `checkpoint:human-verify` gate — execution stopped here per plan i
 - **Fix:** Changed call to `exportPng(analysisName || undefined)` — drops the spurious mode argument
 - **Files modified:** `src/components/export/ExportButton.tsx`
 - **Commit:** `55130e8`
+
+**2. [Rule 1 - Bug] Reverted export footer domain to original text**
+- **Found during:** Post-checkpoint user review
+- **Issue:** Task 2 changed the footer from "Created with Should I Test That?" to "shoulditestthat.com" — a domain the project owner does not control or use.
+- **Fix:** Reverted footer back to "Created with Should I Test That?" in `ExportCard.tsx`
+- **Files modified:** `src/components/export/ExportCard.tsx`
+- **Commit:** `f161f12`
 
 ## Known Stubs
 
