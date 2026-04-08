@@ -1,15 +1,16 @@
 /**
- * Accessibility tests for ResultsSection
+ * Accessibility tests for AdvancedResultsSection
  *
  * Per 06-03-PLAN.md: Add accessibility tests using vitest-axe
- * Per WCAG 2.1 AA: Ensure no accessibility violations in results display
+ * Per WCAG 2.1 AA: Ensure no accessibility violations in advanced results display
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
-import { ResultsSection } from './AdvancedResultsSection';
+import { AdvancedResultsSection } from './AdvancedResultsSection';
 import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
+import type { CoDResults } from '@/lib/calculations/cost-of-delay';
 
 // Mock useEVSICalculations hook
 vi.mock('@/hooks/useEVSICalculations', () => ({
@@ -29,6 +30,13 @@ vi.mock('@/components/export/ExportButton', () => ({
 import { useEVSICalculations } from '@/hooks/useEVSICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 
+// Sample Cost of Delay results
+const sampleCodResults: CoDResults = {
+  codApplies: true,
+  codDollars: 2500,
+  dailyOpportunityCost: 125,
+};
+
 // Sample EVSI results for testing
 const sampleEVSIResults: EVSICalculationResults = {
   evsi: {
@@ -36,9 +44,12 @@ const sampleEVSIResults: EVSICalculationResults = {
     defaultDecision: 'ship',
     probabilityClearsThreshold: 0.68,
     probabilityTestChangesDecision: 0.25,
+    pStopsShip: 0.25,
+    pConvincesShip: 0,
     numSamples: 10000,
     numRejected: 50,
   },
+  cod: sampleCodResults,
   netValueDollars: 9500,
   sampleSizes: {
     n_total: 10000,
@@ -47,29 +58,28 @@ const sampleEVSIResults: EVSICalculationResults = {
   },
 };
 
-// Sample flat inputs for testing
-const sampleInputs = {
+// Sample shared inputs for testing
+const sampleSharedInputs = {
   baselineConversionRate: 0.03,
   annualVisitors: 500000,
-  visitorUnitLabel: 'visitors',
   valuePerConversion: 50,
-  priorType: 'default' as const,
   priorIntervalLow: -8.22,
   priorIntervalHigh: 8.22,
-  priorShape: 'normal' as const,
-  studentTDf: null,
   thresholdScenario: 'minimum-lift' as const,
-  thresholdUnit: 'dollars' as const,
+  thresholdUnit: 'percent' as const,
   thresholdValue: 2,
-  testDurationDays: 20,
-  dailyTraffic: 1370,
-  trafficSplit: 0.5,
-  eligibilityFraction: 1.0,
-  conversionLatencyDays: 0,
-  decisionLatencyDays: 0,
 };
 
-describe('ResultsSection accessibility', () => {
+// Sample advanced inputs for testing
+const sampleAdvancedInputs = {
+  priorShape: 'normal' as const,
+  studentTDf: null,
+  testDurationDays: 20,
+  trafficFraction: 0.1,
+  trafficAllocation: 0.5,
+};
+
+describe('AdvancedResultsSection accessibility', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -82,16 +92,16 @@ describe('ResultsSection accessibility', () => {
     });
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
-        inputs: sampleInputs,
-        sharedNetValue: null,
-        analysisName: '',
-        setAnalysisName: vi.fn(),
+        inputs: {
+          shared: sampleSharedInputs,
+          advanced: sampleAdvancedInputs,
+        },
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
     });
 
-    const { container } = render(<ResultsSection />);
+    const { container } = render(<AdvancedResultsSection />);
 
     // Verify component rendered with results
     expect(screen.getByText(/If you can run this test/)).toBeInTheDocument();
@@ -109,16 +119,16 @@ describe('ResultsSection accessibility', () => {
     });
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
-        inputs: sampleInputs,
-        sharedNetValue: null,
-        analysisName: '',
-        setAnalysisName: vi.fn(),
+        inputs: {
+          shared: sampleSharedInputs,
+          advanced: sampleAdvancedInputs,
+        },
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
     });
 
-    const { container } = render(<ResultsSection />);
+    const { container } = render(<AdvancedResultsSection />);
 
     // Verify placeholder is shown
     expect(screen.getByText(/Complete all previous sections/)).toBeInTheDocument();
@@ -136,16 +146,16 @@ describe('ResultsSection accessibility', () => {
     });
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
-        inputs: sampleInputs,
-        sharedNetValue: null,
-        analysisName: '',
-        setAnalysisName: vi.fn(),
+        inputs: {
+          shared: sampleSharedInputs,
+          advanced: sampleAdvancedInputs,
+        },
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
     });
 
-    const { container } = render(<ResultsSection />);
+    const { container } = render(<AdvancedResultsSection />);
 
     // Verify loading state is shown
     expect(screen.getByText('Calculating...')).toBeInTheDocument();
@@ -162,16 +172,16 @@ describe('ResultsSection accessibility', () => {
     });
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
-        inputs: sampleInputs,
-        sharedNetValue: null,
-        analysisName: '',
-        setAnalysisName: vi.fn(),
+        inputs: {
+          shared: sampleSharedInputs,
+          advanced: sampleAdvancedInputs,
+        },
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
     });
 
-    render(<ResultsSection />);
+    render(<AdvancedResultsSection />);
 
     // Find the live region with aria-busy
     const liveRegion = document.querySelector('[role="status"][aria-live="polite"][aria-busy="true"]');
@@ -194,16 +204,16 @@ describe('ResultsSection accessibility', () => {
     });
     vi.mocked(useWizardStore).mockImplementation((selector) => {
       const state = {
-        inputs: sampleInputs,
-        sharedNetValue: null,
-        analysisName: '',
-        setAnalysisName: vi.fn(),
+        inputs: {
+          shared: sampleSharedInputs,
+          advanced: sampleAdvancedInputs,
+        },
       };
       // Cast to unknown first to satisfy TypeScript for partial mock
       return selector(state as unknown as Parameters<typeof selector>[0]);
     });
 
-    render(<ResultsSection />);
+    render(<AdvancedResultsSection />);
 
     // Find the card that uses highlight variant styling - title is "P(Decision Change)"
     const decisionCard = screen.getByText('P(Decision Change)').closest('div');
