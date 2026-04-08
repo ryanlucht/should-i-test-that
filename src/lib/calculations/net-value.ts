@@ -13,9 +13,8 @@
  *
  * Mathematical notes (for statistician audit):
  * - Net Value = E[ValueWithTest] - E[ValueWithoutTest]
- * - Net value CAN be legitimately negative when timing costs (delay, exposure during test)
- *   outweigh the expected value of the information gained
- * - maxTestBudgetDollars is clamped to >= 0 (you should never pay to run a test that destroys value)
+ * - Final result is clamped to >= 0 to avoid negative values due to Monte Carlo noise
+ *   (information cannot hurt in expectation, so negative net value is an artifact)
  * - ValueWithTest = ValueDuringTest + ValueDuringLatency + ValueAfterDecision
  * - ValueWithoutTest = K * (L - T) if default=ship, else 0
  *
@@ -27,9 +26,8 @@
 
 import { sample, cdf, getPriorMean } from './distributions';
 import { computePosteriorMean, computeEffectivePriorMetrics } from './evsi';
-import { seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
+import { seOfRelativeLift, sampleStandardNormal } from './abtest-math';
 import { determineDefaultDecision } from './derived';
-import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD, checkRareEventsWarning, checkLowAcceptanceWarning, checkHighRejectionWarning } from './feasibility';
 import type { NetValueInputs, NetValueResults, CalculationWarning } from './types';
 
 /**
@@ -236,6 +234,8 @@ export function calculateNetValueMonteCarlo(
       defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
       numSamples: 0,
       numRejected: 0,
     };
@@ -254,6 +254,8 @@ export function calculateNetValueMonteCarlo(
       defaultDecision,
       probabilityClearsThreshold: 0.5, // Indeterminate
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
       numSamples: 0,
       numRejected: 0,
     };
@@ -270,11 +272,23 @@ export function calculateNetValueMonteCarlo(
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
-  // Step 2.5: Check for rare events warning (Accuracy-08, per ENG-14 shared helper)
+  // Step 2.5: Check for rare events warning (Accuracy-08)
   // ===========================================
+  // The Normal approximation for lift becomes unreliable when expected
+  // conversions per arm are low (<20). Warn user to consider alternatives.
+  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
   const warnings: CalculationWarning[] = [];
-  const rareEventsWarning = checkRareEventsWarning(n_control, n_variant, CR0);
-  if (rareEventsWarning) warnings.push(rareEventsWarning);
+  const expectedConvControl = n_control * CR0;
+  const expectedConvVariant = n_variant * CR0;
+  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
+
+  if (minExpectedConversions < 20) {
+    warnings.push({
+      code: 'rare_events',
+      message:
+        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    });
+  }
 
   // ===========================================
   // Step 3: Determine prior mean and default decision
@@ -285,38 +299,37 @@ export function calculateNetValueMonteCarlo(
   // ===========================================
   // Step 3.5: Compute effective prior metrics under feasibility truncation
   // ===========================================
-  // Per ENG-03/ENG-04: Use actual tail mass (both bounds) to detect truncation.
-  // The old heuristic (sigma > |mu + 1|) only checked the lower bound and missed
-  // upper-bound truncation (which matters when CR0 is large, e.g., CR0=0.90).
+  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
+  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
+  // on a truncated prior. For consistency, we should display metrics
+  // (mean, probClearsThreshold) from the same truncated prior.
   //
-  // When truncation is material (infeasible mass > TRUNCATION_THRESHOLD):
-  // - Use effective truncated metrics for probability and default decision
-  // - The default decision must reflect the truncated mean, not the untruncated mean
+  // Only compute effective metrics when truncation is likely to matter:
+  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
+  // - Normal priors with wide sigma relative to distance to L=-1
+  // This adds ~2000 samples overhead, so skip for tight Normal priors
   let effectiveProbClears = 1 - cdf(threshold_L, prior);
 
-  const infeasibleMass = computeInfeasibleTailMass(prior, CR0);
-  const needsEffectiveMetrics = infeasibleMass > TRUNCATION_THRESHOLD;
-
-  // Default decision starts from untruncated mean, may be overridden
-  let effectiveDefaultDecision = defaultDecision;
+  const needsEffectiveMetrics =
+    prior.type !== 'normal' ||
+    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
 
   if (needsEffectiveMetrics) {
     const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
     effectiveProbClears = effective.effectiveProbClears;
-    // Use truncated mean for default decision (per ENG-03)
-    effectiveDefaultDecision = determineDefaultDecision(effective.effectivePriorMean, threshold_L);
   }
 
   // Use effective probClears for the returned metric
   const probClearsThreshold = effectiveProbClears;
 
   // ===========================================
-  // Step 4: Feasibility bounds for lift (via shared helper)
+  // Step 4: Feasibility bounds for lift
   // ===========================================
   // CR1 = CR0 * (1 + L) must be in [0, 1]
-  // L_min = -1 (CR1 = 0), L_max = (1/CR0) - 1 (CR1 = 1)
-  // Per ENG-17: uses shared liftFeasibilityBounds (not manual bounds)
-  const { L_min, L_max } = liftFeasibilityBounds(CR0);
+  // L_min = -1 (CR1 = 0)
+  // L_max = (1/CR0) - 1 (CR1 = 1)
+  const L_min = -1;
+  const L_max = 1 / CR0 - 1;
 
   // ===========================================
   // Step 5: Monte Carlo simulation
@@ -326,10 +339,11 @@ export function calculateNetValueMonteCarlo(
   let validSamples = 0;
   let rejectedSamples = 0;
   let decisionChanges = 0;
+  // Directional counters: track which way the test changes the decision
+  let stopsShipCount = 0;    // default=ship, posterior=dont-ship
+  let convincesShipCount = 0; // default=dont-ship, posterior=ship
 
-  // Adaptive cap: 50x instead of 10x to allow more attempts when rejection rate
-  // is high (e.g., high-CR0 cases where L_max is tight). Per ENG-12.
-  const maxIterations = numSamples * 50;
+  const maxIterations = numSamples * 10; // Cap to prevent infinite loops
   let iterations = 0;
 
   while (validSamples < numSamples && iterations < maxIterations) {
@@ -347,14 +361,13 @@ export function calculateNetValueMonteCarlo(
     validSamples++;
 
     // ===========================================
-    // Value WITHOUT test (use effective default decision)
+    // Value WITHOUT test (use default decision)
     // ===========================================
     // This is the baseline: what happens if we don't test.
-    // Apply effective default decision for the full year.
-    // Per ENG-03: uses effectiveDefaultDecision (truncated mean) when truncation material
+    // Apply default decision for the full year.
     const valueWithoutTest = calculateBaselineValue(
       L_true,
-      effectiveDefaultDecision,
+      defaultDecision,
       threshold_L,
       K
     );
@@ -380,9 +393,15 @@ export function calculateNetValueMonteCarlo(
     const posteriorDecision =
       posteriorMean >= threshold_L ? 'ship' : 'dont-ship';
 
-    // Track decision changes (relative to effective default, which may use truncated mean)
-    if (posteriorDecision !== effectiveDefaultDecision) {
+    // Track decision changes (aggregate and directional)
+    if (posteriorDecision !== defaultDecision) {
       decisionChanges++;
+      // Directional split: which way did the test flip the decision?
+      if (defaultDecision === 'ship') {
+        stopsShipCount++;    // was going to ship, test says don't
+      } else {
+        convincesShipCount++; // wasn't going to ship, test says do
+      }
     }
 
     // ===========================================
@@ -401,12 +420,21 @@ export function calculateNetValueMonteCarlo(
   }
 
   // ===========================================
-  // Step 5.5: Check for low acceptance and high rejection rate warnings (per ENG-14 shared helpers)
+  // Step 5.5: Check for high rejection rate warning (Edge Case 6)
   // ===========================================
-  const lowAccWarning = checkLowAcceptanceWarning(validSamples, numSamples);
-  if (lowAccWarning) warnings.push(lowAccWarning);
-  const highRejWarning = checkHighRejectionWarning(validSamples, rejectedSamples);
-  if (highRejWarning) warnings.push(highRejWarning);
+  // High rejection indicates prior places substantial mass outside feasible bounds.
+  // This can lead to metrics that don't reflect the full prior distribution.
+  // Threshold: >10% rejection rate triggers warning.
+  const totalAttempted = validSamples + rejectedSamples;
+  if (totalAttempted > 0) {
+    const rejectionRate = rejectedSamples / totalAttempted;
+    if (rejectionRate > 0.10) {
+      warnings.push({
+        code: 'high_rejection',
+        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing prior or adjusting baseline rate.`,
+      });
+    }
+  }
 
   // ===========================================
   // Guard: Handle zero valid samples edge case
@@ -415,9 +443,11 @@ export function calculateNetValueMonteCarlo(
     return {
       netValueDollars: 0,
       maxTestBudgetDollars: 0,
-      defaultDecision: effectiveDefaultDecision,
+      defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
       numSamples: 0,
       numRejected: rejectedSamples,
       ...(warnings.length > 0 && { warnings }),
@@ -442,12 +472,19 @@ export function calculateNetValueMonteCarlo(
 
   const probabilityTestChangesDecision = decisionChanges / validSamples;
 
+  // Directional probabilities: partition of probabilityTestChangesDecision
+  // pStopsShip + pConvincesShip === probabilityTestChangesDecision (identity)
+  const pStopsShip = stopsShipCount / validSamples;
+  const pConvincesShip = convincesShipCount / validSamples;
+
   return {
     netValueDollars,
     maxTestBudgetDollars,
-    defaultDecision: effectiveDefaultDecision,
+    defaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
+    pStopsShip,
+    pConvincesShip,
     numSamples: validSamples,
     numRejected: rejectedSamples,
     ...(warnings.length > 0 && { warnings }),

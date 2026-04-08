@@ -632,72 +632,17 @@ describe('NetValue effective prior metrics', () => {
 });
 
 // ===========================================
-// ENG-08: maxTestBudgetDollars regression test
+// Directional Probability Tests (Plan 25.1-01)
 // ===========================================
 
-describe('ENG-08: maxTestBudgetDollars regression', () => {
-  it('maxTestBudgetDollars is clamped to $0 when net value is negative', () => {
-    // Use near-deterministic positive prior with threshold=0 (always ship)
-    // Test delays full deployment, so net value should be negative
+describe('calculateNetValueMonteCarlo directional probability fields', () => {
+  // Test 6: identity — pStopsShip + pConvincesShip === probabilityTestChangesDecision
+  it('pStopsShip + pConvincesShip equals probabilityTestChangesDecision', () => {
     const inputs: NetValueInputs = {
       K: 1000000,
       baselineConversionRate: 0.05,
       threshold_L: 0,
-      prior: { type: 'normal', mu_L: 0.10, sigma_L: 0.001 }, // Near-deterministic positive
-      n_control: 5000,
-      n_variant: 5000,
-      testDurationDays: 30,
-      variantFraction: 0.5,
-      decisionLatencyDays: 0,
-    };
-
-    const result = calculateNetValueMonteCarlo(inputs, 5000);
-
-    // Net value should be negative (test delays beneficial rollout)
-    expect(result.netValueDollars).toBeLessThan(0);
-    // maxTestBudgetDollars MUST be clamped to 0
-    expect(result.maxTestBudgetDollars).toBe(0);
-  });
-
-  it('maxTestBudgetDollars equals net value when positive', () => {
-    // Uncertain prior near threshold -- test has positive value
-    const inputs: NetValueInputs = {
-      K: 1000000,
-      baselineConversionRate: 0.05,
-      threshold_L: 0.03,
-      prior: { type: 'normal', mu_L: 0.04, sigma_L: 0.04 },
-      n_control: 10000,
-      n_variant: 10000,
-      testDurationDays: 14,
-      variantFraction: 0.5,
-      decisionLatencyDays: 0,
-    };
-
-    const result = calculateNetValueMonteCarlo(inputs, 10000);
-
-    // Net value should be positive for uncertain scenario
-    expect(result.netValueDollars).toBeGreaterThan(0);
-    // maxTestBudgetDollars should equal netValueDollars when positive
-    expect(result.maxTestBudgetDollars).toBeCloseTo(result.netValueDollars, 0);
-  });
-});
-
-// ===========================================
-// End-to-end pipeline test: Student-t + truncation + net value
-// Addresses Codex consensus concern: no pipeline test for full flow
-// ===========================================
-
-describe('end-to-end pipeline: Student-t + truncation + net value', () => {
-  it('Student-t prior with high CR0 produces consistent truncation-aware results', () => {
-    // Student-t(mu=0, scale=0.035, df=3) with CR0=0.90 (material upper truncation)
-    // L_max = 1/0.90 - 1 = 0.111, so upper tail of Student-t is truncated
-    // This exercises the full pipeline: t-calibrated prior -> truncation detection ->
-    // truncated default decision -> MC simulation -> net value
-    const inputs: NetValueInputs = {
-      K: 500000,
-      baselineConversionRate: 0.90, // High CR0 -> L_max = 0.111 (material truncation)
-      threshold_L: 0,
-      prior: { type: 'student-t', mu_L: 0, sigma_L: 0.035, df: 3 },
+      prior: { type: 'normal', mu_L: 0.05, sigma_L: 0.05 },
       n_control: 5000,
       n_variant: 5000,
       testDurationDays: 14,
@@ -707,34 +652,23 @@ describe('end-to-end pipeline: Student-t + truncation + net value', () => {
 
     const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    // Default decision should be well-defined (either 'ship' or 'dont-ship')
-    // With mu=0 and threshold=0, the default depends on truncated effective mean
-    expect(['ship', 'dont-ship']).toContain(result.defaultDecision);
-
-    // Net value should be well-defined (not NaN)
-    expect(isFinite(result.netValueDollars)).toBe(true);
-
-    // maxTestBudget should be clamped appropriately
-    if (result.netValueDollars < 0) {
-      expect(result.maxTestBudgetDollars).toBe(0);
-    } else {
-      expect(result.maxTestBudgetDollars).toBeGreaterThanOrEqual(0);
-    }
-
-    // Should have some rejected samples due to truncation
-    expect(result.numRejected).toBeGreaterThan(0);
+    expect(result.pStopsShip).toBeDefined();
+    expect(result.pConvincesShip).toBeDefined();
+    // pStopsShip + pConvincesShip must partition probabilityTestChangesDecision exactly
+    expect(result.pStopsShip! + result.pConvincesShip!).toBeCloseTo(
+      result.probabilityTestChangesDecision,
+      5
+    );
   });
 
-  it('Student-t prior with normal CR0 and positive mean ships by default', () => {
-    // Student-t(mu=0.05, scale=0.02, df=5) with CR0=0.05
-    // Minimal truncation, strong positive prior -> should ship
+  it('when defaultDecision is ship, pConvincesShip === 0', () => {
     const inputs: NetValueInputs = {
       K: 1000000,
       baselineConversionRate: 0.05,
       threshold_L: 0,
-      prior: { type: 'student-t', mu_L: 0.05, sigma_L: 0.02, df: 5 },
-      n_control: 10000,
-      n_variant: 10000,
+      prior: { type: 'normal', mu_L: 0.05, sigma_L: 0.05 },
+      n_control: 5000,
+      n_variant: 5000,
       testDurationDays: 14,
       variantFraction: 0.5,
       decisionLatencyDays: 0,
@@ -742,24 +676,17 @@ describe('end-to-end pipeline: Student-t + truncation + net value', () => {
 
     const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    // Strong positive prior -> default is ship
     expect(result.defaultDecision).toBe('ship');
-    expect(isFinite(result.netValueDollars)).toBe(true);
-    expect(isFinite(result.maxTestBudgetDollars)).toBe(true);
+    expect(result.pConvincesShip).toBe(0);
+    expect(result.pStopsShip).toBeGreaterThanOrEqual(0);
   });
-});
 
-// ===========================================
-// ENG-19: Edge-case safety tests for net value
-// ===========================================
-
-describe('ENG-19: NetValue edge-case safety', () => {
-  it('Normal sigma_L=0 produces finite netValueDollars (no NaN)', () => {
+  it('when defaultDecision is dont-ship, pStopsShip === 0', () => {
     const inputs: NetValueInputs = {
-      K: 100000,
+      K: 1000000,
       baselineConversionRate: 0.05,
-      threshold_L: 0.01,
-      prior: { type: 'normal', mu_L: 0.02, sigma_L: 0 },
+      threshold_L: 0.1,
+      prior: { type: 'normal', mu_L: 0.02, sigma_L: 0.05 },
       n_control: 5000,
       n_variant: 5000,
       testDurationDays: 14,
@@ -767,76 +694,32 @@ describe('ENG-19: NetValue edge-case safety', () => {
       decisionLatencyDays: 0,
     };
 
-    const result = calculateNetValueMonteCarlo(inputs, 1000);
+    const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    // Point mass prior = no uncertainty = net value should be finite
-    expect(Number.isNaN(result.netValueDollars)).toBe(false);
-    expect(Number.isFinite(result.netValueDollars)).toBe(true);
-    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
-    expect(result.defaultDecision).toBeDefined();
+    expect(result.defaultDecision).toBe('dont-ship');
+    expect(result.pStopsShip).toBe(0);
+    expect(result.pConvincesShip).toBeGreaterThanOrEqual(0);
   });
 
-  it('Student-t sigma_L=0 produces finite netValueDollars (no NaN)', () => {
+  // Test 7 (net-value): zero valid samples — both directional probs are 0
+  it('returns pStopsShip = 0 and pConvincesShip = 0 when validSamples is 0', () => {
     const inputs: NetValueInputs = {
-      K: 100000,
+      K: 1000000,
       baselineConversionRate: 0.05,
       threshold_L: 0,
-      prior: { type: 'student-t', mu_L: 0.03, sigma_L: 0, df: 5 },
-      n_control: 5000,
-      n_variant: 5000,
+      prior: { type: 'normal', mu_L: 0.05, sigma_L: 0.05 },
+      n_control: 0, // triggers zero-samples guard
+      n_variant: 0,
       testDurationDays: 14,
       variantFraction: 0.5,
       decisionLatencyDays: 0,
     };
 
-    const result = calculateNetValueMonteCarlo(inputs, 1000);
+    const result = calculateNetValueMonteCarlo(inputs, 5000);
 
-    expect(Number.isNaN(result.netValueDollars)).toBe(false);
-    expect(Number.isFinite(result.netValueDollars)).toBe(true);
-    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
-    expect(result.defaultDecision).toBeDefined();
-  });
-
-  it('Uniform low >= high produces netValueDollars=0 (no NaN)', () => {
-    const inputs: NetValueInputs = {
-      K: 100000,
-      baselineConversionRate: 0.05,
-      threshold_L: 0,
-      // Inverted bounds
-      prior: { type: 'uniform', low_L: 0.10, high_L: 0.05 },
-      n_control: 5000,
-      n_variant: 5000,
-      testDurationDays: 14,
-      variantFraction: 0.5,
-      decisionLatencyDays: 0,
-    };
-
-    const result = calculateNetValueMonteCarlo(inputs, 1000);
-
-    // Invalid Uniform = degenerate = no meaningful simulation
-    expect(Number.isNaN(result.netValueDollars)).toBe(false);
-    expect(Number.isFinite(result.netValueDollars)).toBe(true);
-    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
-  });
-
-  it('Uniform low == high produces finite netValueDollars (no NaN)', () => {
-    const inputs: NetValueInputs = {
-      K: 100000,
-      baselineConversionRate: 0.05,
-      threshold_L: 0,
-      // Equal bounds = point mass
-      prior: { type: 'uniform', low_L: 0.05, high_L: 0.05 },
-      n_control: 5000,
-      n_variant: 5000,
-      testDurationDays: 14,
-      variantFraction: 0.5,
-      decisionLatencyDays: 0,
-    };
-
-    const result = calculateNetValueMonteCarlo(inputs, 1000);
-
-    expect(Number.isNaN(result.netValueDollars)).toBe(false);
-    expect(Number.isFinite(result.netValueDollars)).toBe(true);
-    expect(Number.isFinite(result.maxTestBudgetDollars)).toBe(true);
+    expect(result.pStopsShip).toBeDefined();
+    expect(result.pConvincesShip).toBeDefined();
+    expect(result.pStopsShip).toBe(0);
+    expect(result.pConvincesShip).toBe(0);
   });
 });

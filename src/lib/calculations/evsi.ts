@@ -27,9 +27,7 @@ import { sample, cdf, getPriorMean, pdf } from './distributions';
 import type { PriorDistribution } from './distributions';
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
-import { studentTQuantileBounds } from './student-t-helpers';
 import { determineDefaultDecision } from './derived';
-import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD, checkRareEventsWarning, checkLowAcceptanceWarning, checkHighRejectionWarning } from './feasibility';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 
 /**
@@ -63,9 +61,7 @@ export function computeEffectivePriorMetrics(
   let sumL = 0;
   let countExceedsThreshold = 0;
   let accepted = 0;
-  // Adaptive cap: 50x instead of 10x to allow more attempts when rejection rate
-  // is high (e.g., high-CR0 cases where L_max is tight). Per ENG-12.
-  const maxIterations = numSamples * 50;
+  const maxIterations = numSamples * 10;
   let iterations = 0;
 
   while (accepted < numSamples && iterations < maxIterations) {
@@ -195,15 +191,15 @@ function computePosteriorMeanGrid(
     L_min = Math.max(-1, prior.low_L!);
     L_max = Math.min(prior.high_L!, feasibleMax);
   } else if (prior.type === 'student-t') {
-    // Use quantile-based bounds for Student-t posterior grid (per ENG-11)
-    // 0.1th to 99.9th percentile provides better coverage of heavy tails
-    // than the old mu +/- 6*sigma approach, which underestimated tails for low df.
-    // Per Accuracy-07: Clamp to feasibility constraint
-    const bounds = studentTQuantileBounds(
-      prior.mu_L!, prior.sigma_L!, prior.df!, 0.001, 0.999
-    );
-    L_min = Math.max(-1, bounds.low);
-    L_max = Math.min(bounds.high, feasibleMax);
+    // Student-t is unbounded but we use practical bounds
+    // Center around prior mean, extend by 6 scale parameters
+    // This provides practical coverage for numerical integration
+    // (exact coverage depends on df; heavier tails = less coverage)
+    // Per Accuracy-07: Clamp upper bound to feasibility constraint
+    const mu = prior.mu_L!;
+    const sigma = prior.sigma_L!;
+    L_min = Math.max(-1, mu - 6 * sigma);
+    L_max = Math.min(mu + 6 * sigma, feasibleMax);
   } else {
     // Fallback for any other type (shouldn't reach here)
     L_min = -1;
@@ -334,61 +330,22 @@ export function computePosteriorMean(
     const sigma_prior = prior.sigma_L!;
     const mu_prior = prior.mu_L!;
 
+    // Shrinkage weight: w = prior_variance / (prior_variance + data_variance)
+    // This determines how much to trust the data (L_hat) vs the prior
+    const prior_variance = sigma_prior * sigma_prior;
+    const data_variance = SE * SE;
+
     // Handle edge case: sigma_prior = 0 (point mass prior)
-    if (sigma_prior === 0) {
+    // w = 0 / (0 + SE^2) = 0, so posterior mean = mu_prior
+    if (prior_variance === 0) {
       return mu_prior;
     }
 
-    // --- Normal-Normal conjugate posterior (standard Bayesian update) ---
-    // Prior: L ~ Normal(mu_prior, sigma_prior^2)
-    // Likelihood: L_hat | L ~ Normal(L, SE^2)
-    // Posterior: L | L_hat ~ Normal(posteriorMean, posteriorVariance)
-    //
-    // posteriorVariance = 1 / (1/sigma_prior^2 + 1/SE^2)
-    //   This is the precision-weighted (inverse-variance) combination.
-    //   More informative data (smaller SE) pulls the posterior tighter.
-    //
-    // posteriorMean = w * L_hat + (1 - w) * mu_prior
-    //   where w = sigma_prior^2 / (sigma_prior^2 + SE^2)
-    //   is the data weight (proportion of posterior precision from data).
-    const prior_variance = sigma_prior * sigma_prior;
-    const data_variance = SE * SE;
     const w = prior_variance / (prior_variance + data_variance);
-    const untruncatedPosteriorMean = w * L_hat + (1 - w) * mu_prior;
 
-    // Per audit Priority 3: When feasibility truncation is material,
-    // the untruncated conjugate posterior mean is biased because it ignores
-    // the constraint L in [L_min, L_max]. Apply the truncated-Normal mean
-    // formula to the posterior distribution.
-    //
-    // Posterior ~ Normal(untruncatedPosteriorMean, posteriorVariance)
-    // Truncated to [L_min, L_max] where:
-    //   L_min = -1 (CR1 >= 0)
-    //   L_max = 1/CR0 - 1 (CR1 <= 1)
-    //
-    // posteriorVariance = 1 / (1/sigma_prior^2 + 1/SE^2)
-    //   This is the standard Normal-Normal conjugate posterior variance.
-    //   It does NOT depend on the data L_hat -- only on the prior and
-    //   likelihood precisions.
-    //
-    // E[L | data, L in [a,b]] = truncatedNormalMeanTwoSided(mu_post, sigma_post, a, b)
-    const infeasibleMass = computeInfeasibleTailMass(prior, CR0);
-    if (infeasibleMass > TRUNCATION_THRESHOLD) {
-      const { L_min, L_max } = liftFeasibilityBounds(CR0);
-      // Posterior standard deviation from conjugate posterior variance
-      const posteriorVariance = 1 / (1 / prior_variance + 1 / data_variance);
-      const posteriorSigma = Math.sqrt(posteriorVariance);
-      // Apply two-sided truncated-Normal mean formula
-      // truncatedNormalMeanTwoSided(mu, sigma, a, b) already exists in this file
-      return truncatedNormalMeanTwoSided(
-        untruncatedPosteriorMean,
-        posteriorSigma,
-        L_min,
-        L_max
-      );
-    }
-
-    return untruncatedPosteriorMean;
+    // Posterior mean: weighted average of data and prior mean
+    // E[L|L_hat] = w * L_hat + (1-w) * mu_prior
+    return w * L_hat + (1 - w) * mu_prior;
   }
 
   // ===========================================
@@ -460,6 +417,8 @@ export function calculateEVSIMonteCarlo(
       defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
       numSamples: 0,
       numRejected: 0,
     };
@@ -477,6 +436,8 @@ export function calculateEVSIMonteCarlo(
       defaultDecision,
       probabilityClearsThreshold: 0.5, // Indeterminate
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
       numSamples: 0,
       numRejected: 0,
     };
@@ -496,11 +457,23 @@ export function calculateEVSIMonteCarlo(
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
-  // Step 2.5: Check for rare events warning (Accuracy-08, per ENG-14 shared helper)
+  // Step 2.5: Check for rare events warning (Accuracy-08)
   // ===========================================
+  // The Normal approximation for lift becomes unreliable when expected
+  // conversions per arm are low (<20). Warn user to consider alternatives.
+  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
   const warnings: CalculationWarning[] = [];
-  const rareEventsWarning = checkRareEventsWarning(n_control, n_variant, CR0);
-  if (rareEventsWarning) warnings.push(rareEventsWarning);
+  const expectedConvControl = n_control * CR0;
+  const expectedConvVariant = n_variant * CR0;
+  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
+
+  if (minExpectedConversions < 20) {
+    warnings.push({
+      code: 'rare_events',
+      message:
+        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    });
+  }
 
   // ===========================================
   // Step 3: Determine prior mean and default decision
@@ -511,27 +484,24 @@ export function calculateEVSIMonteCarlo(
   // ===========================================
   // Step 3.5: Compute effective prior metrics under feasibility truncation
   // ===========================================
-  // Per ENG-03/ENG-04: Use actual tail mass (both bounds) to detect truncation.
-  // The old heuristic (sigma > |mu + 1|) only checked the lower bound and missed
-  // upper-bound truncation (which matters when CR0 is large, e.g., CR0=0.90).
+  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
+  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
+  // on a truncated prior. For consistency, we should display metrics
+  // (mean, probClearsThreshold) from the same truncated prior.
   //
-  // When truncation is material (infeasible mass > TRUNCATION_THRESHOLD):
-  // - Use effective truncated metrics for probability and default decision
-  // - The default decision must reflect the truncated mean, not the untruncated mean
+  // Only compute effective metrics when truncation is likely to matter:
+  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
+  // - Normal priors with wide sigma relative to distance to L=-1
+  // This adds ~2000 samples overhead, so skip for tight Normal priors
   let effectiveProbClears = 1 - cdf(threshold_L, prior);
 
-  const infeasibleMass = computeInfeasibleTailMass(prior, CR0);
-  const needsEffectiveMetrics = infeasibleMass > TRUNCATION_THRESHOLD;
-
-  // Default decision starts from untruncated mean, may be overridden
-  let effectiveDefaultDecision = defaultDecision;
+  const needsEffectiveMetrics =
+    prior.type !== 'normal' ||
+    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
 
   if (needsEffectiveMetrics) {
     const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
     effectiveProbClears = effective.effectiveProbClears;
-    // Use truncated mean for default decision (per ENG-03)
-    // This ensures the default decision reflects the truncated prior
-    effectiveDefaultDecision = determineDefaultDecision(effective.effectivePriorMean, threshold_L);
   }
 
   // Use effective probClears for the returned metric
@@ -552,10 +522,11 @@ export function calculateEVSIMonteCarlo(
   let validSamples = 0;
   let rejectedSamples = 0;
   let decisionChanges = 0;
+  // Directional counters: track which way the test changes the decision
+  let stopsShipCount = 0;    // default=ship, posterior=dont-ship
+  let convincesShipCount = 0; // default=dont-ship, posterior=ship
 
-  // Adaptive cap: 50x instead of 10x to allow more attempts when rejection rate
-  // is high (e.g., high-CR0 cases where L_max is tight). Per ENG-12.
-  const maxIterations = numSamples * 50;
+  const maxIterations = numSamples * 10; // Cap to prevent infinite loops
   let iterations = 0;
 
   while (validSamples < numSamples && iterations < maxIterations) {
@@ -573,16 +544,15 @@ export function calculateEVSIMonteCarlo(
     validSamples++;
 
     // ===========================================
-    // Value WITHOUT test (use effective default decision)
+    // Value WITHOUT test (use default decision)
     // ===========================================
     // Value is measured relative to the threshold because:
     // - Shipping when L_true > T_L gives positive value (correct decision)
     // - Shipping when L_true < T_L gives negative value (regret)
     // - Not shipping always gives 0 (threshold is our baseline)
     // This aligns with the EVPI formula which uses threshold-relative calculations.
-    // Per ENG-03: uses effectiveDefaultDecision (truncated mean) when truncation material
     let valueWithoutTest: number;
-    if (effectiveDefaultDecision === 'ship') {
+    if (defaultDecision === 'ship') {
       // We ship, get value relative to threshold baseline
       // Value = K * (L_true - T_L) represents excess value above threshold
       valueWithoutTest = K * (L_true - threshold_L);
@@ -613,9 +583,15 @@ export function calculateEVSIMonteCarlo(
     // E[L|L_hat] >= T is the correct Bayesian decision rule
     const posteriorDecision = posteriorMean >= threshold_L ? 'ship' : 'dont-ship';
 
-    // Track decision changes (relative to effective default, which may use truncated mean)
-    if (posteriorDecision !== effectiveDefaultDecision) {
+    // Track decision changes (aggregate and directional)
+    if (posteriorDecision !== defaultDecision) {
       decisionChanges++;
+      // Directional split: which way did the test flip the decision?
+      if (defaultDecision === 'ship') {
+        stopsShipCount++;    // was going to ship, test says don't
+      } else {
+        convincesShipCount++; // wasn't going to ship, test says do
+      }
     }
 
     // ===========================================
@@ -636,12 +612,21 @@ export function calculateEVSIMonteCarlo(
   }
 
   // ===========================================
-  // Step 5.5: Check for low acceptance and high rejection rate warnings (per ENG-14 shared helpers)
+  // Step 5.5: Check for high rejection rate warning (Edge Case 6)
   // ===========================================
-  const lowAccWarning = checkLowAcceptanceWarning(validSamples, numSamples);
-  if (lowAccWarning) warnings.push(lowAccWarning);
-  const highRejWarning = checkHighRejectionWarning(validSamples, rejectedSamples);
-  if (highRejWarning) warnings.push(highRejWarning);
+  // High rejection indicates prior places substantial mass outside feasible bounds.
+  // This can lead to metrics that don't reflect the full prior distribution.
+  // Threshold: >10% rejection rate triggers warning.
+  const totalAttempted = validSamples + rejectedSamples;
+  if (totalAttempted > 0) {
+    const rejectionRate = rejectedSamples / totalAttempted;
+    if (rejectionRate > 0.10) {
+      warnings.push({
+        code: 'high_rejection',
+        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing prior or adjusting baseline rate.`,
+      });
+    }
+  }
 
   // ===========================================
   // Step 6: Handle zero valid samples edge case
@@ -651,9 +636,11 @@ export function calculateEVSIMonteCarlo(
   if (validSamples === 0) {
     return {
       evsiDollars: 0,
-      defaultDecision: effectiveDefaultDecision,
+      defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
       numSamples: 0,
       numRejected: rejectedSamples,
       ...(warnings.length > 0 && { warnings }),
@@ -675,11 +662,18 @@ export function calculateEVSIMonteCarlo(
 
   const probabilityTestChangesDecision = decisionChanges / validSamples;
 
+  // Directional probabilities: partition of probabilityTestChangesDecision
+  // pStopsShip + pConvincesShip === probabilityTestChangesDecision (identity)
+  const pStopsShip = stopsShipCount / validSamples;
+  const pConvincesShip = convincesShipCount / validSamples;
+
   return {
     evsiDollars,
-    defaultDecision: effectiveDefaultDecision,
+    defaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
+    pStopsShip,
+    pConvincesShip,
     numSamples: validSamples,
     numRejected: rejectedSamples,
     ...(warnings.length > 0 && { warnings }),
@@ -741,6 +735,8 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
       defaultDecision,
       probabilityClearsThreshold,
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
     };
   }
 
@@ -757,6 +753,8 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
       defaultDecision,
       probabilityClearsThreshold: probClearsThreshold,
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
     };
   }
 
@@ -771,6 +769,8 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
       defaultDecision,
       probabilityClearsThreshold: 0.5, // Indeterminate
       probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
     };
   }
 
@@ -783,11 +783,23 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
   const data_precision = 1 / SE_squared; // 1/SE^2
 
   // ===========================================
-  // Step 1.5: Check for rare events warning (Accuracy-08, per ENG-14 shared helper)
+  // Step 1.5: Check for rare events warning (Accuracy-08)
   // ===========================================
+  // The Normal approximation for lift becomes unreliable when expected
+  // conversions per arm are low (<20). Warn user to consider alternatives.
+  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
   const warnings: CalculationWarning[] = [];
-  const rareEventsWarning = checkRareEventsWarning(n_control, n_variant, CR0);
-  if (rareEventsWarning) warnings.push(rareEventsWarning);
+  const expectedConvControl = n_control * CR0;
+  const expectedConvVariant = n_variant * CR0;
+  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
+
+  if (minExpectedConversions < 20) {
+    warnings.push({
+      code: 'rare_events',
+      message:
+        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
+    });
+  }
 
   // ===========================================
   // Step 2: Calculate prior precision
@@ -851,11 +863,19 @@ export function calculateEVSINormalFastPath(inputs: EVSIInputs): EVSIResults {
   // crossing the threshold when the prior mean is on one side.
   const probabilityTestChangesDecision = defaultDecision === 'ship' ? PhiZ : (1 - PhiZ);
 
+  // Directional split: if default is 'ship', only direction is stopping;
+  // if default is 'dont-ship', only direction is convincing.
+  // pStopsShip + pConvincesShip === probabilityTestChangesDecision (identity)
+  const pStopsShip = defaultDecision === 'ship' ? probabilityTestChangesDecision : 0;
+  const pConvincesShip = defaultDecision === 'dont-ship' ? probabilityTestChangesDecision : 0;
+
   return {
     evsiDollars,
     defaultDecision,
     probabilityClearsThreshold: probClearsThreshold,
     probabilityTestChangesDecision,
+    pStopsShip,
+    pConvincesShip,
     ...(warnings.length > 0 && { warnings }),
   };
 }
