@@ -20,6 +20,7 @@ import { EVSIVerdictCard } from './EVSIVerdictCard';
 import { ValueBreakdownCard } from './ValueBreakdownCard';
 import { SupportingCard } from './SupportingCard';
 import { ExportButton } from '@/components/export/ExportButton';
+import { Input } from '@/components/ui/input';
 import { AlertTriangle, Info } from 'lucide-react';
 import {
   formatSmartCurrency,
@@ -39,6 +40,10 @@ export function ResultsSection() {
   // Used instead of the re-calculated value so recipients see the same verdict.
   // Cleared when the recipient modifies any input (setInput clears it).
   const sharedNetValue = useWizardStore((state) => state.sharedNetValue);
+
+  // Analysis name for export filename and sharing context (EXPORT-02 D-06)
+  const analysisName = useWizardStore((state) => state.analysisName);
+  const setAnalysisName = useWizardStore((state) => state.setAnalysisName);
 
   // Build prior distribution for export
   // Uses centralized buildPriorFromInputs to ensure consistent calibration
@@ -220,15 +225,25 @@ export function ResultsSection() {
           </div>
 
           {/* PNG Export - EXPORT-01 through EXPORT-04 */}
+          {/* Analysis name field — per D-06, D-08 */}
           <div className="rounded-xl border bg-card p-4">
             <p className="text-sm font-semibold text-foreground mb-3">
               Share your analysis
             </p>
+            <Input
+              type="text"
+              value={analysisName}
+              onChange={(e) => setAnalysisName(e.target.value)}
+              placeholder="Name this analysis (optional)"
+              className="text-sm mb-3"
+              aria-label="Analysis name for export and sharing"
+            />
             <ExportButton
               evsiResults={results}
               sharedInputs={inputs}
               prior={prior}
               testDurationDays={inputs.testDurationDays ?? undefined}
+              analysisName={analysisName}
             />
           </div>
         </>

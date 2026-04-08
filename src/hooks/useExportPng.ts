@@ -46,22 +46,27 @@ function sanitizeFilename(title: string): string {
 }
 
 /**
- * Generate export filename based on custom title
+ * Generate export filename based on custom title and current date
  *
- * Filename pattern: "should-i-test-that-{sanitized-title}.png"
- * If no title provided, use default "analysis"
+ * Filename patterns (per D-07):
+ * - Named:   "should-i-test-that_{slug}_{YYYY-MM-DD}.png"
+ * - Default: "should-i-test-that_{YYYY-MM-DD}.png"
  *
- * @param customTitle - Optional user-provided title
+ * @param customTitle - Optional user-provided analysis name
  * @returns Complete filename with .png extension
  */
 function generateFilename(customTitle?: string): string {
+  // Date stamp: YYYY-MM-DD
+  const date = new Date().toISOString().slice(0, 10);
   const title = customTitle?.trim();
   if (title) {
     const sanitized = sanitizeFilename(title);
     const safeTitle = sanitized || 'analysis';
-    return `should-i-test-that-${safeTitle}.png`;
+    // Per D-07: should-i-test-that_{slug}_{date}.png
+    return `should-i-test-that_${safeTitle}_${date}.png`;
   }
-  return 'should-i-test-that-analysis.png';
+  // Per D-07: should-i-test-that_{date}.png
+  return `should-i-test-that_${date}.png`;
 }
 
 /**

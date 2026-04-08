@@ -13,10 +13,9 @@
  * with primary wizard actions.
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ExportCard } from './ExportCard';
 import { useExportPng } from '@/hooks/useExportPng';
 import { computePriorFromInterval, DEFAULT_PRIOR, DEFAULT_INTERVAL } from '@/lib/prior';
@@ -53,6 +52,8 @@ interface BasicModeProps {
   sharedInputs: SharedInputs;
   /** Prior distribution for chart (constructed from interval in Basic mode) */
   prior?: never;
+  /** Optional analysis name for export filename (EXPORT-02) */
+  analysisName?: string;
 }
 
 /**
@@ -66,6 +67,8 @@ interface AdvancedModeProps {
   prior: PriorDistribution;
   /** Test duration in days for CoD explanation */
   testDurationDays?: number;
+  /** Optional analysis name for export filename (EXPORT-02) */
+  analysisName?: string;
 }
 
 type ExportButtonProps = BasicModeProps | AdvancedModeProps;
@@ -84,8 +87,8 @@ type ExportButtonProps = BasicModeProps | AdvancedModeProps;
 export function ExportButton(props: ExportButtonProps) {
   const { mode, sharedInputs } = props;
 
-  // Custom title state
-  const [customTitle, setCustomTitle] = useState('');
+  // Analysis name comes from parent (AdvancedResultsSection) via prop (EXPORT-02)
+  const analysisName = props.analysisName ?? '';
 
   // Export hook
   const { exportRef, exportPng, isExporting } = useExportPng();
@@ -197,7 +200,7 @@ export function ExportButton(props: ExportButtonProps) {
   // Handle export click
   const handleExport = async () => {
     try {
-      await exportPng(mode, customTitle || undefined);
+      await exportPng(analysisName || undefined);
     } catch (error) {
       console.error('Export failed:', error);
     }
@@ -205,15 +208,6 @@ export function ExportButton(props: ExportButtonProps) {
 
   return (
     <div className="space-y-3">
-      {/* Custom title input */}
-      <Input
-        type="text"
-        placeholder="Add a title for your export..."
-        value={customTitle}
-        onChange={(e) => setCustomTitle(e.target.value)}
-        className="text-sm"
-      />
-
       {/* Export button */}
       <Button
         variant="outline"
@@ -247,7 +241,7 @@ export function ExportButton(props: ExportButtonProps) {
         <ExportCard
           ref={exportRef}
           mode={mode}
-          title={customTitle || 'Should I Test That?'}
+          title={analysisName || 'Should I Test That?'}
           verdictValue={verdictValue}
           baselineConversionRate={sharedInputs.baselineConversionRate ?? 0}
           annualVisitors={sharedInputs.annualVisitors ?? 0}
