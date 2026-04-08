@@ -20,6 +20,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard (completed 2026-04-06)
 - [x] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification (completed 2026-04-08)
 - [ ] **Phase 25.1: Results Card Improvements** - Plain-English waterfall, directional decision impact, card renames, FAQ accordion explainers
+- [ ] **Phase 25.2: Stats Engine V3 Audit Fixes** - Deterministic effective-prior metrics, infeasible-prior warning, traffic-population documentation, Student-t display fix, timing-costs sign handling, URL validation tightening
 - [ ] **Phase 26: AWS Deployment** - Serverless deployment following Datadog community-golden-paths
 
 ## Phase Details
@@ -174,15 +175,38 @@ Plans:
   4. Statistical Interpretation callout uses mainDecisionMechanism phrasing per SPEC
   5. Four FAQ accordion explainers are collapsed by default and expand independently with dynamic content
   6. A non-statistician can answer: what to do, why worth money, why this much, waiting cost, and directional protection
-**Plans:** 4 plans
+**Plans:** 2/4 plans executed
 
 Plans:
-- [ ] 25.1-01-PLAN.md -- Add pStopsShip/pConvincesShip directional probabilities to engine types, MC loops, fast-path, and hook
-- [ ] 25.1-02-PLAN.md -- WaterfallBlock component, SupportingCard grid updates (Shipping rule, Decision impact), Statistical Interpretation update, layout reorder
+- [x] 25.1-01-PLAN.md -- Add pStopsShip/pConvincesShip directional probabilities to engine types, MC loops, fast-path, and hook
+- [x] 25.1-02-PLAN.md -- WaterfallBlock component, SupportingCard grid updates (Shipping rule, Decision impact), Statistical Interpretation update, layout reorder
 - [ ] 25.1-03-PLAN.md -- FAQAccordion component with four collapsed explainers, wire into ResultsSection, remove EVSI Intuition block
 - [ ] 25.1-04-PLAN.md -- PM visual review checkpoint for results page redesign
 
 **UI hint**: yes
+
+### Phase 25.2: Stats Engine V3 Audit Fixes (INSERTED)
+
+**Goal:** Remaining v3 audit findings resolved: effective-prior metrics are deterministic (no MC noise), impossible priors produce a clear warning, traffic-population semantics are documented, Student-t form displays t-calibrated scale, timing-costs sign is handled honestly, dead store field removed, and URL validation matches form rules
+**Requirements**: Audit-1, Audit-3, Audit-4, Audit-7, Audit-8, D-01, D-02, D-03, D-04, Other-1, Other-2, Other-3, Simplification-4
+**Depends on:** Phase 25.1
+**Success Criteria** (what must be TRUE):
+  1. computeEffectivePriorMetrics is deterministic for Normal (analytic), Uniform (closed-form), and Student-t (numerical) priors
+  2. EVSI and net-value MC use identical effective-prior data from a single computation
+  3. Zero-feasible-mass prior produces infeasible_prior_support warning (not silent untruncated fallback)
+  4. dailyTraffic label says "Total daily traffic (before eligibility)" with documented rollout assumption
+  5. Student-t form displays t-calibrated scale parameter labeled "scale" (not Normal sigma)
+  6. Timing costs row handles negative values honestly and is labeled "(est.)"
+  7. Results and export show "Value scaled to all annual visitors (assumes full rollout after test)"
+  8. sharedNetValue dead store field is removed
+  9. URL decoding rejects CR=0, CR=1, trafficSplit outside [10%, 90%]
+  10. Sample sizes are real-valued in calculation layer (Math.floor removed)
+**Plans:** 3 plans
+
+Plans:
+- [ ] 25.2-01-PLAN.md -- Deterministic effective-prior metrics, infeasible-prior warning, real-valued sample sizes, stale comment fix
+- [ ] 25.2-02-PLAN.md -- Traffic field labels/tooltips per D-01/D-02/D-03, Student-t form display fix
+- [ ] 25.2-03-PLAN.md -- Truncated-prior reporting text, timing-costs sign, assumption note, sharedNetValue removal, URL validation tightening
 
 ### Phase 26: AWS Deployment
 **Goal**: Application is deployed to AWS serverless infrastructure with working Datadog instrumentation
@@ -195,7 +219,7 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 25.1 > 26
+**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 25.1 > 25.2 > 26
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -207,7 +231,8 @@ Plans:
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
 | 24. Shareable Walkthrough URLs | 3/3 | Complete    | 2026-04-06 |
 | 25. Polish, Accessibility & Export | 3/3 | Complete    | 2026-04-08 |
-| 25.1. Results Card Improvements | 0/4 | In Progress | - |
+| 25.1. Results Card Improvements | 2/4 | In Progress|  |
+| 25.2. Stats Engine V3 Audit Fixes | 0/3 | Not started | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
 ## Coverage Validation
@@ -271,9 +296,22 @@ Plans:
 | RCI-04 | 25.1 | Yes |
 | RCI-05 | 25.1 | Yes |
 | RCI-06 | 25.1 | Yes |
+| Audit-1 | 25.2 | Yes |
+| Audit-3 | 25.2 | Yes |
+| Audit-4 | 25.2 | Yes |
+| Audit-7 | 25.2 | Yes |
+| Audit-8 | 25.2 | Yes |
+| D-01 | 25.2 | Yes |
+| D-02 | 25.2 | Yes |
+| D-03 | 25.2 | Yes |
+| D-04 | 25.2 | Yes |
+| Other-1 | 25.2 | Yes |
+| Other-2 | 25.2 | Yes |
+| Other-3 | 25.2 | Yes |
+| Simplification-4 | 25.2 | Yes |
 | DEPLOY-01 | 26 | Yes |
 
-**Coverage:** 58/58 requirements mapped (100%)
+**Coverage:** 71/71 requirements mapped (100%)
 
 ---
 *Roadmap created: 2026-03-23*
