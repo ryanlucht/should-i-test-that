@@ -549,7 +549,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
               margin: 0,
             }}
           >
-            shoulditestthat.com
+            Created with Should I Test That?
           </p>
         </div>
       </div>
