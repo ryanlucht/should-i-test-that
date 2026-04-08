@@ -18,7 +18,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 22.1: Stats Engine Correctness Fixes** - Fix remaining audit findings: Student-t double-division, worker truncation routing, truncated posterior mean, centralized prior builder, threshold formatting, traffic label semantics, legacy CoD removal, warning plumbing (completed 2026-03-25)
 - [x] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update (completed 2026-03-26)
 - [x] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard (completed 2026-04-06)
-- [ ] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification
+- [x] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification (completed 2026-04-08)
 - [ ] **Phase 26: AWS Deployment** - Serverless deployment following Datadog community-golden-paths
 
 ## Phase Details
@@ -183,7 +183,7 @@ Plans:
 | 22.1. Stats Engine Correctness Fixes | 5/5 | Complete    | 2026-03-25 |
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
 | 24. Shareable Walkthrough URLs | 3/3 | Complete    | 2026-04-06 |
-| 25. Polish, Accessibility & Export | 0/TBD | Not started | - |
+| 25. Polish, Accessibility & Export | 3/3 | Complete    | 2026-04-08 |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
 ## Coverage Validation
