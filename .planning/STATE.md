@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed 24-03-PLAN.md
-last_updated: "2026-04-08T17:49:53.760Z"
+stopped_at: Phase 25.1 context gathered
+last_updated: "2026-04-08T18:30:31.544Z"
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 7
   total_plans: 24
   completed_plans: 23
@@ -108,6 +108,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 22.1 inserted after Phase 22: Stats engine correctness fixes (URGENT)
+- Phase 25.1 inserted after Phase 25: Results Card Improvements (URGENT) — plain-English waterfall, directional decision impact, accordion explainers
 
 ### Blockers/Concerns
 
@@ -115,8 +116,8 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-06T19:08:59.466Z
-Stopped at: Completed 24-03-PLAN.md
+Last session: 2026-04-08T18:30:31.540Z
+Stopped at: Phase 25.1 context gathered
 Next action: `/gsd:plan-phase 19` to plan Basic Mode Deprecation
 
 ## Archive Reference
