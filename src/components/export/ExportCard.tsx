@@ -391,7 +391,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                 margin: '0 0 8px 0',
               }}
             >
-              Shipping threshold
+              Decision threshold
             </p>
             <p
               style={{
@@ -433,7 +433,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: '0 0 8px 0',
                 }}
               >
-                Test value (EVSI)
+                Test value (EVSI — Expected Value of Sample Information)
               </p>
               <p
                 style={{

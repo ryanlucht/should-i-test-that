@@ -64,8 +64,8 @@ interface SectionConfig {
 const SECTIONS: SectionConfig[] = [
   { id: 'baseline', label: 'Baseline', title: 'Baseline Metrics' },
   { id: 'uncertainty', label: 'Uncertainty', title: 'Uncertainty (Prior)' },
-  { id: 'threshold', label: 'Threshold', title: 'Shipping Threshold' },
-  { id: 'test-design', label: 'Test Design', title: 'Experiment Design' },
+  { id: 'threshold', label: 'Threshold', title: 'Decision Threshold' },
+  { id: 'test-design', label: 'Experiment', title: 'Experiment Design' },
   { id: 'results', label: 'Results', title: 'Results' },
 ];
 
@@ -86,6 +86,9 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
     (state) => state.markSectionComplete
   );
   const canAccessSection = useWizardStore((state) => state.canAccessSection);
+
+  // Shared URL state — non-null when recipient arrived via shared URL
+  const sharedBaseline = useWizardStore((state) => state.sharedBaseline);
 
   // Guide overlay state (GUIDE-01, GUIDE-02, GUIDE-03)
   const guideEnabled = useWizardStore((state) => state.guideEnabled);
@@ -110,7 +113,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
 
   // Guide message routing: maps active section + trigger events to dialogue text
-  const { currentMessage } = useGuideMessages(activeSection, guideTrigger, enabledSections);
+  const { currentMessage } = useGuideMessages(activeSection, guideTrigger, enabledSections, guideEnabled);
 
   // Trigger callbacks wired from form components to guide message system
   const handlePriorShapeAccordionOpen = useCallback(() => {
@@ -144,6 +147,22 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
       setCurrentSection(sectionIndex);
     }
   }, [activeSection, currentSection, setCurrentSection, sectionIds]);
+
+  // Shared URL recipients: scroll to Results section on mount so they
+  // see the verdict first. They can click "Explain" to start the walkthrough.
+  const hasScrolledToResults = useRef(false);
+  useEffect(() => {
+    if (sharedBaseline && !hasScrolledToResults.current) {
+      hasScrolledToResults.current = true;
+      // Small delay to ensure DOM is rendered before scrolling
+      requestAnimationFrame(() => {
+        const resultsEl = document.getElementById('results');
+        if (resultsEl) {
+          resultsEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
+      });
+    }
+  }, [sharedBaseline]);
 
   /**
    * Scroll to a section smoothly

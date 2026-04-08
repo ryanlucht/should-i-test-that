@@ -35,6 +35,11 @@ export function ResultsSection() {
   const { loading, results } = useEVSICalculations();
   const inputs = useWizardStore((state) => state.inputs);
 
+  // Shared URL result: the sender's exact computed value.
+  // Used instead of the re-calculated value so recipients see the same verdict.
+  // Cleared when the recipient modifies any input (setInput clears it).
+  const sharedNetValue = useWizardStore((state) => state.sharedNetValue);
+
   // Build prior distribution for export
   // Uses centralized buildPriorFromInputs to ensure consistent calibration
   // with useEVSICalculations hook (Student-t uses t-quantile, not z_0.95).
@@ -67,9 +72,11 @@ export function ResultsSection() {
     }
   }, [loading, results]);
 
-  // Show placeholder if no results and not loading
-  // The hook returns null results when inputs are incomplete
-  if (!loading && !results) {
+  // Show placeholder if no results, not loading, and no shared result.
+  // The hook returns null results when inputs are incomplete.
+  // When sharedNetValue is set (shared URL), skip the placeholder — the
+  // verdict card will display the sender's result immediately.
+  if (!loading && !results && sharedNetValue === null) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">
@@ -87,9 +94,12 @@ export function ResultsSection() {
   return (
     <div className="space-y-6">
       {/* Primary Verdict - ADV-OUT-01, ADV-OUT-02 */}
+      {/* When arriving from a shared URL, show the sender's exact result
+          (sharedNetValue) instead of the re-calculated value. This avoids
+          Monte Carlo variance showing a different verdict to recipients. */}
       <EVSIVerdictCard
-        netValueDollars={results ? results.netValueDollars : null}
-        isLoading={loading}
+        netValueDollars={sharedNetValue ?? (results ? results.netValueDollars : null)}
+        isLoading={sharedNetValue !== null ? false : loading}
       />
 
       {/* Calculation Warnings - Accuracy-08 */}
@@ -140,8 +150,8 @@ export function ResultsSection() {
                 })}
                 description={
                   inputs.thresholdScenario !== 'any-positive'
-                    ? `Your minimum bar to ship`
-                    : 'Ship if it helps'
+                    ? `Your minimum bar to deploy`
+                    : 'Deploy if it helps'
                 }
               />
 
@@ -190,11 +200,11 @@ export function ResultsSection() {
 
           {/* EVSI Intuition */}
           <div className="rounded-xl border bg-muted/30 border-muted p-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-semibold text-foreground">
               How to interpret {formatSmartCurrency(results.netValueDollars)}
             </p>
             <p className="text-sm text-muted-foreground">
-              The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI represents
+              The {formatSmartCurrency(results.evsi.evsiDollars)} EVSI (Expected Value of Sample Information) represents
               the expected improvement in your decision from running this test.
               However, running a test has timing costs: during the test period,
               only the variant group receives treatment, and during decision latency,
@@ -211,7 +221,7 @@ export function ResultsSection() {
 
           {/* PNG Export - EXPORT-01 through EXPORT-04 */}
           <div className="rounded-xl border bg-card p-4">
-            <p className="text-sm font-medium text-foreground mb-3">
+            <p className="text-sm font-semibold text-foreground mb-3">
               Share your analysis
             </p>
             <ExportButton
