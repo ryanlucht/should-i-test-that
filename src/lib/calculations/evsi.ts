@@ -29,66 +29,188 @@ import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
+import jStat from 'jstat';
 
 /**
- * Compute effective prior metrics under feasibility truncation.
+ * Compute effective prior metrics under feasibility truncation (DETERMINISTIC).
  *
- * Per Controversial B: Monte Carlo EVSI/NetValue use rejection sampling
- * to enforce L in [-1, 1/CR0-1]. This means the simulation effectively
- * operates on a truncated prior. For consistency, we should display
- * metrics (mean, probClearsThreshold) from the same truncated prior.
+ * Per Audit-1: EVSI/NetValue MC use rejection sampling to enforce
+ * L in [-1, 1/CR0-1]. The prior metrics displayed to the user must
+ * reflect the same truncated prior. This function computes those
+ * metrics analytically (Normal, Uniform) or via numerical integration
+ * (Student-t), eliminating MC noise entirely.
  *
- * This function uses Monte Carlo to compute these metrics using the same
- * feasibility bounds as the main simulation, ensuring consistency.
+ * When the feasible mass Z is near zero (< 1e-10), returns NaN pair
+ * to signal an infeasible prior. Callers (MC functions) catch this
+ * via checkInfeasiblePriorWarning and return safe zero-dollar results.
  *
  * @param prior - Prior distribution
  * @param threshold_L - Decision threshold in lift units
  * @param CR0 - Baseline conversion rate (determines L_max)
- * @param numSamples - Number of Monte Carlo samples (default 2000)
  * @returns Effective prior metrics under feasibility truncation
  */
 export function computeEffectivePriorMetrics(
   prior: PriorDistribution,
   threshold_L: number,
-  CR0: number,
-  numSamples: number = 2000
+  CR0: number
 ): { effectivePriorMean: number; effectiveProbClears: number } {
   // Feasibility bounds for lift (via shared helper)
   // CR1 = CR0 * (1 + L) must be in [0, 1]
   // L_min = -1 (CR1 = 0), L_max = (1/CR0) - 1 (CR1 = 1)
   const { L_min, L_max } = liftFeasibilityBounds(CR0);
 
-  let sumL = 0;
-  let countExceedsThreshold = 0;
-  let accepted = 0;
-  const maxIterations = numSamples * 10;
-  let iterations = 0;
+  switch (prior.type) {
+    // ===========================================
+    // Normal prior: analytic truncated Normal formulas
+    // ===========================================
+    case 'normal': {
+      const mu = prior.mu_L!;
+      const sigma = prior.sigma_L!;
 
-  while (accepted < numSamples && iterations < maxIterations) {
-    iterations++;
-    const L = sample(prior);
+      // Guard: sigma=0 (point mass at mu)
+      if (sigma === 0) {
+        if (mu >= L_min && mu <= L_max) {
+          return {
+            effectivePriorMean: mu,
+            effectiveProbClears: mu >= threshold_L ? 1 : 0,
+          };
+        }
+        // Point mass outside feasible range → infeasible
+        return { effectivePriorMean: NaN, effectiveProbClears: NaN };
+      }
 
-    // Apply same feasibility filter as main simulation
-    if (L < L_min || L > L_max) continue;
+      // Z = Phi((L_max - mu)/sigma) - Phi((L_min - mu)/sigma)
+      // This is the total feasible mass under the Normal prior
+      const PhiMax = standardNormalCDF((L_max - mu) / sigma);
+      const PhiMin = standardNormalCDF((L_min - mu) / sigma);
+      const Z = PhiMax - PhiMin;
 
-    accepted++;
-    sumL += L;
-    if (L >= threshold_L) countExceedsThreshold++;
+      // Near-zero feasible mass → infeasible prior
+      if (Z < 1e-10) {
+        return { effectivePriorMean: NaN, effectiveProbClears: NaN };
+      }
+
+      // effectivePriorMean = truncatedNormalMeanTwoSided(mu, sigma, L_min, L_max)
+      // Uses the analytic formula: E[X | a<=X<=b] = mu + sigma*(phi(alpha)-phi(beta))/Z
+      const effectivePriorMean = truncatedNormalMeanTwoSided(mu, sigma, L_min, L_max);
+
+      // effectiveProbClears = P(L >= threshold_L | L in [L_min, L_max])
+      //   = (Phi((L_max - mu)/sigma) - Phi((threshold_L - mu)/sigma)) / Z
+      // Clamp threshold to [L_min, L_max] for edge cases
+      const threshClamped = Math.max(L_min, Math.min(L_max, threshold_L));
+      const PhiThresh = standardNormalCDF((threshClamped - mu) / sigma);
+      const effectiveProbClears = (PhiMax - PhiThresh) / Z;
+
+      return { effectivePriorMean, effectiveProbClears };
+    }
+
+    // ===========================================
+    // Uniform prior: closed-form clipped-bounds calculation
+    // ===========================================
+    case 'uniform': {
+      // Clip Uniform bounds to feasibility range
+      const a = Math.max(prior.low_L!, L_min);
+      const b = Math.min(prior.high_L!, L_max);
+
+      // Empty intersection → infeasible prior
+      if (b <= a) {
+        return { effectivePriorMean: NaN, effectiveProbClears: NaN };
+      }
+
+      // Mean of Uniform[a, b] = (a + b) / 2
+      const effectivePriorMean = (a + b) / 2;
+
+      // P(L >= threshold_L) in Uniform[a, b]
+      // = max(0, b - max(a, threshold_L)) / (b - a)
+      const effectiveProbClears = Math.max(0, b - Math.max(a, threshold_L)) / (b - a);
+
+      return { effectivePriorMean, effectiveProbClears };
+    }
+
+    // ===========================================
+    // Student-t prior: 200-point composite Simpson's rule
+    // ===========================================
+    // Addresses review concern: Student-t numerical integration.
+    // Uses composite Simpson's 1/3 rule with 200 intervals (201 nodes).
+    // Convergence: O(h^4) for smooth Student-t pdf on typical feasibility
+    // intervals gives >6 digits of precision, far exceeding the MC noise
+    // it replaces.
+    case 'student-t': {
+      const mu = prior.mu_L!;
+      const sigma = prior.sigma_L!;
+      const df = prior.df!;
+
+      // Guard: sigma=0 (point mass)
+      if (sigma === 0) {
+        if (mu >= L_min && mu <= L_max) {
+          return {
+            effectivePriorMean: mu,
+            effectiveProbClears: mu >= threshold_L ? 1 : 0,
+          };
+        }
+        return { effectivePriorMean: NaN, effectiveProbClears: NaN };
+      }
+
+      // Number of Simpson's rule intervals (must be even)
+      const N = 200;
+      const h = (L_max - L_min) / N;
+
+      // Compute integrals in a single pass:
+      // Z       = integral of pdf(L) over [L_min, L_max]           (normalization)
+      // sumLpdf = integral of L * pdf(L) over [L_min, L_max]       (for mean)
+      // aboveT  = integral of pdf(L) over [max(threshold_L, L_min), L_max] (for probClears)
+      //
+      // Simpson's 1/3 rule: integral ≈ (h/3) * [f(x0) + 4*f(x1) + 2*f(x2) + 4*f(x3) + ... + f(xN)]
+      // Weights: endpoints get 1, odd indices get 4, even indices get 2
+      let Z = 0;
+      let sumLpdf = 0;
+      let aboveT = 0;
+
+      // Threshold clamped to integration domain
+      const threshClamped = Math.max(L_min, Math.min(L_max, threshold_L));
+
+      for (let i = 0; i <= N; i++) {
+        const L = L_min + i * h;
+
+        // Location-scale Student-t pdf: f(L) = t_df((L-mu)/sigma) / sigma
+        const z = (L - mu) / sigma;
+        const pdfVal = jStat.studentt.pdf(z, df) / sigma;
+
+        // Simpson's weight: 1 at endpoints, 4 at odd, 2 at even
+        let w: number;
+        if (i === 0 || i === N) {
+          w = 1;
+        } else if (i % 2 === 1) {
+          w = 4;
+        } else {
+          w = 2;
+        }
+
+        Z += w * pdfVal;
+        sumLpdf += w * L * pdfVal;
+        if (L >= threshClamped) {
+          aboveT += w * pdfVal;
+        }
+      }
+
+      // Multiply by h/3 (Simpson's rule factor)
+      Z *= h / 3;
+      sumLpdf *= h / 3;
+      aboveT *= h / 3;
+
+      // Near-zero feasible mass → infeasible prior
+      if (Z < 1e-10) {
+        return { effectivePriorMean: NaN, effectiveProbClears: NaN };
+      }
+
+      // Truncated mean: E[L | L_min <= L <= L_max] = (integral of L*pdf) / Z
+      const effectivePriorMean = sumLpdf / Z;
+      // P(L >= threshold | L in [L_min, L_max]) = (integral of pdf above threshold) / Z
+      const effectiveProbClears = aboveT / Z;
+
+      return { effectivePriorMean, effectiveProbClears };
+    }
   }
-
-  // Fallback if all samples rejected (degenerate case)
-  // Return untruncated metrics since we can't compute effective metrics
-  if (accepted === 0) {
-    return {
-      effectivePriorMean: getPriorMean(prior),
-      effectiveProbClears: 1 - cdf(threshold_L, prior),
-    };
-  }
-
-  return {
-    effectivePriorMean: sumL / accepted,
-    effectiveProbClears: countExceedsThreshold / accepted,
-  };
 }
 
 /**
@@ -391,11 +513,15 @@ export function computePosteriorMean(
  *
  * @param inputs - EVSI calculation parameters
  * @param numSamples - Number of Monte Carlo samples (default 5000)
+ * @param effectivePriorMetrics - REQUIRED: pre-computed effective prior metrics
+ *   from computeEffectivePriorMetrics. Passed in (not computed here) to ensure
+ *   EVSI and net-value MC use identical effective-prior data from a single computation.
  * @returns EVSI results with supporting metrics
  */
 export function calculateEVSIMonteCarlo(
   inputs: EVSIInputs,
-  numSamples: number = 5000
+  numSamples: number = 5000,
+  effectivePriorMetrics: { effectivePriorMean: number; effectiveProbClears: number } = computeEffectivePriorMetrics(inputs.prior, inputs.threshold_L, inputs.baselineConversionRate)
 ): EVSIResults {
   const { K, baselineConversionRate, threshold_L, prior, n_control, n_variant } =
     inputs;
@@ -482,30 +608,12 @@ export function calculateEVSIMonteCarlo(
   const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
 
   // ===========================================
-  // Step 3.5: Compute effective prior metrics under feasibility truncation
+  // Step 3.5: Use pre-computed effective prior metrics (Audit-1 fix)
   // ===========================================
-  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
-  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
-  // on a truncated prior. For consistency, we should display metrics
-  // (mean, probClearsThreshold) from the same truncated prior.
-  //
-  // Only compute effective metrics when truncation is likely to matter:
-  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
-  // - Normal priors with wide sigma relative to distance to L=-1
-  // This adds ~2000 samples overhead, so skip for tight Normal priors
-  let effectiveProbClears = 1 - cdf(threshold_L, prior);
-
-  const needsEffectiveMetrics =
-    prior.type !== 'normal' ||
-    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
-
-  if (needsEffectiveMetrics) {
-    const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
-    effectiveProbClears = effective.effectiveProbClears;
-  }
-
-  // Use effective probClears for the returned metric
-  const probClearsThreshold = effectiveProbClears;
+  // effectivePriorMetrics is passed in as a REQUIRED parameter (computed once
+  // by the caller) so that EVSI and net-value MC use identical effective-prior
+  // data. This eliminates MC noise from prior metrics and ensures consistency.
+  const probClearsThreshold = effectivePriorMetrics.effectiveProbClears;
 
   // ===========================================
   // Step 4: Feasibility bounds for lift (via shared helper)

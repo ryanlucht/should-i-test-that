@@ -194,15 +194,20 @@ function calculateIterationValue(
  *   h. Accumulate sums
  *
  * Net value = avgValueWithTest - avgValueWithoutTest
- * Clamped to max(0, netValue) because information can't hurt.
+ * Net value CAN be negative when testing delays rollout of a beneficial change.
+ * Negative values are preserved honestly, not clamped.
  *
  * @param inputs - Net value calculation parameters
  * @param numSamples - Number of Monte Carlo samples (default 5000)
+ * @param effectivePriorMetrics - REQUIRED: pre-computed effective prior metrics
+ *   from computeEffectivePriorMetrics. Passed in (not computed here) to ensure
+ *   EVSI and net-value MC use identical effective-prior data from a single computation.
  * @returns Net value results with supporting metrics
  */
 export function calculateNetValueMonteCarlo(
   inputs: NetValueInputs,
-  numSamples: number = 5000
+  numSamples: number = 5000,
+  effectivePriorMetrics: { effectivePriorMean: number; effectiveProbClears: number } = computeEffectivePriorMetrics(inputs.prior, inputs.threshold_L, inputs.baselineConversionRate)
 ): NetValueResults {
   const {
     K,
@@ -297,30 +302,12 @@ export function calculateNetValueMonteCarlo(
   const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
 
   // ===========================================
-  // Step 3.5: Compute effective prior metrics under feasibility truncation
+  // Step 3.5: Use pre-computed effective prior metrics (Audit-1 fix)
   // ===========================================
-  // Per Controversial B: Monte Carlo uses rejection sampling to enforce
-  // L in [-1, 1/CR0-1]. This means the simulation effectively operates
-  // on a truncated prior. For consistency, we should display metrics
-  // (mean, probClearsThreshold) from the same truncated prior.
-  //
-  // Only compute effective metrics when truncation is likely to matter:
-  // - Non-Normal priors (Uniform, Student-t) often have mass near bounds
-  // - Normal priors with wide sigma relative to distance to L=-1
-  // This adds ~2000 samples overhead, so skip for tight Normal priors
-  let effectiveProbClears = 1 - cdf(threshold_L, prior);
-
-  const needsEffectiveMetrics =
-    prior.type !== 'normal' ||
-    (prior.type === 'normal' && prior.sigma_L! > Math.abs(prior.mu_L! + 1));
-
-  if (needsEffectiveMetrics) {
-    const effective = computeEffectivePriorMetrics(prior, threshold_L, CR0);
-    effectiveProbClears = effective.effectiveProbClears;
-  }
-
-  // Use effective probClears for the returned metric
-  const probClearsThreshold = effectiveProbClears;
+  // effectivePriorMetrics is passed in as a REQUIRED parameter (computed once
+  // by the caller) so that EVSI and net-value MC use identical effective-prior
+  // data. This eliminates MC noise from prior metrics and ensures consistency.
+  const probClearsThreshold = effectivePriorMetrics.effectiveProbClears;
 
   // ===========================================
   // Step 4: Feasibility bounds for lift

@@ -43,7 +43,8 @@ import type { EVSIInputs, EVSIResults, NetValueInputs, NetValueResults } from '.
  */
 function computeEVSI(
   inputs: EVSIInputs,
-  numSamples: number = 5000
+  numSamples: number = 5000,
+  effectivePriorMetrics?: { effectivePriorMean: number; effectiveProbClears: number }
 ): EVSIResults {
   if (inputs.prior.type === 'normal') {
     // Per audit Priority 2: Worker must respect the same truncation gate as the hook.
@@ -64,7 +65,8 @@ function computeEVSI(
 
   // Monte Carlo for Student-t, Uniform, and truncation-sensitive Normal priors
   // Per SPEC.md A5.1: Sample from prior, simulate test, average improvement
-  return calculateEVSIMonteCarlo(inputs, numSamples);
+  // effectivePriorMetrics computed on main thread (deterministic), passed through
+  return calculateEVSIMonteCarlo(inputs, numSamples, effectivePriorMetrics);
 }
 
 /**
@@ -85,9 +87,10 @@ function computeEVSI(
  */
 function computeNetValue(
   inputs: NetValueInputs,
-  numSamples: number = 5000
+  numSamples: number = 5000,
+  effectivePriorMetrics?: { effectivePriorMean: number; effectiveProbClears: number }
 ): NetValueResults {
-  return calculateNetValueMonteCarlo(inputs, numSamples);
+  return calculateNetValueMonteCarlo(inputs, numSamples, effectivePriorMetrics);
 }
 
 // Expose the API via Comlink

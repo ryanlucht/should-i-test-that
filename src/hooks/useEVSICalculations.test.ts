@@ -287,6 +287,23 @@ describe('useEVSICalculations', () => {
       expect(evsi.defaultDecision).toBe('ship');
       expect(evsi.pConvincesShip).toBe(0);
     });
+
+    it('includes effectivePriorMean field in results (Test 8)', async () => {
+      act(() => {
+        setupAllInputs();
+      });
+
+      const { result } = renderHook(() => useEVSICalculations());
+
+      await waitFor(() => {
+        expect(result.current.results).not.toBeNull();
+      });
+
+      // effectivePriorMean should be a finite number
+      expect(result.current.results!.effectivePriorMean).toBeDefined();
+      expect(typeof result.current.results!.effectivePriorMean).toBe('number');
+      expect(Number.isFinite(result.current.results!.effectivePriorMean)).toBe(true);
+    });
   });
 
   describe('reactivity', () => {

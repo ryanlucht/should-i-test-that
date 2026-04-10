@@ -25,9 +25,11 @@ import {
   calculateEVSIMonteCarlo,
   deriveSampleSizes,
 } from '@/lib/calculations';
+import { computeEffectivePriorMetrics } from '@/lib/calculations/evsi';
 import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from '@/lib/calculations/feasibility';
 import { buildPriorFromInputs } from '@/lib/prior';
+import { getPriorMean } from '@/lib/calculations/distributions';
 import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults, CalculationWarning } from '@/lib/calculations/types';
 
 /**
@@ -49,6 +51,8 @@ export interface EVSICalculationResults {
   };
   /** Merged warnings from EVSI and net-value calculations (audit P8b) */
   warnings: CalculationWarning[];
+  /** Effective prior mean under feasibility truncation (for UI consumption) */
+  effectivePriorMean: number;
 }
 
 /**
@@ -243,6 +247,18 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
     const { prior, evsiInputs, netValueInputs } = validatedInputs;
 
+    // ===========================================
+    // Compute effective prior metrics ONCE (Audit-1 fix)
+    // ===========================================
+    // Deterministic computation: no MC noise. The same effectivePriorMetrics
+    // object is passed to both calculateEVSIMonteCarlo and calculateNetValueMonteCarlo
+    // ensuring they operate on identical effective-prior data.
+    const effectiveMetrics = computeEffectivePriorMetrics(
+      prior,
+      evsiInputs.threshold_L,
+      evsiInputs.baselineConversionRate
+    );
+
     // For Normal priors, gate fast path by infeasible tail mass (per ENG-05)
     // When truncation is material, the untruncated closed-form EVSI diverges
     // from the truncated MC net value. Fall back to MC for consistency.
@@ -259,7 +275,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
         // Integrated net value for headline (COD-03)
         // Must use Monte Carlo to integrate timing effects
-        const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000);
+        const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000, effectiveMetrics);
         setNetValueResults(netResults);
 
         setLoading(false);
@@ -289,15 +305,17 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
         // Wrap with Comlink for type-safe RPC
         // Worker exposes both computeEVSI (for display) and computeNetValue (for headline)
+        // effectivePriorMetrics computed deterministically on main thread, passed to worker
         const api = Comlink.wrap<{
-          computeEVSI: (inputs: typeof evsiInputs, numSamples: number) => EVSIResults;
-          computeNetValue: (inputs: NetValueInputs, numSamples: number) => NetValueResults;
+          computeEVSI: (inputs: typeof evsiInputs, numSamples: number, effectivePriorMetrics: typeof effectiveMetrics) => EVSIResults;
+          computeNetValue: (inputs: NetValueInputs, numSamples: number, effectivePriorMetrics: typeof effectiveMetrics) => NetValueResults;
         }>(newWorker);
 
         // Compute both in parallel for efficiency
+        // Pass effectiveMetrics (computed once on main thread) to both
         const [evsiResults, netResults] = await Promise.all([
-          api.computeEVSI(evsiInputs, 5000),
-          api.computeNetValue(netValueInputs, 5000),
+          api.computeEVSI(evsiInputs, 5000, effectiveMetrics),
+          api.computeNetValue(netValueInputs, 5000, effectiveMetrics),
         ]);
 
         // Only update if this is still the current request
@@ -311,8 +329,8 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
         if (currentRequestId === requestIdRef.current) {
           try {
             // Synchronous fallback: run Monte Carlo on main thread
-            const evsiResults = calculateEVSIMonteCarlo(evsiInputs, 5000);
-            const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000);
+            const evsiResults = calculateEVSIMonteCarlo(evsiInputs, 5000, effectiveMetrics);
+            const netResults = calculateNetValueMonteCarlo(netValueInputs, 5000, effectiveMetrics);
             setWorkerResults(evsiResults);
             setNetValueResults(netResults);
           } catch (fallbackError) {
@@ -354,8 +372,21 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       return null;
     }
 
-    const { sampleSizes } = validatedInputs;
+    const { sampleSizes, evsiInputs } = validatedInputs;
     const netValueDollars = netValueResults.netValueDollars;
+
+    // Compute effective prior mean (deterministic, fast) for UI consumption
+    // This is the same computation done in the useEffect, but deterministic
+    // functions are idempotent so recomputing here is safe and avoids extra state
+    const effectiveMetrics = computeEffectivePriorMetrics(
+      evsiInputs.prior,
+      evsiInputs.threshold_L,
+      evsiInputs.baselineConversionRate
+    );
+    // Fallback to raw prior mean when effective mean is NaN (infeasible prior)
+    const effectivePriorMean = Number.isFinite(effectiveMetrics.effectivePriorMean)
+      ? effectiveMetrics.effectivePriorMean
+      : getPriorMean(evsiInputs.prior);
 
     // Merge warnings from EVSI and net-value calculations (audit Priority 8b)
     // Use warning code as dedup key to avoid showing duplicate messages
@@ -376,6 +407,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       netValueDollars,
       sampleSizes,
       warnings: mergedWarnings,
+      effectivePriorMean,
     };
   }, [validatedInputs, workerResults, netValueResults]);
 
