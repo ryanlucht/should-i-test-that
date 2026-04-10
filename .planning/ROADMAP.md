@@ -20,7 +20,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard (completed 2026-04-06)
 - [x] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification (completed 2026-04-08)
 - [x] **Phase 25.1: Results Card Improvements** - Plain-English waterfall, directional decision impact, card renames, FAQ accordion explainers (completed 2026-04-10)
-- [ ] **Phase 25.2: Stats Engine V3 Audit Fixes** - Deterministic effective-prior metrics, infeasible-prior warning, traffic-population documentation, Student-t display fix, timing-costs sign handling, URL validation tightening
+- [x] **Phase 25.2: Stats Engine V3 Audit Fixes** - Deterministic effective-prior metrics, infeasible-prior warning, traffic-population documentation, Student-t display fix, timing-costs sign handling, URL validation tightening (completed 2026-04-10)
 - [ ] **Phase 26: AWS Deployment** - Serverless deployment following Datadog community-golden-paths
 
 ## Phase Details
@@ -201,12 +201,12 @@ Plans:
   8. sharedNetValue dead store field is removed
   9. URL decoding rejects CR=0, CR=1, trafficSplit outside [10%, 90%]
   10. Sample sizes are real-valued in calculation layer (Math.floor removed)
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 25.2-01-PLAN.md -- Deterministic effective-prior metrics, infeasible-prior warning, real-valued sample sizes, stale comment fix
-- [ ] 25.2-02-PLAN.md -- Traffic field labels/tooltips per D-01/D-02/D-03, Student-t form display fix
-- [ ] 25.2-03-PLAN.md -- Truncated-prior reporting text, timing-costs sign, assumption note, sharedNetValue removal, URL validation tightening
+- [x] 25.2-01-PLAN.md -- Deterministic effective-prior metrics, infeasible-prior warning, real-valued sample sizes, stale comment fix
+- [x] 25.2-02-PLAN.md -- Traffic field labels/tooltips per D-01/D-02/D-03, Student-t form display fix
+- [x] 25.2-03-PLAN.md -- Truncated-prior reporting text, timing-costs sign, assumption note, sharedNetValue removal, URL validation tightening
 
 ### Phase 26: AWS Deployment
 **Goal**: Application is deployed to AWS serverless infrastructure with working Datadog instrumentation
@@ -232,7 +232,7 @@ Plans:
 | 24. Shareable Walkthrough URLs | 3/3 | Complete    | 2026-04-06 |
 | 25. Polish, Accessibility & Export | 3/3 | Complete    | 2026-04-08 |
 | 25.1. Results Card Improvements | 4/4 | Complete    | 2026-04-10 |
-| 25.2. Stats Engine V3 Audit Fixes | 0/3 | Not started | - |
+| 25.2. Stats Engine V3 Audit Fixes | 3/3 | Complete    | 2026-04-10 |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
 ## Coverage Validation
