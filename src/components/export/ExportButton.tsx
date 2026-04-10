@@ -69,6 +69,8 @@ interface AdvancedModeProps {
   testDurationDays?: number;
   /** Optional analysis name for export filename (EXPORT-02) */
   analysisName?: string;
+  /** Effective prior mean under feasibility truncation (for export annotation) */
+  effectivePriorMean?: number;
 }
 
 type ExportButtonProps = BasicModeProps | AdvancedModeProps;
@@ -197,6 +199,9 @@ export function ExportButton(props: ExportButtonProps) {
   // Get test duration for Advanced mode
   const testDurationDays = mode === 'advanced' ? props.testDurationDays : undefined;
 
+  // Effective prior mean for export annotation (Advanced mode only)
+  const effectivePriorMean = mode === 'advanced' ? props.effectivePriorMean : undefined;
+
   // Handle export click
   const handleExport = async () => {
     try {
@@ -259,6 +264,7 @@ export function ExportButton(props: ExportButtonProps) {
           evsi={mode === 'advanced' ? props.evsiResults.evsi.evsiDollars : undefined}
           netValue={mode === 'advanced' ? props.evsiResults.netValueDollars : undefined}
           testDurationDays={testDurationDays}
+          effectivePriorMean={effectivePriorMean}
         />
       </div>
     </div>

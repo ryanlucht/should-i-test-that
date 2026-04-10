@@ -94,6 +94,9 @@ interface ExportCardProps {
 
   /** Test duration in days (only for advanced mode) */
   testDurationDays?: number;
+
+  /** Effective prior mean under feasibility truncation (for truncation annotation) */
+  effectivePriorMean?: number;
 }
 
 /**
@@ -123,6 +126,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
       evsi,
       netValue,
       testDurationDays,
+      effectivePriorMean,
     },
     ref
   ) {
@@ -133,6 +137,19 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     const priorShapeText = priorShapeDescription ? ` (${priorShapeDescription})` : '';
     const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% expected lift${priorShapeText}`;
     const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
+
+    // Effective prior mean annotation (NaN guard, same as AdvancedResultsSection)
+    // Threshold: 0.001 lift units = 0.1 percentage points
+    const TRUNCATION_DISPLAY_THRESHOLD = 0.001;
+    const safeEffectiveMean = (effectivePriorMean != null && !isNaN(effectivePriorMean))
+      ? effectivePriorMean
+      : undefined;
+    const rawPriorMean = (prior.lowPercent + prior.highPercent) / 2; // midpoint in % form
+    // effectivePriorMean is in lift-unit form (decimal), rawPriorMean is in % form
+    // Convert raw to decimal for comparison
+    const rawPriorMeanDecimal = rawPriorMean / 100;
+    const showEffectiveMeanAnnotation = safeEffectiveMean !== undefined &&
+      Math.abs(safeEffectiveMean - rawPriorMeanDecimal) > TRUNCATION_DISPLAY_THRESHOLD;
 
     // Format threshold display — unit-aware via formatThreshold (audit P5)
     const thresholdDisplay = formatThreshold({
@@ -397,6 +414,18 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             >
               {priorInterval}
             </p>
+            {showEffectiveMeanAnnotation && safeEffectiveMean !== undefined && (
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: '#9CA3AF',
+                  fontStyle: 'italic',
+                  margin: '4px 0 0 0',
+                }}
+              >
+                (effective: {safeEffectiveMean > 0 ? '+' : ''}{(safeEffectiveMean * 100).toFixed(1)}%)
+              </p>
+            )}
           </div>
 
           {/* Threshold Summary */}
@@ -489,7 +518,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: '0 0 8px 0',
                 }}
               >
-                Timing costs
+                Timing costs (est.)
               </p>
               <p
                 style={{
@@ -499,11 +528,21 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: 0,
                 }}
               >
-                {formatSmartCurrency(evsi - netValue)}
+                {(() => {
+                  const tc = evsi - netValue;
+                  return `${tc > 0 ? '-' : tc < 0 ? '+' : ''}${formatSmartCurrency(Math.abs(tc))}`;
+                })()}
               </p>
             </div>
           )}
         </div>
+
+        {/* Assumption note per D-04: value scaled to annual visitors */}
+        {mode === 'advanced' && (
+          <p style={{ fontSize: '11px', color: '#9CA3AF', fontStyle: 'italic', margin: '8px 0 0 0' }}>
+            Value scaled to all annual visitors (assumes full rollout after test).
+          </p>
+        )}
 
         {/* Mini Chart */}
         <div

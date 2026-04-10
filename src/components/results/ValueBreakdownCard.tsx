@@ -78,7 +78,9 @@ export function ValueBreakdownCard({
           }}
         >
           <span className="text-sm text-muted-foreground flex items-center gap-1">
-            Timing costs
+            <span title="Estimated from the difference between gross information value and net value. A negative value means estimated time savings vs. baseline.">
+              Timing costs (est.)
+            </span>
             {isExpanded ? (
               <ChevronUp className="h-3.5 w-3.5" />
             ) : (
@@ -86,7 +88,7 @@ export function ValueBreakdownCard({
             )}
           </span>
           <span className="text-base font-medium text-foreground">
-            {timingCostsDollars > 0 ? '-' : ''}
+            {timingCostsDollars > 0 ? '-' : timingCostsDollars < 0 ? '+' : ''}
             {formatSmartCurrency(Math.abs(timingCostsDollars))}
           </span>
         </div>

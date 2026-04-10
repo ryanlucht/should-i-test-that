@@ -2,10 +2,8 @@
  * Results Section - EVSI results display
  *
  * Requirements covered:
- * - ADV-OUT-01: Primary verdict "up to $Y"
- * - ADV-OUT-02: Y = max(0, EVSI - CoD)
+ * - ADV-OUT-01: Primary verdict (net value headline)
  * - ADV-OUT-03: EVSI display (gross value)
- * - ADV-OUT-04: Cost of Delay display
  * - ADV-OUT-05: Net value display
  * - ADV-OUT-07: Probability test changes decision
  * - EXPORT-01 through EXPORT-04: PNG export functionality
@@ -33,6 +31,14 @@ import {
 import { trackCalculationCompleted } from '@/lib/analytics';
 import { buildPriorFromInputs, DEFAULT_INTERVAL } from '@/lib/prior';
 import type { PriorDistribution } from '@/lib/calculations/types';
+
+/**
+ * Threshold for displaying truncation disclosure in the UI.
+ * When |effectivePriorMean - rawPriorMean| > this value (in lift units),
+ * the UI shows the effective mean after feasibility truncation.
+ * 0.001 = 0.1 percentage points of lift difference.
+ */
+export const TRUNCATION_DISPLAY_THRESHOLD = 0.001;
 
 /**
  * Determine whether the prior mean is exactly at the shipping threshold
@@ -69,11 +75,6 @@ export function ResultsSection() {
   const { loading, results } = useEVSICalculations();
   const inputs = useWizardStore((state) => state.inputs);
 
-  // Shared URL result: the sender's exact computed value.
-  // Used instead of the re-calculated value so recipients see the same verdict.
-  // Cleared when the recipient modifies any input (setInput clears it).
-  const sharedNetValue = useWizardStore((state) => state.sharedNetValue);
-
   // Analysis name for export filename and sharing context (EXPORT-02 D-06)
   const analysisName = useWizardStore((state) => state.analysisName);
   const setAnalysisName = useWizardStore((state) => state.setAnalysisName);
@@ -108,8 +109,8 @@ export function ResultsSection() {
     }
   }, [loading, results]);
 
-  // Show placeholder if no results, not loading, and no shared result.
-  if (!loading && !results && sharedNetValue === null) {
+  // Show placeholder if no results and not loading.
+  if (!loading && !results) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">
@@ -122,7 +123,21 @@ export function ResultsSection() {
   // Get prior interval for display
   const priorLow = inputs.priorIntervalLow ?? DEFAULT_INTERVAL.low;
   const priorHigh = inputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high;
-  const priorMean = (priorLow + priorHigh) / 2;
+
+  // Raw prior midpoint (user's input, for Prior Belief card display)
+  const rawPriorMean = (priorLow + priorHigh) / 2;
+
+  // Effective prior mean (after feasibility truncation, from engine)
+  // NaN guard: if effectivePriorMean is NaN (infeasible prior), fall back to rawPriorMean
+  // This prevents NaN from propagating to the display layer.
+  // (Addresses Codex review concern: NaN propagation through charts/formatters)
+  const effectivePriorMean = (results?.effectivePriorMean != null && !isNaN(results.effectivePriorMean))
+    ? results.effectivePriorMean
+    : rawPriorMean;
+  const truncationMaterial = Math.abs(effectivePriorMean - rawPriorMean) > TRUNCATION_DISPLAY_THRESHOLD;
+
+  // Keep priorMean alias for backward compatibility with downstream uses
+  const priorMean = rawPriorMean;
 
   // Tie detection: when prior mean is exactly at the shipping threshold,
   // the starting decision is a tie-break and needs explanation
@@ -134,10 +149,10 @@ export function ResultsSection() {
 
   return (
     <div className="space-y-6">
-      {/* Primary Verdict - ADV-OUT-01, ADV-OUT-02 */}
+      {/* Primary Verdict - ADV-OUT-01 */}
       <EVSIVerdictCard
-        netValueDollars={sharedNetValue ?? (results ? results.netValueDollars : null)}
-        isLoading={sharedNetValue !== null ? false : loading}
+        netValueDollars={results ? results.netValueDollars : null}
+        isLoading={loading}
       />
 
       {/* Supporting Metrics - ADV-OUT-03 through ADV-OUT-07 */}
@@ -167,16 +182,34 @@ export function ResultsSection() {
             variantFraction={inputs.trafficSplit ?? 0.5}
             decisionLatencyDays={inputs.decisionLatencyDays ?? 0}
           />
+          <p className="text-xs text-muted-foreground italic">
+            Value scaled to all annual visitors (assumes full rollout after test).
+          </p>
 
           {/* Supporting Cards Grid */}
           <div className="bg-card rounded-lg border overflow-hidden shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
-              {/* Prior Belief — bold the range, show mean as secondary */}
-              <SupportingCard
-                title="Prior Belief"
-                value={`${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
-                description={`Mean: ${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`}
-              />
+              {/* Prior Belief — bold the range, show mean as secondary.
+                  When truncation is material, use children to render both value and annotation. */}
+              {truncationMaterial ? (
+                <SupportingCard
+                  title="Prior Belief"
+                  description={`Mean: ${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`}
+                >
+                  <div className="text-xl font-bold text-foreground">
+                    {formatPercentage(priorLow)} to {formatPercentage(priorHigh)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    After feasibility truncation: {effectivePriorMean > 0 ? '+' : ''}{(effectivePriorMean * 100).toFixed(1)}%
+                  </div>
+                </SupportingCard>
+              ) : (
+                <SupportingCard
+                  title="Prior Belief"
+                  value={`${formatPercentage(priorLow)} to ${formatPercentage(priorHigh)}`}
+                  description={`Mean: ${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`}
+                />
+              )}
 
               {/* Shipping rule — renamed from Threshold per RCI-03/D-05 */}
               <SupportingCard
@@ -284,6 +317,7 @@ export function ResultsSection() {
               prior={prior}
               testDurationDays={inputs.testDurationDays ?? undefined}
               analysisName={analysisName}
+              effectivePriorMean={results?.effectivePriorMean}
             />
           </div>
 
