@@ -60,22 +60,17 @@ export function ValueBreakdownCard({
           </span>
         </div>
 
-        {/* Timing costs row - clickable for expansion */}
-        <div
+        {/* Timing costs row - clickable for expansion.
+            Uses native <button> for keyboard + screen reader support. */}
+        <button
+          type="button"
           className={cn(
-            'flex justify-between items-baseline cursor-pointer rounded px-1 -mx-1 transition-colors',
-            'hover:bg-muted/50'
+            'w-full flex justify-between items-baseline cursor-pointer rounded px-1 -mx-1 transition-colors',
+            'hover:bg-muted/50',
+            'bg-transparent border-none p-0 text-left font-inherit'
           )}
           onClick={() => setIsExpanded(!isExpanded)}
-          role="button"
           aria-expanded={isExpanded}
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setIsExpanded(!isExpanded);
-            }
-          }}
         >
           <span className="text-sm text-muted-foreground flex items-center gap-1">
             <span title="Estimated from the difference between gross information value and net value. A negative value means estimated time savings vs. baseline.">
@@ -91,7 +86,7 @@ export function ValueBreakdownCard({
             {timingCostsDollars > 0 ? '-' : timingCostsDollars < 0 ? '+' : ''}
             {formatSmartCurrency(Math.abs(timingCostsDollars))}
           </span>
-        </div>
+        </button>
 
         {/* Expanded explanation */}
         {isExpanded && (
