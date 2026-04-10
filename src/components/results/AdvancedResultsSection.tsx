@@ -35,30 +35,31 @@ import { buildPriorFromInputs, DEFAULT_INTERVAL } from '@/lib/prior';
 import type { PriorDistribution } from '@/lib/calculations/types';
 
 /**
- * Determine whether the prior mean is close enough to the shipping threshold
- * that the starting decision is essentially a tie-break.
+ * Determine whether the prior mean is exactly at the shipping threshold
+ * (an actual tie, not a near-miss). This triggers special copy explaining
+ * the tie-break convention.
  *
- * Near-tie threshold: within 1 percentage point of the decision boundary.
- * - 'any-positive': threshold is 0%, so |priorMean| < 1.0
- * - 'minimum-lift': threshold is thresholdValue, so |priorMean - threshold| < 1.0
- * - 'accept-loss': threshold is -thresholdValue, so |priorMean + threshold| < 1.0
+ * Uses a tiny epsilon (0.01 percentage points) for floating-point tolerance
+ * only — not to create a "near-tie" band.
+ * - 'any-positive': threshold is 0%, so |priorMean| < 0.01
+ * - 'minimum-lift': threshold is thresholdValue, so |priorMean - threshold| < 0.01
+ * - 'accept-loss': threshold is -thresholdValue, so |priorMean + threshold| < 0.01
  */
-function computeIsNearTie(
+function computeIsTie(
   priorMean: number,
   thresholdScenario: string | null,
   thresholdValue: number | null,
 ): boolean {
-  const NEAR_TIE_EPSILON = 1.0; // 1 percentage point
+  const TIE_EPSILON = 0.01; // floating-point tolerance only
 
   if (!thresholdScenario || thresholdScenario === 'any-positive') {
-    // Threshold is 0%; prior mean near zero means near-tie
-    return Math.abs(priorMean) < NEAR_TIE_EPSILON;
+    return Math.abs(priorMean) < TIE_EPSILON;
   }
   if (thresholdScenario === 'minimum-lift' && thresholdValue != null) {
-    return Math.abs(priorMean - thresholdValue) < NEAR_TIE_EPSILON;
+    return Math.abs(priorMean - thresholdValue) < TIE_EPSILON;
   }
   if (thresholdScenario === 'accept-loss' && thresholdValue != null) {
-    return Math.abs(priorMean + thresholdValue) < NEAR_TIE_EPSILON;
+    return Math.abs(priorMean + thresholdValue) < TIE_EPSILON;
   }
   return false;
 }
@@ -136,9 +137,9 @@ export function ResultsSection() {
   const priorHigh = inputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high;
   const priorMean = (priorLow + priorHigh) / 2;
 
-  // Near-tie detection: when prior mean is close to the shipping threshold,
-  // the starting decision is essentially a tie-break and needs explanation
-  const isNearTie = computeIsNearTie(
+  // Tie detection: when prior mean is exactly at the shipping threshold,
+  // the starting decision is a tie-break and needs explanation
+  const isTie = computeIsTie(
     priorMean,
     inputs.thresholdScenario,
     inputs.thresholdValue,
@@ -244,16 +245,24 @@ export function ResultsSection() {
             defaultDecision={results.evsi.defaultDecision}
             priorLow={priorLow}
             priorHigh={priorHigh}
+            priorMean={priorMean}
+            shippingRuleLabel={formatThreshold({
+              scenario: (inputs.thresholdScenario ?? 'any-positive') as 'any-positive' | 'minimum-lift' | 'accept-loss',
+              unit: inputs.thresholdUnit,
+              value: inputs.thresholdValue,
+            }).toLowerCase()}
             pDecisionChange={results.evsi.probabilityTestChangesDecision}
             testValue={results.evsi.evsiDollars}
             timingCost={results.evsi.evsiDollars - results.netValueDollars}
             netValue={results.netValueDollars}
-            isNearTie={isNearTie}
+            isTie={isTie}
           />
 
           {/* Plain-English Interpretation — explains the starting decision logic */}
           {(() => {
             const shippingRuleLabel = getShippingRuleLabel(inputs.thresholdScenario);
+            const formattedMean = `${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`;
+            const defaultLabel = results.evsi.defaultDecision === 'ship' ? 'ship' : 'not ship';
 
             // Derive directional interpretation sentence
             const pStopsShip = results.evsi.pStopsShip ?? 0;
@@ -278,17 +287,20 @@ export function ResultsSection() {
                     Plain-English interpretation
                   </h4>
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    {isNearTie ? (
+                    {isTie ? (
                       <>
-                        Because your prior is centered very close to the shipping cutoff,
-                        shipping and not shipping are nearly tied before testing. The calculator
-                        treats <strong>{results.evsi.defaultDecision === 'ship' ? 'ship' : 'not ship'}</strong> as
-                        the starting choice, so {directionSentence}
+                        Your expected effect ({formattedMean}) is right at the boundary of your
+                        shipping rule ({shippingRuleLabel}). At this point, shipping and not shipping
+                        are equally good — the calculator defaults
+                        to <strong>{defaultLabel}</strong>, but this choice doesn&apos;t affect the
+                        test&apos;s value. In this setup, {directionSentence}
                       </>
                     ) : (
                       <>
-                        Because your current rule is <strong>&ldquo;{shippingRuleLabel},&rdquo;</strong> the
-                        calculator starts from <strong>{results.evsi.defaultDecision === 'ship' ? 'ship' : 'not ship'}</strong>.
+                        Your expected effect ({formattedMean})
+                        {results.evsi.defaultDecision === 'ship' ? ' meets ' : ' doesn\u2019t meet '}
+                        your shipping rule ({shippingRuleLabel}), so the calculator starts
+                        from <strong>{defaultLabel}</strong>.
                         In this case, {directionSentence}
                       </>
                     )}

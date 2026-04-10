@@ -288,7 +288,12 @@ describe('AdvancedResultsSection card content', () => {
 
     render(<AdvancedResultsSection />);
 
-    expect(screen.getByText(/nearly tied before testing/)).toBeInTheDocument();
+    // "right at the boundary" appears in both waterfall and interpretation
+    const matches = screen.getAllByText(/right at the boundary/);
+    expect(matches.length).toBeGreaterThanOrEqual(2);
+    // "doesn't affect" appears in both as well
+    const affectMatches = screen.getAllByText(/doesn't affect/);
+    expect(affectMatches.length).toBeGreaterThanOrEqual(1);
   });
 
   it('does not render EVSI Intuition block', () => {

@@ -5,9 +5,9 @@
  * showing how prior uncertainty flows into test value and net value.
  *
  * Per UI-SPEC: visible by default, no toggle, read-only prose block.
- * Includes near-tie conditional copy when the prior mean is close to
- * the shipping threshold (explains why the calculator treats "ship"
- * as the starting decision when outcomes look nearly tied).
+ * Step 1 explicitly shows the prior mean vs. shipping rule comparison
+ * so users understand why the calculator picks ship or don't-ship.
+ * Near-tie variant explains the tie-break convention.
  */
 
 import { cn } from '@/lib/utils';
@@ -24,6 +24,10 @@ interface WaterfallBlockProps {
   priorLow: number;
   /** Prior interval upper bound in percentage form (e.g., 8.22 for 8.22%) */
   priorHigh: number;
+  /** Prior mean in percentage form (e.g., 0.0 for 0.0%) */
+  priorMean: number;
+  /** Human-readable shipping rule label (e.g., "any positive impact") */
+  shippingRuleLabel: string;
   /** Probability the test would change the decision (decimal 0-1) */
   pDecisionChange: number;
   /** Gross value of better decisions enabled by the test (evsiDollars) */
@@ -32,22 +36,27 @@ interface WaterfallBlockProps {
   timingCost: number;
   /** Net value after timing costs (netValueDollars) */
   netValue: number;
-  /** True when prior mean is close to the shipping threshold (tie-breaking case) */
-  isNearTie?: boolean;
+  /** True when prior mean is exactly at the shipping threshold (tie-break) */
+  isTie?: boolean;
 }
 
 export function WaterfallBlock({
   defaultDecision,
   priorLow,
   priorHigh,
+  priorMean,
+  shippingRuleLabel,
   pDecisionChange,
   testValue,
   timingCost,
   netValue,
-  isNearTie = false,
+  isTie = false,
 }: WaterfallBlockProps) {
   // Convert internal 'dont-ship' to display-friendly "not ship"
   const defaultDecisionLabel = defaultDecision === 'ship' ? 'ship' : 'not ship';
+
+  // Format prior mean with sign for display
+  const formattedMean = `${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`;
 
   return (
     <section
@@ -59,18 +68,25 @@ export function WaterfallBlock({
       </h4>
 
       <ol className="space-y-3 list-none">
-        {/* Step 1: Starting decision — with near-tie variant when
-            prior mean is close to the shipping threshold */}
+        {/* Step 1: Starting decision — shows explicit comparison of prior
+            mean vs shipping rule so users understand the logic. Near-tie
+            variant explains the boundary tie-break convention. */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">1.</span>{' '}
-          {isNearTie ? (
+          {isTie ? (
             <>
-              Before testing, shipping and not shipping look nearly equally good.
-              In that tie case, the calculator treats &ldquo;{defaultDecisionLabel}&rdquo; as the starting decision.
+              Your expected effect ({formattedMean}) is right at the boundary of
+              your shipping rule ({shippingRuleLabel}). At this point, shipping and
+              not shipping are equally good — the calculator needs to pick one as a
+              starting point, and defaults to
+              {' '}<strong>{defaultDecisionLabel}</strong>.
+              This choice doesn&apos;t affect the test&apos;s value.
             </>
           ) : (
             <>
-              If you had to decide today, your current rule would lead you to {defaultDecisionLabel}.
+              If you had to decide today, your best estimate of the effect ({formattedMean})
+              {defaultDecision === 'ship' ? ' meets ' : ' doesn\u2019t meet '}
+              your shipping rule ({shippingRuleLabel}), so you&apos;d {defaultDecisionLabel}.
             </>
           )}
         </li>

@@ -12,6 +12,8 @@ const defaultProps = {
   defaultDecision: 'ship' as const,
   priorLow: -8.22,
   priorHigh: 8.22,
+  priorMean: 0.0,
+  shippingRuleLabel: 'any positive impact',
   pDecisionChange: 0.25,
   testValue: 12000,
   timingCost: 2500,
@@ -40,26 +42,32 @@ describe('WaterfallBlock', () => {
     expect(screen.getByText(/^6\./)).toBeInTheDocument();
   });
 
-  it('step 1 contains default decision text when not near-tie', () => {
-    render(<WaterfallBlock {...defaultProps} defaultDecision="ship" />);
+  it('step 1 shows explicit comparison when not near-tie (ship)', () => {
+    render(<WaterfallBlock {...defaultProps} defaultDecision="ship" priorMean={3.0} shippingRuleLabel="any positive impact" />);
 
-    const step1 = screen.getByText(/If you had to decide today/);
+    const step1 = screen.getByText(/best estimate of the effect/);
     expect(step1).toBeInTheDocument();
+    expect(step1.textContent).toContain('+3.0%');
+    expect(step1.textContent).toContain('meets');
     expect(step1.textContent).toContain('ship');
   });
 
-  it('step 1 contains "not ship" when decision is dont-ship', () => {
-    render(<WaterfallBlock {...defaultProps} defaultDecision="dont-ship" />);
+  it('step 1 shows "doesn\u2019t meet" when decision is dont-ship', () => {
+    render(<WaterfallBlock {...defaultProps} defaultDecision="dont-ship" priorMean={1.0} shippingRuleLabel="minimum lift of +2%" />);
 
-    const step1 = screen.getByText(/If you had to decide today/);
+    const step1 = screen.getByText(/best estimate of the effect/);
+    expect(step1.textContent).toContain('doesn\u2019t meet');
     expect(step1.textContent).toContain('not ship');
   });
 
-  it('step 1 shows near-tie copy when isNearTie is true', () => {
-    render(<WaterfallBlock {...defaultProps} isNearTie={true} />);
+  it('step 1 shows near-tie copy when isTie is true', () => {
+    render(<WaterfallBlock {...defaultProps} isTie={true} />);
 
-    const step1 = screen.getByText(/shipping and not shipping look nearly equally good/);
-    expect(step1).toBeInTheDocument();
+    // Near-tie copy appears in step 1 (li element)
+    const steps = document.querySelectorAll('li');
+    const step1Text = steps[0].textContent ?? '';
+    expect(step1Text).toContain('right at the boundary');
+    expect(step1Text).toContain('t affect');
   });
 
   it('step 2 contains formatted priorLow and priorHigh values', () => {
