@@ -250,7 +250,47 @@ describe('buildPriorFromInputs', () => {
   });
 
   /**
-   * Test 7: Null fallback parity
+   * Test 7a: Student-t scale differs from Normal sigma for same interval
+   *
+   * For interval [-8.22, 8.22] with df=5:
+   *   Normal sigma_L ~= 0.05 (z_0.95 calibration)
+   *   Student-t scale ~= 0.04079 (t_inv(0.95, 5) calibration)
+   * Because t_inv(0.95, 5) > z_0.95, the Student-t scale is smaller.
+   */
+  it('Student-t scale differs from Normal sigma for same interval', () => {
+    const normalParams = computePriorFromInterval(-8.22, 8.22);
+    const prior = buildPriorFromInputs({
+      priorShape: 'student-t',
+      studentTDf: 5,
+      intervalLowPercent: -8.22,
+      intervalHighPercent: 8.22,
+    });
+    // Student-t scale should be smaller than Normal sigma
+    // because t_inv(0.95, 5) > z_0.95
+    expect(prior.sigma_L).toBeLessThan(normalParams.sigma_L);
+    expect(prior.sigma_L).toBeCloseTo(0.04079, 4); // t-calibrated value
+  });
+
+  /**
+   * Test 7b: Student-t display scale matches engine computation exactly
+   *
+   * buildPriorFromInputs must produce the exact same sigma_L as
+   * computeStudentTPriorScale for identical inputs, ensuring the
+   * form display matches what the engine uses in EVSI calculations.
+   */
+  it('Student-t display scale matches engine computation exactly', () => {
+    const prior = buildPriorFromInputs({
+      priorShape: 'student-t',
+      studentTDf: 10,
+      intervalLowPercent: -5.0,
+      intervalHighPercent: 5.0,
+    });
+    const engineScale = computeStudentTPriorScale(-5.0, 5.0, 10);
+    expect(prior.sigma_L).toBe(engineScale.sigma_L);
+  });
+
+  /**
+   * Test 7c: Null fallback parity
    *
    * buildPriorFromInputs with null intervals should produce the exact
    * same PriorDistribution as calling computePriorFromInterval with

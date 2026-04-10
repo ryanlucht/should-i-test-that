@@ -27,6 +27,7 @@ import {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useMemo,
   useState,
   useRef,
 } from 'react';
@@ -189,10 +190,28 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle, Uncer
         ? (intervalLow + intervalHigh) / 2
         : 0;
 
-    const priorParams =
-      intervalLow !== undefined && intervalHigh !== undefined
-        ? computePriorFromInterval(intervalLow, intervalHigh)
-        : null;
+    // Compute prior parameters with correct calibration per shape:
+    // - Normal: uses z_0.95 calibration via computePriorFromInterval
+    // - Student-t: uses t-quantile calibration via buildPriorFromInputs
+    //   This ensures the displayed scale matches what the engine actually uses
+    const priorParams = useMemo(() => {
+      if (intervalLow === undefined || intervalHigh === undefined) return null;
+
+      if (inputs.priorShape === 'student-t') {
+        // Student-t: use t-quantile calibration via buildPriorFromInputs
+        // This ensures the displayed scale matches what the engine actually uses
+        const prior = buildPriorFromInputs({
+          priorShape: 'student-t',
+          studentTDf: inputs.studentTDf ?? 5,
+          intervalLowPercent: intervalLow,
+          intervalHighPercent: intervalHigh,
+        });
+        return { mu_L: prior.mu_L!, sigma_L: prior.sigma_L! };
+      }
+
+      // Normal: use standard z_0.95 calibration
+      return computePriorFromInterval(intervalLow, intervalHigh);
+    }, [intervalLow, intervalHigh, inputs.priorShape, inputs.studentTDf]);
 
     // Get asymmetry message
     const asymmetryMessage = getAsymmetryMessage(impliedMeanPercent);
@@ -584,10 +603,12 @@ export const UncertaintyPriorForm = forwardRef<UncertaintyPriorFormHandle, Uncer
                         {impliedMeanPercent > 0 ? '+' : ''}
                         {impliedMeanPercent.toFixed(1)}%
                       </span>
-                      {/* For Normal: "std dev", for Student-t: "σ" (scale param, not SD) */}
+                      {/* For Normal: "std dev", for Student-t: "scale" (t-calibrated scale param) */}
                       {priorParams && !isUniformPrior && (
                         <span className="text-muted-foreground">
-                          ({inputs.priorShape === 'student-t' ? 'σ' : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
+                          ({inputs.priorShape === 'student-t' ? (
+                            <span title="Student-t scale parameter controlling spread">scale</span>
+                          ) : 'std dev'}: {(priorParams.sigma_L * 100).toFixed(2)}%)
                         </span>
                       )}
                     </div>
