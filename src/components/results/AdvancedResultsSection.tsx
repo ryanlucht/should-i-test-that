@@ -317,6 +317,7 @@ export function ResultsSection() {
               aria-label="Analysis name for export and sharing"
             />
             <ExportButton
+              mode="advanced"
               evsiResults={results}
               sharedInputs={inputs}
               prior={prior}
