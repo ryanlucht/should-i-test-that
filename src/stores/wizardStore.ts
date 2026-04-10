@@ -33,7 +33,6 @@ export const useWizardStore = create<WizardStore>()(
       completedSections: [],
       guideEnabled: true, // Default ON for new sessions (D-06)
       sharedBaseline: null, // Transient — only set when arriving from a shared URL (D-08)
-      sharedNetValue: null, // Transient — sender's computed result for display fidelity
       analysisName: '', // Transient — not persisted to sessionStorage (EXPORT-02)
 
       /**
@@ -43,18 +42,9 @@ export const useWizardStore = create<WizardStore>()(
         key: K,
         value: WizardInputs[K]
       ) => {
-        set((state) => {
-          // Clear shared net value when any input changes — the sender's
-          // result is only valid for the exact inputs they used. After
-          // editing, the simulation re-runs and produces a fresh result.
-          const clearSharedNetValue = state.sharedNetValue !== null &&
-            state.sharedBaseline !== null &&
-            value !== state.sharedBaseline[key];
-          return {
-            inputs: { ...state.inputs, [key]: value },
-            ...(clearSharedNetValue ? { sharedNetValue: null } : {}),
-          };
-        });
+        set((state) => ({
+          inputs: { ...state.inputs, [key]: value },
+        }));
       },
 
       /**
@@ -113,14 +103,6 @@ export const useWizardStore = create<WizardStore>()(
       },
 
       /**
-       * Store the sender's computed net value result for display fidelity.
-       * Transient — not included in partialize. Called during URL hydration.
-       */
-      setSharedNetValue: (value) => {
-        set({ sharedNetValue: value });
-      },
-
-      /**
        * Set the analysis name for export filenames and sharing context.
        * Transient — not persisted to sessionStorage (EXPORT-02 D-06).
        */
@@ -139,7 +121,6 @@ export const useWizardStore = create<WizardStore>()(
           completedSections: [],
           guideEnabled: true, // Reset guide to default ON (D-06)
           sharedBaseline: null, // Clear baseline on reset
-          sharedNetValue: null, // Clear shared result on reset
           analysisName: '', // Clear analysis name on reset
         });
       },

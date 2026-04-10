@@ -137,14 +137,6 @@ export interface WizardState {
   sharedBaseline: WizardInputs | null;
 
   /**
-   * The sender's computed net value result from a shared URL. Transient.
-   * Displayed instead of re-running the Monte Carlo simulation (which is
-   * non-deterministic) so recipients see the exact same verdict. Cleared
-   * when the recipient modifies any input.
-   */
-  sharedNetValue: number | null;
-
-  /**
    * Optional user-provided name for the analysis. Used in export
    * filenames and as context when sharing. Not persisted to
    * sessionStorage — fresh each session. Per EXPORT-02 D-06.
@@ -179,9 +171,6 @@ export interface WizardActions {
 
   /** Store the shared URL's inputs as the baseline for diff tracking (D-08) */
   setSharedBaseline: (baseline: WizardInputs | null) => void;
-
-  /** Store the sender's computed result for display fidelity */
-  setSharedNetValue: (value: number | null) => void;
 
   /** Set the analysis name (EXPORT-02 D-06) */
   setAnalysisName: (name: string) => void;

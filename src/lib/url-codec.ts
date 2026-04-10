@@ -74,7 +74,7 @@ const REVERSE_KEY_MAP: Record<string, keyof WizardInputs> = Object.fromEntries(
  * Current schema version. Increment when the encoding format changes.
  * Every encoded payload includes "v": SCHEMA_VERSION.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * Migration functions keyed by the FROM version.
@@ -87,8 +87,9 @@ export const SCHEMA_VERSION = 1;
 const MIGRATIONS: Record<number, (payload: Record<string, unknown>) => Record<string, unknown>> = {
   // v0 -> v1 migration scaffold.
   // v0 used the same short keys as v1; the only change is the version bump.
-  // Future migrations would handle actual structural changes here.
   0: (payload) => ({ ...payload, v: 1 }),
+  // v1 -> v2 migration: identity (same data structure; only validation tightened)
+  1: (payload) => ({ ...payload, v: 2 }),
 };
 
 // ---------------------------------------------------------------------------
@@ -139,18 +140,26 @@ const ENUM_CONSTRAINTS = {
 /**
  * Validates a decoded payload (full keys, post-migration, post-merge with initialInputs).
  *
+ * Versioned validation strategy (addresses Codex review concern):
+ * - v1 URLs use original loose rules to preserve backward compatibility
+ * - v2+ URLs use tightened rules aligned with form validation
+ * - This ensures previously shared links continue to work while
+ *   new links enforce stricter domain constraints
+ *
  * Validation rules:
  * - Numeric fields: typeof 'number' && Number.isFinite, or null
  * - Enum fields: one of allowed values, or null
- * - Domain constraints:
- *   - baselineConversionRate: [0, 1] (decimal rate, not percentage)
- *   - trafficSplit: (0, 1] (must be positive, at most 100%)
+ * - Domain constraints (version-aware):
+ *   - baselineConversionRate: v1=[0, 1], v2+=(0, 1) (strict open interval)
+ *   - trafficSplit: v1=(0, 1], v2+=[0.10, 0.90] (form-aligned bounds)
  *   - eligibilityFraction: (0, 1] (must be positive, at most 100%)
  *   - studentTDf: 3, 5, 10, or null (discrete degrees-of-freedom choices)
  *
+ * @param decoded - The decoded payload object with full field names
+ * @param version - The original schema version from the payload (before migration)
  * @returns The validated WizardInputs, or null if any constraint fails
  */
-function validateDecodedPayload(decoded: Record<string, unknown>): WizardInputs | null {
+function validateDecodedPayload(decoded: Record<string, unknown>, version: number): WizardInputs | null {
   const d = decoded as Record<keyof WizardInputs, unknown>;
 
   // --- Numeric fields: must be a finite number or null ---
@@ -205,21 +214,29 @@ function validateDecodedPayload(decoded: Record<string, unknown>): WizardInputs 
     return null;
   }
 
-  // --- Domain constraint: baselineConversionRate in [0, 1] ---
+  // --- Domain constraint: baselineConversionRate (version-aware) ---
   // baselineConversionRate is a decimal rate (e.g., 0.05 = 5%), not a percentage
   if (d.baselineConversionRate !== null) {
     const bcr = d.baselineConversionRate as number;
-    if (bcr < 0 || bcr > 1) {
-      return null;
+    if (version >= 2) {
+      // v2+: strict open interval matching form validation
+      // CR=0 causes division by zero in SE formula; CR=1 collapses feasibility bounds
+      if (bcr <= 0 || bcr >= 1) { return null; }
+    } else {
+      // v1 legacy: original loose rules (preserve backward compatibility)
+      if (bcr < 0 || bcr > 1) { return null; }
     }
   }
 
-  // --- Domain constraint: trafficSplit in (0, 1] ---
-  // Must be strictly positive (0 would mean no traffic) and at most 100%
+  // --- Domain constraint: trafficSplit (version-aware) ---
   if (d.trafficSplit !== null) {
     const ts = d.trafficSplit as number;
-    if (ts <= 0 || ts > 1) {
-      return null;
+    if (version >= 2) {
+      // v2+: form-aligned bounds [10%, 90%]
+      if (ts < 0.10 || ts > 0.90) { return null; }
+    } else {
+      // v1 legacy: original loose rules
+      if (ts <= 0 || ts > 1) { return null; }
     }
   }
 
@@ -319,10 +336,12 @@ export function decodeWizardState(encoded: string): WizardInputs | null {
   let payload = rawPayload as Record<string, unknown>;
 
   // Step 3: Read and validate schema version
+  // Store the original version before migration for version-aware validation
   const version = payload['v'];
   if (typeof version !== 'number' || !Number.isInteger(version)) {
     return null;
   }
+  const originalVersion = version;
 
   // Unknown future version: caller must handle gracefully
   if (version > SCHEMA_VERSION) {
@@ -354,6 +373,6 @@ export function decodeWizardState(encoded: string): WizardInputs | null {
     ...expanded,
   };
 
-  // Step 7: Validate the merged payload
-  return validateDecodedPayload(merged);
+  // Step 7: Validate the merged payload (version-aware: v1 uses loose rules, v2+ tightened)
+  return validateDecodedPayload(merged, originalVersion);
 }
