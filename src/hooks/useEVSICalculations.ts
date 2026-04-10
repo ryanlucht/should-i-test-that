@@ -352,14 +352,16 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     runWorker();
 
     // Cleanup: terminate worker immediately on unmount, invalidate request
-    // Capture ref values before cleanup to avoid stale ref reads (react-hooks/exhaustive-deps)
-    const currentWorker = workerRef.current;
+    // Read workerRef.current directly (not a captured snapshot) because the
+    // Worker is created asynchronously inside runWorker(). A captured value
+    // would be null/stale, leaking the actual Worker on rapid re-renders.
+    // The ref object identity is stable across renders, so this is safe.
     return () => {
       requestIdRef.current++; // eslint-disable-line react-hooks/exhaustive-deps -- intentional: invalidate stale requests on cleanup
-      if (currentWorker) {
-        currentWorker.terminate();
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
       }
-      workerRef.current = null;
     };
   }, [validatedInputs]);
 
