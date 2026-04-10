@@ -125,16 +125,21 @@ export function ResultsSection() {
   const priorHigh = inputs.priorIntervalHigh ?? DEFAULT_INTERVAL.high;
 
   // Raw prior midpoint (user's input, for Prior Belief card display)
+  // priorLow/priorHigh are in percentage form (e.g., -5 and 15 for -5% to +15%)
   const rawPriorMean = (priorLow + priorHigh) / 2;
+  // Convert to decimal lift units (e.g., 5.0% → 0.05) for comparison with engine output
+  const rawPriorMeanDecimal = rawPriorMean / 100;
 
   // Effective prior mean (after feasibility truncation, from engine)
-  // NaN guard: if effectivePriorMean is NaN (infeasible prior), fall back to rawPriorMean
+  // Engine returns effectivePriorMean in decimal lift units (e.g., 0.05 for 5%)
+  // NaN guard: if effectivePriorMean is NaN (infeasible prior), fall back to rawPriorMeanDecimal
   // This prevents NaN from propagating to the display layer.
   // (Addresses Codex review concern: NaN propagation through charts/formatters)
   const effectivePriorMean = (results?.effectivePriorMean != null && !isNaN(results.effectivePriorMean))
     ? results.effectivePriorMean
-    : rawPriorMean;
-  const truncationMaterial = Math.abs(effectivePriorMean - rawPriorMean) > TRUNCATION_DISPLAY_THRESHOLD;
+    : rawPriorMeanDecimal;
+  // Compare in consistent units (both decimal lift) to detect material truncation
+  const truncationMaterial = Math.abs(effectivePriorMean - rawPriorMeanDecimal) > TRUNCATION_DISPLAY_THRESHOLD;
 
   // Keep priorMean alias for backward compatibility with downstream uses
   const priorMean = rawPriorMean;
