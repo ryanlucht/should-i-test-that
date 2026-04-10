@@ -723,3 +723,35 @@ describe('calculateNetValueMonteCarlo directional probability fields', () => {
     expect(result.pConvincesShip).toBe(0);
   });
 });
+
+// ===========================================
+// Infeasible prior tests (Phase 25.2-01, Task 2)
+// ===========================================
+
+describe('calculateNetValueMonteCarlo with infeasible prior', () => {
+  it('returns netValueDollars=0 (NOT NaN) with infeasible_prior_support warning', () => {
+    const inputs: NetValueInputs = {
+      K: 1000000,
+      baselineConversionRate: 0.5,
+      threshold_L: 0,
+      prior: { type: 'uniform', low_L: 5, high_L: 10 },
+      n_control: 5000,
+      n_variant: 5000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 7,
+    };
+
+    const result = calculateNetValueMonteCarlo(inputs, 5000);
+
+    // netValueDollars must be 0, NOT NaN
+    expect(result.netValueDollars).toBe(0);
+    expect(Number.isNaN(result.netValueDollars)).toBe(false);
+    expect(result.maxTestBudgetDollars).toBe(0);
+
+    // Must include infeasible_prior_support warning
+    expect(result.warnings).toBeDefined();
+    const infeasibleWarning = result.warnings!.find(w => w.code === 'infeasible_prior_support');
+    expect(infeasibleWarning).toBeDefined();
+  });
+});

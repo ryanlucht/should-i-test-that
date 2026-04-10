@@ -74,8 +74,9 @@ describe('deriveSampleSizes', () => {
   // ===========================================
 
   describe('edge cases', () => {
-    it('floors fractional results to integers', () => {
-      // 100 daily, 7 days, 100% eligible, 33.33% variant (produces fractions)
+    it('preserves real-valued (non-integer) results for smooth calculations', () => {
+      // 100 daily, 7 days, 100% eligible, 33.3% variant (produces fractions)
+      // Per Audit-7: sample sizes are real-valued in calculation layer
       const result = deriveSampleSizes({
         dailyTraffic: 100,
         testDurationDays: 7,
@@ -83,20 +84,15 @@ describe('deriveSampleSizes', () => {
         variantFraction: 0.333,
       });
 
-      // n_total = 100 * 7 * 1.0 = 700
+      // n_total = 100 * 7 * 1.0 = 700 (integer by coincidence)
       expect(result.n_total).toBe(700);
-      // n_variant = floor(700 * 0.333) = floor(233.1) = 233
-      expect(result.n_variant).toBe(233);
-      // n_control = 700 - 233 = 467
-      expect(result.n_control).toBe(467);
-
-      // All values should be integers
-      expect(Number.isInteger(result.n_total)).toBe(true);
-      expect(Number.isInteger(result.n_variant)).toBe(true);
-      expect(Number.isInteger(result.n_control)).toBe(true);
+      // n_variant = 700 * 0.333 = 233.1 (real-valued, NOT floored)
+      expect(result.n_variant).toBeCloseTo(233.1, 10);
+      // n_control = 700 - 233.1 = 466.9
+      expect(result.n_control).toBeCloseTo(466.9, 10);
     });
 
-    it('handles very small traffic numbers', () => {
+    it('handles very small traffic numbers (real-valued)', () => {
       // Edge case: small sample experiment
       const result = deriveSampleSizes({
         dailyTraffic: 10,
@@ -107,10 +103,10 @@ describe('deriveSampleSizes', () => {
 
       // n_total = 10 * 3 * 0.5 = 15
       expect(result.n_total).toBe(15);
-      // n_variant = floor(15 * 0.5) = 7
-      expect(result.n_variant).toBe(7);
-      // n_control = 15 - 7 = 8
-      expect(result.n_control).toBe(8);
+      // n_variant = 15 * 0.5 = 7.5 (real-valued, NOT floored)
+      expect(result.n_variant).toBe(7.5);
+      // n_control = 15 - 7.5 = 7.5
+      expect(result.n_control).toBe(7.5);
     });
 
     it('handles zero traffic', () => {
@@ -143,6 +139,41 @@ describe('deriveSampleSizes', () => {
   // ===========================================
   // 3. Output structure
   // ===========================================
+
+  describe('real-valued sample sizes (Phase 25.2-01)', () => {
+    it('returns real-valued (non-integer) n_total, n_variant, n_control for non-even inputs', () => {
+      // 100 daily, 7 days, 33% eligible, 50% variant
+      // n_total = 100 * 7 * 0.33 = 231.0 (exact)
+      // n_variant = 231 * 0.5 = 115.5 (non-integer)
+      // n_control = 231 - 115.5 = 115.5
+      const result = deriveSampleSizes({
+        dailyTraffic: 100,
+        testDurationDays: 7,
+        eligibilityFraction: 0.33,
+        variantFraction: 0.5,
+      });
+
+      expect(result.n_total).toBe(231);
+      expect(result.n_variant).toBe(115.5);
+      expect(result.n_control).toBe(115.5);
+    });
+
+    it('returns exact real-valued results for 1000*14*0.33 inputs', () => {
+      // n_total = 1000 * 14 * 0.33 = 4620 (exact integer)
+      // n_variant = 4620 * 0.5 = 2310
+      // n_control = 4620 - 2310 = 2310
+      const result = deriveSampleSizes({
+        dailyTraffic: 1000,
+        testDurationDays: 14,
+        eligibilityFraction: 0.33,
+        variantFraction: 0.5,
+      });
+
+      expect(result.n_total).toBe(4620);
+      expect(result.n_variant).toBe(2310);
+      expect(result.n_control).toBe(2310);
+    });
+  });
 
   describe('output structure', () => {
     it('returns all required fields', () => {

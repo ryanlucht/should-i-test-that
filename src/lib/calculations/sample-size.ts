@@ -11,7 +11,7 @@
  *
  * Mathematical notes (for statistician audit):
  * - All fractions are decimals in [0, 1]
- * - Results are floored to integers (can't have fractional users)
+ * - Results are real-valued for smooth calculation behavior. Round to integers only for display.
  * - n_control = n_total - n_variant ensures exact summation
  */
 
@@ -71,24 +71,20 @@ export function deriveSampleSizes(inputs: SampleSizeInputs): SampleSizeResults {
     inputs;
 
   // ===========================================
-  // Step 1: Calculate total sample size
+  // Step 1: Calculate total sample size (real-valued)
   // ===========================================
   // n_total = dailyTraffic * testDurationDays * eligibilityFraction
   // This is the total number of users who will be part of the experiment
-  const n_total_raw = dailyTraffic * testDurationDays * eligibilityFraction;
-
-  // Floor to integer (can't have fractional users)
-  const n_total = Math.floor(n_total_raw);
+  // Real-valued for smooth calculation behavior; round to integers only for display
+  const n_total = dailyTraffic * testDurationDays * eligibilityFraction;
 
   // ===========================================
-  // Step 2: Calculate variant sample size
+  // Step 2: Calculate variant sample size (real-valued)
   // ===========================================
   // n_variant = n_total * variantFraction
   // This is the number of users who will see the variant (treatment)
-  const n_variant_raw = n_total * variantFraction;
-
-  // Floor to integer
-  const n_variant = Math.floor(n_variant_raw);
+  // Real-valued: no Math.floor — rounding applied only at display layer
+  const n_variant = n_total * variantFraction;
 
   // ===========================================
   // Step 3: Calculate control sample size

@@ -95,6 +95,28 @@ export function checkLowAcceptanceWarning(
 }
 
 /**
+ * Checks if effective-prior metrics indicate an infeasible prior
+ * (zero feasible mass within conversion-rate bounds).
+ * Returns a typed CalculationWarning if infeasible, null otherwise.
+ *
+ * This is the ONLY place NaN from infeasible priors is converted to
+ * a user-facing warning. MC functions that call this return evsiDollars=0
+ * and netValueDollars=0 with this warning -- NaN never reaches dollar outputs.
+ */
+export function checkInfeasiblePriorWarning(
+  effectivePriorMean: number,
+  effectiveProbClears: number
+): CalculationWarning | null {
+  if (isNaN(effectivePriorMean) || isNaN(effectiveProbClears)) {
+    return {
+      code: 'infeasible_prior_support',
+      message: 'The prior distribution has no feasible mass within conversion rate bounds. Check that your prior interval is compatible with the baseline conversion rate.',
+    };
+  }
+  return null;
+}
+
+/**
  * Check if rejection rate exceeds 10% of total attempted samples.
  * Per Edge Case 6.
  *

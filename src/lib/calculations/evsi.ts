@@ -28,6 +28,7 @@ import type { PriorDistribution } from './distributions';
 import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
+import { checkInfeasiblePriorWarning } from './feasibility';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 import jStat from 'jstat';
 
@@ -602,10 +603,14 @@ export function calculateEVSIMonteCarlo(
   }
 
   // ===========================================
-  // Step 3: Determine prior mean and default decision
+  // Step 3: Determine default decision using effective (truncated) prior mean
   // ===========================================
-  const priorMean = getPriorMean(prior);
-  const defaultDecision = determineDefaultDecision(priorMean, threshold_L);
+  // Use effective prior mean when finite (accounts for feasibility truncation).
+  // Fall back to raw prior mean when effective is NaN (infeasible prior).
+  const effectiveMean = Number.isFinite(effectivePriorMetrics.effectivePriorMean)
+    ? effectivePriorMetrics.effectivePriorMean
+    : getPriorMean(prior);
+  const defaultDecision = determineDefaultDecision(effectiveMean, threshold_L);
 
   // ===========================================
   // Step 3.5: Use pre-computed effective prior metrics (Audit-1 fix)
@@ -613,6 +618,27 @@ export function calculateEVSIMonteCarlo(
   // effectivePriorMetrics is passed in as a REQUIRED parameter (computed once
   // by the caller) so that EVSI and net-value MC use identical effective-prior
   // data. This eliminates MC noise from prior metrics and ensures consistency.
+
+  // Check for infeasible prior: NaN metrics mean zero feasible mass.
+  // Return safe zero-dollar results with warning instead of propagating NaN.
+  const infeasibleWarning = checkInfeasiblePriorWarning(
+    effectivePriorMetrics.effectivePriorMean,
+    effectivePriorMetrics.effectiveProbClears
+  );
+  if (infeasibleWarning) {
+    return {
+      evsiDollars: 0,
+      defaultDecision,
+      probabilityClearsThreshold: 0,
+      probabilityTestChangesDecision: 0,
+      pStopsShip: 0,
+      pConvincesShip: 0,
+      numSamples: 0,
+      numRejected: 0,
+      warnings: [...warnings, infeasibleWarning],
+    };
+  }
+
   const probClearsThreshold = effectivePriorMetrics.effectiveProbClears;
 
   // ===========================================

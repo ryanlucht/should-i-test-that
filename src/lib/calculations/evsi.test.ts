@@ -440,13 +440,17 @@ describe('calculateEVSIMonteCarlo', () => {
       };
 
       // This should not throw and should return safe zero result
+      // Per Audit-1: infeasible prior detected deterministically before MC loop
+      // so numRejected=0 (loop never runs) and infeasible_prior_support warning returned
       const result = calculateEVSIMonteCarlo(extremeInputs, 100);
 
       expect(result.evsiDollars).toBe(0);
       expect(result.probabilityTestChangesDecision).toBe(0);
       expect(result.numSamples).toBe(0);
-      expect(result.numRejected).toBeGreaterThan(0);
       expect(Number.isNaN(result.evsiDollars)).toBe(false);
+      // Infeasible prior warning should be present
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings!.some(w => w.code === 'infeasible_prior_support')).toBe(true);
     });
   });
 
@@ -1918,6 +1922,70 @@ describe('computeEffectivePriorMetrics (deterministic)', () => {
       // This call should work with exactly 3 args (no 4th numSamples)
       const result = computeEffectivePriorMetrics(prior, 0, 0.5);
       expect(Number.isFinite(result.effectivePriorMean)).toBe(true);
+    });
+  });
+});
+
+// ===========================================
+// Infeasible prior tests (Phase 25.2-01, Task 2)
+// ===========================================
+
+describe('infeasible prior handling', () => {
+  beforeEach(() => {
+    randomSeed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(seededRandom);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('computeEffectivePriorMetrics with impossible prior', () => {
+    it('returns NaN pair for Uniform[5,10] with CR0=0.5 (entire prior outside feasible bounds)', () => {
+      // Feasibility: L_min=-1, L_max=1 for CR0=0.5
+      // Uniform[5,10] is entirely above L_max=1
+      // Clipped: a=max(5,-1)=5, b=min(10,1)=1 => b < a => empty intersection
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: 5,
+        high_L: 10,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5);
+
+      expect(result.effectivePriorMean).toBeNaN();
+      expect(result.effectiveProbClears).toBeNaN();
+    });
+  });
+
+  describe('calculateEVSIMonteCarlo with infeasible prior', () => {
+    it('returns evsiDollars=0 (NOT NaN) with infeasible_prior_support warning', () => {
+      const prior: PriorDistribution = {
+        type: 'uniform',
+        low_L: 5,
+        high_L: 10,
+      };
+
+      const result = calculateEVSIMonteCarlo(
+        {
+          K: 1000000,
+          baselineConversionRate: 0.5,
+          threshold_L: 0,
+          prior,
+          n_control: 5000,
+          n_variant: 5000,
+        },
+        5000
+      );
+
+      // evsiDollars must be 0, NOT NaN
+      expect(result.evsiDollars).toBe(0);
+      expect(Number.isNaN(result.evsiDollars)).toBe(false);
+
+      // Must include infeasible_prior_support warning
+      expect(result.warnings).toBeDefined();
+      const infeasibleWarning = result.warnings!.find(w => w.code === 'infeasible_prior_support');
+      expect(infeasibleWarning).toBeDefined();
     });
   });
 });
