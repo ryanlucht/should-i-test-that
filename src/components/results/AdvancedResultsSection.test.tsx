@@ -10,7 +10,6 @@ import { render, screen } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { ResultsSection as AdvancedResultsSection } from './AdvancedResultsSection';
 import type { EVSICalculationResults } from '@/hooks/useEVSICalculations';
-import type { CoDResults } from '@/lib/calculations/cost-of-delay';
 
 // Mock useEVSICalculations hook
 vi.mock('@/hooks/useEVSICalculations', () => ({
@@ -35,13 +34,6 @@ vi.mock('@/lib/analytics', () => ({
 import { useEVSICalculations } from '@/hooks/useEVSICalculations';
 import { useWizardStore } from '@/stores/wizardStore';
 
-// Sample Cost of Delay results
-const sampleCodResults: CoDResults = {
-  codApplies: true,
-  codDollars: 2500,
-  dailyOpportunityCost: 125,
-};
-
 // Sample EVSI results for testing (includes directional fields from Plan 01)
 const sampleEVSIResults: EVSICalculationResults = {
   evsi: {
@@ -54,7 +46,6 @@ const sampleEVSIResults: EVSICalculationResults = {
     numSamples: 10000,
     numRejected: 50,
   },
-  cod: sampleCodResults,
   netValueDollars: 9500,
   sampleSizes: {
     n_total: 10000,
@@ -62,6 +53,7 @@ const sampleEVSIResults: EVSICalculationResults = {
     n_variant: 5000,
   },
   warnings: [],
+  effectivePriorMean: 0.0, // matches rawPriorMean for default scenario (no truncation)
 };
 
 // Flat inputs matching the actual WizardInputs shape used by useWizardStore
@@ -85,7 +77,6 @@ const sampleInputs = {
 function mockWizardStore(overrides: Record<string, unknown> = {}) {
   const state = {
     inputs: sampleInputs,
-    sharedNetValue: null,
     analysisName: '',
     setAnalysisName: vi.fn(),
     ...overrides,
@@ -304,5 +295,54 @@ describe('AdvancedResultsSection card content', () => {
     expect(screen.getByText('Prior Belief')).toBeInTheDocument();
     // Range should be the bolded value, mean in description
     expect(screen.getByText(/Mean:/)).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TRUNCATION_DISPLAY_THRESHOLD boundary tests
+// ---------------------------------------------------------------------------
+
+describe('TRUNCATION_DISPLAY_THRESHOLD boundary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('delta of exactly 0.001 does NOT show truncation note (strictly greater than)', () => {
+    // rawPriorMean = midpoint of (-8.22, 8.22) = 0.0 (in % form) => 0.0 in decimal
+    // effectivePriorMean = 0.001 => delta = |0.001 - 0.0| = 0.001
+    // Since TRUNCATION_DISPLAY_THRESHOLD uses strictly-greater-than, 0.001 is NOT > 0.001
+    const resultsAtBoundary = {
+      ...sampleEVSIResults,
+      effectivePriorMean: 0.001, // exactly at threshold
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: resultsAtBoundary,
+    });
+    mockWizardStore();
+
+    render(<AdvancedResultsSection />);
+
+    // Should NOT show the truncation disclosure
+    expect(screen.queryByText(/After feasibility truncation/)).not.toBeInTheDocument();
+  });
+
+  it('delta of 0.0011 shows truncation note', () => {
+    // rawPriorMean = 0.0 (decimal, midpoint of symmetric interval)
+    // effectivePriorMean = 0.0011 => delta = 0.0011 > 0.001
+    const resultsAboveBoundary = {
+      ...sampleEVSIResults,
+      effectivePriorMean: 0.0011, // just above threshold
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: resultsAboveBoundary,
+    });
+    mockWizardStore();
+
+    render(<AdvancedResultsSection />);
+
+    // Should show the truncation disclosure
+    expect(screen.getByText(/After feasibility truncation/)).toBeInTheDocument();
   });
 });

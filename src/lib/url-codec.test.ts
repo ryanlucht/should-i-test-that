@@ -85,8 +85,8 @@ const allFieldsScenario: WizardInputs = {
 // ---------------------------------------------------------------------------
 
 describe('SCHEMA_VERSION', () => {
-  it('should be version 1', () => {
-    expect(SCHEMA_VERSION).toBe(1);
+  it('should be version 2', () => {
+    expect(SCHEMA_VERSION).toBe(2);
   });
 });
 
@@ -101,10 +101,10 @@ describe('encodeWizardState', () => {
     expect(encoded.length).toBeGreaterThan(0);
   });
 
-  it('should include schema version "v":1 in the encoded payload', () => {
+  it('should include schema version "v":2 in the encoded payload', () => {
     const encoded = encodeWizardState(typicalScenario);
     const payload = JSON.parse(decodeBase64Url(encoded));
-    expect(payload.v).toBe(1);
+    expect(payload.v).toBe(2);
   });
 
   it('typical scenario encodes to under 400 characters (including #s= prefix)', () => {
@@ -339,10 +339,8 @@ describe('decodeWizardState — payload validation', () => {
 // ---------------------------------------------------------------------------
 
 describe('decodeWizardState — migration chain', () => {
-  it('runs v0->v1 migration and produces valid output', () => {
-    // Manually construct a v0 payload using short keys that the v0->v1 migration will handle.
-    // In v0, we scaffold that the payload has "v":0 and the same short keys as v1
-    // (migration just bumps the version; this tests the migration chain runs).
+  it('runs v0->v1->v2 migration and produces valid output', () => {
+    // Manually construct a v0 payload using short keys that the migration chain will handle.
     const v0Payload = JSON.stringify({
       v: 0,
       bc: 0.05,
@@ -360,5 +358,117 @@ describe('decodeWizardState — migration chain', () => {
     expect(decoded!.valuePerConversion).toBe(25);
     expect(decoded!.priorType).toBe('default');
     expect(decoded!.thresholdScenario).toBe('any-positive');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2 tightened validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Helper: build a v1 payload manually (base64url-encoded JSON with v=1).
+ * Used to test backward compatibility -- v1 payloads use original loose rules.
+ */
+function buildV1Payload(overrides: Partial<Record<string, unknown>>): string {
+  // Map full field names to short keys for the payload
+  const shortKeyMap: Record<string, string> = {
+    baselineConversionRate: 'bc',
+    annualVisitors: 'av',
+    visitorUnitLabel: 'ul',
+    valuePerConversion: 'vc',
+    priorType: 'pt',
+    priorIntervalLow: 'pl',
+    priorIntervalHigh: 'ph',
+    priorShape: 'ps',
+    studentTDf: 'df',
+    thresholdScenario: 'ts',
+    thresholdUnit: 'tu',
+    thresholdValue: 'tv',
+    testDurationDays: 'td',
+    dailyTraffic: 'dt',
+    trafficSplit: 'sp',
+    eligibilityFraction: 'ef',
+    decisionLatencyDays: 'dl',
+  };
+
+  const compact: Record<string, unknown> = { v: 1 };
+  for (const [fullKey, value] of Object.entries(overrides)) {
+    const shortKey = shortKeyMap[fullKey];
+    if (shortKey && value !== null && value !== undefined) {
+      compact[shortKey] = value;
+    }
+  }
+
+  const json = JSON.stringify(compact);
+  return btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+describe('v2 tightened validation', () => {
+  it('rejects baselineConversionRate of 0 (boundary)', () => {
+    // v2 URLs get strict validation: CR=0 causes division by zero in SE formula
+    const encoded = encodeWizardState({ ...typicalScenario, baselineConversionRate: 0 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects baselineConversionRate of 1 (boundary)', () => {
+    // v2 URLs get strict validation: CR=1 collapses feasibility bounds
+    const encoded = encodeWizardState({ ...typicalScenario, baselineConversionRate: 1 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects trafficSplit below 10%', () => {
+    const encoded = encodeWizardState({ ...typicalScenario, trafficSplit: 0.05 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects trafficSplit above 90%', () => {
+    const encoded = encodeWizardState({ ...typicalScenario, trafficSplit: 0.95 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('accepts trafficSplit at 10% boundary', () => {
+    const encoded = encodeWizardState({ ...typicalScenario, trafficSplit: 0.10 });
+    const decoded = decodeWizardState(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.trafficSplit).toBe(0.10);
+  });
+
+  it('accepts baselineConversionRate of 0.001 (valid edge)', () => {
+    const encoded = encodeWizardState({ ...typicalScenario, baselineConversionRate: 0.001 });
+    const decoded = decodeWizardState(encoded);
+    expect(decoded).not.toBeNull();
+  });
+});
+
+describe('v1 backward compatibility', () => {
+  it('v1 payload with baselineConversionRate=0 still decodes (legacy loose rules)', () => {
+    // v1 allows bcr=0 (original [0, 1] range), v2 does not (strict open interval)
+    const v1Payload = buildV1Payload({
+      baselineConversionRate: 0,
+      annualVisitors: 500000,
+      valuePerConversion: 50,
+      thresholdScenario: 'any-positive',
+      testDurationDays: 14,
+      dailyTraffic: 2000,
+    });
+    const decoded = decodeWizardState(v1Payload);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.baselineConversionRate).toBe(0);
+  });
+
+  it('v1 payload with trafficSplit=0.95 still decodes (legacy loose rules)', () => {
+    // v1 allows ts up to 1.0 (original (0, 1] range), v2 restricts to [0.10, 0.90]
+    const v1Payload = buildV1Payload({
+      baselineConversionRate: 0.05,
+      annualVisitors: 500000,
+      valuePerConversion: 50,
+      thresholdScenario: 'any-positive',
+      testDurationDays: 14,
+      dailyTraffic: 2000,
+      trafficSplit: 0.95,
+    });
+    const decoded = decodeWizardState(v1Payload);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.trafficSplit).toBe(0.95);
   });
 });
