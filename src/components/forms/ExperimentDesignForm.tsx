@@ -6,7 +6,6 @@
  * - Total daily traffic before eligibility filtering (required, can auto-derive from annual visitors)
  * - Traffic split / variant allocation (default 50%)
  * - Eligibility fraction (default 100%)
- * - Conversion latency in days (default 0, visually de-emphasized)
  * - Decision latency in days (default 0, visually de-emphasized)
  *
  * These inputs determine sample size and test precision for EVSI.
@@ -221,9 +220,9 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
             {/* Daily Traffic (required, with inline derive option) */}
             <NumberInput
               name="dailyTraffic"
-              label="Total daily visitors"
+              label="Total daily traffic (before eligibility)"
               placeholder="5,000"
-              tooltip="Total daily visitors to the site or app, before experiment eligibility filtering. Use Eligible traffic below to specify the share that qualifies."
+              tooltip="Total daily traffic to the site or app, before experiment eligibility filtering. Use Eligible traffic below to specify the share that qualifies."
               error={errors.dailyTraffic?.message}
               helpText={derivedHint ?? undefined}
               labelSuffix={
@@ -232,12 +231,13 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
                     type="button"
                     onClick={handleDeriveFromAnnual}
                     className="text-xs text-primary hover:text-primary/80"
+                    title="Sets daily traffic = annual visitors / 365 (total traffic, before eligibility filtering)"
                   >
                     (derive: {Math.round(inputs.annualVisitors! / 365).toLocaleString()}/day)
                   </button>
                 ) : undefined
               }
-              ariaLabel="Total daily visitors, number"
+              ariaLabel="Total daily traffic before eligibility, number"
             />
 
             {/* Traffic Split (pre-filled 50%) */}
