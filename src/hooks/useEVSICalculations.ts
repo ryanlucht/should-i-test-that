@@ -95,6 +95,10 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
   // Track worker for immediate cleanup on unmount
   const workerRef = useRef<Worker | null>(null);
 
+  // Cache effective prior metrics computed in useEffect for reuse in finalResults useMemo.
+  // Avoids redundant recomputation of computeEffectivePriorMetrics (deterministic but unnecessary).
+  const effectiveMetricsRef = useRef<{ effectivePriorMean: number } | null>(null);
+
   // ===========================================
   // Step 1: Validate inputs and derive parameters
   // ===========================================
@@ -258,6 +262,8 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       evsiInputs.threshold_L,
       evsiInputs.baselineConversionRate
     );
+    // Cache for reuse in finalResults useMemo (avoids redundant recomputation)
+    effectiveMetricsRef.current = effectiveMetrics;
 
     // For Normal priors, gate fast path by infeasible tail mass (per ENG-05)
     // When truncation is material, the untruncated closed-form EVSI diverges
@@ -377,17 +383,16 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     const { sampleSizes, evsiInputs } = validatedInputs;
     const netValueDollars = netValueResults.netValueDollars;
 
-    // Compute effective prior mean (deterministic, fast) for UI consumption
-    // This is the same computation done in the useEffect, but deterministic
-    // functions are idempotent so recomputing here is safe and avoids extra state
-    const effectiveMetrics = computeEffectivePriorMetrics(
-      evsiInputs.prior,
-      evsiInputs.threshold_L,
-      evsiInputs.baselineConversionRate
-    );
+    // Read cached effective prior metrics computed in the useEffect (deterministic,
+    // so the ref always holds the correct value for the current validatedInputs).
+    // Falls back to recomputation only if the ref is unexpectedly null.
+    const cachedMetrics = effectiveMetricsRef.current;
+    const effectiveMean = cachedMetrics
+      ? cachedMetrics.effectivePriorMean
+      : computeEffectivePriorMetrics(evsiInputs.prior, evsiInputs.threshold_L, evsiInputs.baselineConversionRate).effectivePriorMean;
     // Fallback to raw prior mean when effective mean is NaN (infeasible prior)
-    const effectivePriorMean = Number.isFinite(effectiveMetrics.effectivePriorMean)
-      ? effectiveMetrics.effectivePriorMean
+    const effectivePriorMean = Number.isFinite(effectiveMean)
+      ? effectiveMean
       : getPriorMean(evsiInputs.prior);
 
     // Merge warnings from EVSI and net-value calculations (audit Priority 8b)
