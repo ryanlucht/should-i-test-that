@@ -2,8 +2,7 @@
  * Tests for AdvancedResultsSection (ResultsSection)
  *
  * Per 06-03-PLAN.md: Accessibility tests using vitest-axe
- * Per 25.1-02-PLAN.md: New tests for Shipping rule, Decision impact, WaterfallBlock
- * Per WCAG 2.1 AA: Ensure no accessibility violations in advanced results display
+ * Per PM feedback: Updated for revised copy, layout, and near-tie logic
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -110,8 +109,8 @@ describe('AdvancedResultsSection accessibility', () => {
 
     const { container } = render(<AdvancedResultsSection />);
 
-    // Verify component rendered with results
-    expect(screen.getByText(/If you can run this test/)).toBeInTheDocument();
+    // Verify component rendered with results (updated hero copy)
+    expect(screen.getByText(/total cost of running this test/)).toBeInTheDocument();
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
@@ -177,13 +176,12 @@ describe('AdvancedResultsSection accessibility', () => {
 
     render(<AdvancedResultsSection />);
 
-    // Card title is now "Decision impact" (renamed from "P(Decision Change)")
     const decisionCard = screen.getByText('Decision impact').closest('div');
     expect(decisionCard).toBeInTheDocument();
   });
 });
 
-describe('AdvancedResultsSection card content (RCI-03, RCI-04, RCI-05)', () => {
+describe('AdvancedResultsSection card content', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useEVSICalculations).mockReturnValue({
@@ -200,34 +198,16 @@ describe('AdvancedResultsSection card content (RCI-03, RCI-04, RCI-05)', () => {
     expect(screen.queryByText('Threshold')).not.toBeInTheDocument();
   });
 
-  it('renders Decision impact with directional rows', () => {
+  it('renders Decision impact with dominant direction for ship default', () => {
     render(<AdvancedResultsSection />);
 
     expect(screen.getByText('Decision impact')).toBeInTheDocument();
-    expect(screen.getByText('Stops you from shipping')).toBeInTheDocument();
-    expect(screen.getByText('Convinces you to ship')).toBeInTheDocument();
+    // defaultDecision=ship → shows "P(Keeps you from shipping)", hides convince direction
+    expect(screen.getByText('P(Keeps you from shipping)')).toBeInTheDocument();
+    expect(screen.queryByText('P(Pushes you to ship)')).not.toBeInTheDocument();
   });
 
-  it('does not render P(Decision Change) title', () => {
-    render(<AdvancedResultsSection />);
-
-    expect(screen.queryByText('P(Decision Change)')).not.toBeInTheDocument();
-  });
-
-  it('renders Why this result waterfall', () => {
-    render(<AdvancedResultsSection />);
-
-    expect(screen.getByText('Why this result?')).toBeInTheDocument();
-  });
-
-  it('renders mainDecisionMechanism in Statistical Interpretation for ship decision', () => {
-    render(<AdvancedResultsSection />);
-
-    // defaultDecision = 'ship' → mechanism = 'stop you from shipping when downside is plausible'
-    expect(screen.getByText(/stop you from shipping when downside is plausible/)).toBeInTheDocument();
-  });
-
-  it('renders mainDecisionMechanism in Statistical Interpretation for dont-ship decision', () => {
+  it('renders Decision impact with dominant direction for dont-ship default', () => {
     const dontShipResults = {
       ...sampleEVSIResults,
       evsi: {
@@ -244,7 +224,71 @@ describe('AdvancedResultsSection card content (RCI-03, RCI-04, RCI-05)', () => {
 
     render(<AdvancedResultsSection />);
 
-    expect(screen.getByText(/give you confidence to ship when upside is uncertain/)).toBeInTheDocument();
+    expect(screen.getByText('P(Pushes you to ship)')).toBeInTheDocument();
+    expect(screen.queryByText('P(Keeps you from shipping)')).not.toBeInTheDocument();
+  });
+
+  it('does not render P(Decision Change) title', () => {
+    render(<AdvancedResultsSection />);
+
+    expect(screen.queryByText('P(Decision Change)')).not.toBeInTheDocument();
+  });
+
+  it('renders Why this result waterfall', () => {
+    render(<AdvancedResultsSection />);
+
+    expect(screen.getByText('Why this result?')).toBeInTheDocument();
+  });
+
+  it('renders Plain-English interpretation heading', () => {
+    render(<AdvancedResultsSection />);
+
+    expect(screen.getByText('Plain-English interpretation')).toBeInTheDocument();
+    expect(screen.queryByText('Statistical Interpretation')).not.toBeInTheDocument();
+  });
+
+  it('renders guardrail interpretation for ship default', () => {
+    render(<AdvancedResultsSection />);
+
+    // defaultDecision='ship' → guardrail interpretation
+    expect(screen.getByText(/guardrail/)).toBeInTheDocument();
+  });
+
+  it('renders confidence builder interpretation for dont-ship default', () => {
+    const dontShipResults = {
+      ...sampleEVSIResults,
+      evsi: {
+        ...sampleEVSIResults.evsi,
+        defaultDecision: 'dont-ship' as const,
+        pStopsShip: 0,
+        pConvincesShip: 0.25,
+      },
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: dontShipResults,
+    });
+
+    render(<AdvancedResultsSection />);
+
+    expect(screen.getByText(/confidence builder/)).toBeInTheDocument();
+  });
+
+  it('renders near-tie interpretation when prior mean is near threshold', () => {
+    // Prior mean = 0 with any-positive scenario → near-tie
+    mockWizardStore({
+      inputs: {
+        ...sampleInputs,
+        priorIntervalLow: -5,
+        priorIntervalHigh: 5,
+        thresholdScenario: 'any-positive',
+        thresholdValue: null,
+      },
+    });
+
+    render(<AdvancedResultsSection />);
+
+    expect(screen.getByText(/nearly tied before testing/)).toBeInTheDocument();
   });
 
   it('does not render EVSI Intuition block', () => {
@@ -258,5 +302,13 @@ describe('AdvancedResultsSection card content (RCI-03, RCI-04, RCI-05)', () => {
 
     expect(screen.getByText("What's driving the value you've calculated?")).toBeInTheDocument();
     expect(screen.getByText("How is the value of better decisions calculated?")).toBeInTheDocument();
+  });
+
+  it('renders Prior Belief with range as primary value', () => {
+    render(<AdvancedResultsSection />);
+
+    expect(screen.getByText('Prior Belief')).toBeInTheDocument();
+    // Range should be the bolded value, mean in description
+    expect(screen.getByText(/Mean:/)).toBeInTheDocument();
   });
 });

@@ -115,30 +115,31 @@ export function FAQAccordion({
         isOpen={open1}
         onToggle={() => setOpen1(!open1)}
       >
-        <p>This result is driven by four things:</p>
+        <p>This result is mainly driven by four things:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
-            Decision stakes: with {formatNumber(traffic)} daily traffic and{' '}
-            {formatSmartCurrency(valuePerConversion)} value per conversion, the decision matters
-            economically.
+            <strong>Decision stakes:</strong> with {formatNumber(traffic)} daily users and{' '}
+            {formatSmartCurrency(valuePerConversion)} per conversion, this decision has real
+            economic weight.
           </li>
           <li>
-            Uncertainty: your prior range of {formatPercentage(priorLow)} to{' '}
-            {formatPercentage(priorHigh)} means there is still meaningful downside and upside
-            uncertainty.
+            <strong>Remaining uncertainty:</strong> before testing, the true effect could still
+            be meaningfully negative or positive (range: {formatPercentage(priorLow)} to{' '}
+            {formatPercentage(priorHigh)}).
           </li>
           <li>
-            Test informativeness: this experiment changes your action in about{' '}
-            {formatProbabilityPercent(pDecisionChange)} of similar cases.
+            <strong>Test precision:</strong> with this traffic and duration, the experiment is
+            often strong enough to change what you&apos;d do (about{' '}
+            {formatProbabilityPercent(pDecisionChange)} of the time).
           </li>
           <li>
-            Delay costs: waiting for results subtracts about{' '}
-            {formatSmartCurrency(Math.abs(timingCost))} from the value of testing.
+            <strong>Delay cost:</strong> waiting for results reduces the value by about{' '}
+            {formatSmartCurrency(Math.abs(timingCost))}.
           </li>
         </ul>
         <p>
-          Why this test is worth something at all: If the test can meaningfully improve what
-          you do, and the decision has real economic stakes, then information itself has value.
+          <strong>Why the test is worth anything at all:</strong> if the result can change what
+          you do, and the decision has real business stakes, the information has value.
         </p>
       </AccordionItem>
 
@@ -148,22 +149,20 @@ export function FAQAccordion({
         isOpen={open2}
         onToggle={() => setOpen2(!open2)}
       >
-        <p>We estimate the value of this test by asking:</p>
+        <p>The calculator compares two options:</p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>What do you believe about the true effect before seeing data?</li>
-          <li>What results could this specific test plausibly produce?</li>
-          <li>After seeing each possible result, what action would be best?</li>
-          <li>How much better are those actions than deciding today without testing?</li>
+          <li><strong>Decide today</strong> without running a test</li>
+          <li><strong>Run this test</strong>, then decide after seeing the results</li>
         </ol>
         <p>
-          The calculator averages that improvement across many possible outcomes. That average
-          improvement is the value of better decisions, shown here as{' '}
-          {formatSmartCurrency(testValue)}.
+          It estimates how much better option 2 is, on average, across many plausible outcomes.
+          That average improvement is the <strong>value of better decisions</strong>, shown here
+          as {formatSmartCurrency(testValue)}.
         </p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>this is before subtracting delay costs</li>
-          <li>it reflects the value of this specific test design, not perfect certainty</li>
-          <li>larger stakes and more informative tests usually increase this number</li>
+          <li>this is <strong>before</strong> subtracting delay costs</li>
+          <li>it reflects the value of <strong>this specific test design</strong></li>
+          <li>bigger stakes and more decision-changing tests usually make this number larger</li>
         </ul>
       </AccordionItem>
 
@@ -173,20 +172,20 @@ export function FAQAccordion({
         isOpen={open3}
         onToggle={() => setOpen3(!open3)}
       >
-        <p>This test would generally be worth more if:</p>
+        <p>This test would usually be worth <strong>more</strong> if:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>traffic were higher</li>
-          <li>value per conversion were higher</li>
+          <li>more users were affected</li>
+          <li>each conversion were worth more</li>
           <li>you were more uncertain about the true effect</li>
-          <li>the test had a better chance of changing the decision</li>
-          <li>delay costs were smaller</li>
+          <li>the test had a better chance of changing your decision</li>
+          <li>results came back faster</li>
         </ul>
-        <p>This test would generally be worth less if:</p>
+        <p>This test would usually be worth <strong>less</strong> if:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>traffic were lower</li>
-          <li>value per conversion were lower</li>
-          <li>your prior were already very tight</li>
-          <li>the test were unlikely to change your action</li>
+          <li>fewer users were affected</li>
+          <li>each conversion were worth less</li>
+          <li>you were already quite sure about the effect</li>
+          <li>the test were unlikely to change your decision</li>
           <li>the test or readout took longer</li>
         </ul>
       </AccordionItem>
@@ -197,15 +196,14 @@ export function FAQAccordion({
         isOpen={open4}
         onToggle={() => setOpen4(!open4)}
       >
-        <p>Running the test is not free in time:</p>
+        <p>Running the test takes time:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li>during the test, not all users receive the best eventual experience</li>
-          <li>during readout / decision latency, you are still waiting to act</li>
-          <li>that lost time creates an opportunity cost</li>
+          <li>during the experiment, not all users get the eventual best experience</li>
+          <li>during readout and decision time, you are still waiting to act</li>
+          <li>that lost time has a real opportunity cost</li>
         </ul>
         <p>
-          In this case, that cost is estimated at{' '}
-          {formatSmartCurrency(Math.abs(timingCost))}.
+          In this case, that cost is about {formatSmartCurrency(Math.abs(timingCost))}.
         </p>
       </AccordionItem>
     </div>

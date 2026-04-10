@@ -5,8 +5,9 @@
  * showing how prior uncertainty flows into test value and net value.
  *
  * Per UI-SPEC: visible by default, no toggle, read-only prose block.
- * Per 25.1-02-PLAN.md: uses formatSmartCurrency, formatProbabilityPercent,
- * formatPercentage from @/lib/formatting and cn from @/lib/utils.
+ * Includes near-tie conditional copy when the prior mean is close to
+ * the shipping threshold (explains why the calculator treats "ship"
+ * as the starting decision when outcomes look nearly tied).
  */
 
 import { cn } from '@/lib/utils';
@@ -31,6 +32,8 @@ interface WaterfallBlockProps {
   timingCost: number;
   /** Net value after timing costs (netValueDollars) */
   netValue: number;
+  /** True when prior mean is close to the shipping threshold (tie-breaking case) */
+  isNearTie?: boolean;
 }
 
 export function WaterfallBlock({
@@ -41,6 +44,7 @@ export function WaterfallBlock({
   testValue,
   timingCost,
   netValue,
+  isNearTie = false,
 }: WaterfallBlockProps) {
   // Convert internal 'dont-ship' to display-friendly "not ship"
   const defaultDecisionLabel = defaultDecision === 'ship' ? 'ship' : 'not ship';
@@ -55,10 +59,20 @@ export function WaterfallBlock({
       </h4>
 
       <ol className="space-y-3 list-none">
-        {/* Step 1: Default decision */}
+        {/* Step 1: Starting decision — with near-tie variant when
+            prior mean is close to the shipping threshold */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">1.</span>{' '}
-          Without testing, your current best choice is to {defaultDecisionLabel}.
+          {isNearTie ? (
+            <>
+              Before testing, shipping and not shipping look nearly equally good.
+              In that tie case, the calculator treats &ldquo;{defaultDecisionLabel}&rdquo; as the starting decision.
+            </>
+          ) : (
+            <>
+              If you had to decide today, your current rule would lead you to {defaultDecisionLabel}.
+            </>
+          )}
         </li>
 
         {/* Step 2: Prior uncertainty range
@@ -66,38 +80,39 @@ export function WaterfallBlock({
             formatPercentage handles the % suffix */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">2.</span>{' '}
-          But you&apos;re still meaningfully uncertain: the true lift could plausibly be between{' '}
-          {formatPercentage(priorLow)} and {formatPercentage(priorHigh)}.
+          But you&apos;re still uncertain about the true effect: before testing,
+          a plausible range runs from {formatPercentage(priorLow)} to {formatPercentage(priorHigh)}.
         </li>
 
-        {/* Step 3: How informative the test is
+        {/* Step 3: Test precision — how often the test changes the decision
             pDecisionChange is a decimal probability (0-1) */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">3.</span>{' '}
-          This experiment is informative enough that it would change your action in about{' '}
-          {formatProbabilityPercent(pDecisionChange)} of similar situations.
+          Given your traffic and test duration, this experiment is precise enough
+          to change what you&apos;d do in about {formatProbabilityPercent(pDecisionChange)} of similar cases.
         </li>
 
-        {/* Step 4: Gross value of better decisions (EVSI)
+        {/* Step 4: Value of improved decisions (EVSI before delay costs)
             testValue = evsiDollars */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">4.</span>{' '}
-          Across all those possible futures, the better decisions enabled by the test are worth{' '}
-          {formatSmartCurrency(testValue)}.
+          When the test changes your decision, that improved decision-making is
+          worth about {formatSmartCurrency(testValue)} on average.
         </li>
 
         {/* Step 5: Opportunity cost of waiting for test results
             Always show as positive cost (Math.abs) */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">5.</span>{' '}
-          Waiting for the test and readout costs about {formatSmartCurrency(Math.abs(timingCost))}.
+          Running the test and waiting for readout delays action, which costs
+          about {formatSmartCurrency(Math.abs(timingCost))}.
         </li>
 
         {/* Step 6: Net value after timing costs
             Color-coded: text-primary for positive, text-destructive for negative */}
         <li className="text-sm text-foreground leading-relaxed">
           <span className="font-semibold text-muted-foreground">6.</span>{' '}
-          That leaves a net value of{' '}
+          After subtracting that delay cost, the test&apos;s net value is{' '}
           <span
             className={cn(
               'font-semibold',

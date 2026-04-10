@@ -124,9 +124,9 @@ export function EVSIVerdictCard({
           <div className="space-y-2">
             {displayValue >= 0 ? (
               <h3 className="text-xl font-semibold text-foreground leading-relaxed">
-                If you can run this test for{' '}
-                <span className="text-primary">up to {formatSmartCurrency(displayValue)}</span>,
-                test it.
+                If the total cost of running this test is below{' '}
+                <span className="text-primary">{formatSmartCurrency(displayValue)}</span>,
+                it&apos;s worth doing.
               </h3>
             ) : (
               <h3 className="text-xl font-semibold text-foreground leading-relaxed">
@@ -145,8 +145,8 @@ export function EVSIVerdictCard({
           <p className="text-sm text-muted-foreground">
             {displayValue >= 0 ? (
               <>
-                This is the <strong>net value of testing</strong> -- what the test
-                information is worth after accounting for the cost of waiting for results.
+                This is how much the test is worth after accounting for
+                the time it takes to run and read out.
               </>
             ) : (
               <>

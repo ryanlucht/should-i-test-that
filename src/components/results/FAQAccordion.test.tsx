@@ -54,7 +54,7 @@ describe('FAQAccordion', () => {
 
     expect(trigger1).toHaveAttribute('aria-expanded', 'true');
     // Content should now be visible
-    expect(screen.getByText(/This result is driven by four things/)).toBeInTheDocument();
+    expect(screen.getByText(/This result is mainly driven by four things/)).toBeInTheDocument();
   });
 
   it('Test 4: clicking an expanded accordion collapses it', () => {
@@ -69,7 +69,7 @@ describe('FAQAccordion', () => {
     // Collapse
     fireEvent.click(trigger1);
     expect(trigger1).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText(/This result is driven by four things/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/This result is mainly driven by four things/)).not.toBeInTheDocument();
   });
 
   it('Test 5: accordions are independent (opening one does not close another)', () => {

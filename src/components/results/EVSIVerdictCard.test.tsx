@@ -55,13 +55,13 @@ describe('EVSIVerdictCard', () => {
   });
 
   describe('positive net value (D-08)', () => {
-    it('shows "up to" and formatted positive value', () => {
+    it('shows "below" and formatted positive value', () => {
       // Use value < $1000 to avoid compact formatting (e.g., "$1K")
       render(
         <EVSIVerdictCard netValueDollars={750} isLoading={false} />
       );
 
-      expect(screen.getByText(/up to/)).toBeInTheDocument();
+      expect(screen.getByText(/below/)).toBeInTheDocument();
       expect(screen.getByText(/\$750/)).toBeInTheDocument();
     });
 
@@ -70,7 +70,7 @@ describe('EVSIVerdictCard', () => {
         <EVSIVerdictCard netValueDollars={750} isLoading={false} />
       );
 
-      expect(screen.getByText(/net value of testing/)).toBeInTheDocument();
+      expect(screen.getByText(/how much the test is worth/)).toBeInTheDocument();
     });
   });
 
@@ -130,12 +130,12 @@ describe('EVSIVerdictCard', () => {
   });
 
   describe('zero net value', () => {
-    it('treats zero as positive (shows "up to" messaging)', () => {
+    it('treats zero as positive (shows "below" messaging)', () => {
       render(
         <EVSIVerdictCard netValueDollars={0} isLoading={false} />
       );
 
-      expect(screen.getByText(/up to/)).toBeInTheDocument();
+      expect(screen.getByText(/below/)).toBeInTheDocument();
     });
   });
 

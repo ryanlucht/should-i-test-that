@@ -1,7 +1,7 @@
 /**
  * WaterfallBlock - Tests for six-step plain-English results narrative
  *
- * Per 25.1-02-PLAN.md Task 1 behavior spec.
+ * Updated for revised copy per PM feedback.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -32,7 +32,6 @@ describe('WaterfallBlock', () => {
   it('renders 6 numbered steps (1. through 6.)', () => {
     render(<WaterfallBlock {...defaultProps} />);
 
-    // Check for step number prefixes
     expect(screen.getByText(/^1\./)).toBeInTheDocument();
     expect(screen.getByText(/^2\./)).toBeInTheDocument();
     expect(screen.getByText(/^3\./)).toBeInTheDocument();
@@ -41,26 +40,33 @@ describe('WaterfallBlock', () => {
     expect(screen.getByText(/^6\./)).toBeInTheDocument();
   });
 
-  it('step 1 contains defaultDecision text "ship" when decision is ship', () => {
+  it('step 1 contains default decision text when not near-tie', () => {
     render(<WaterfallBlock {...defaultProps} defaultDecision="ship" />);
 
-    // Step 1 copy: "Without testing, your current best choice is to ship."
-    expect(screen.getByText(/Without testing/)).toBeInTheDocument();
-    expect(screen.getByText(/Without testing/).textContent).toContain('ship');
+    const step1 = screen.getByText(/If you had to decide today/);
+    expect(step1).toBeInTheDocument();
+    expect(step1.textContent).toContain('ship');
   });
 
   it('step 1 contains "not ship" when decision is dont-ship', () => {
     render(<WaterfallBlock {...defaultProps} defaultDecision="dont-ship" />);
 
-    expect(screen.getByText(/Without testing/).textContent).toContain('not ship');
+    const step1 = screen.getByText(/If you had to decide today/);
+    expect(step1.textContent).toContain('not ship');
+  });
+
+  it('step 1 shows near-tie copy when isNearTie is true', () => {
+    render(<WaterfallBlock {...defaultProps} isNearTie={true} />);
+
+    const step1 = screen.getByText(/shipping and not shipping look nearly equally good/);
+    expect(step1).toBeInTheDocument();
   });
 
   it('step 2 contains formatted priorLow and priorHigh values', () => {
     render(<WaterfallBlock {...defaultProps} priorLow={-8.22} priorHigh={8.22} />);
 
-    const step2 = screen.getByText(/meaningfully uncertain/);
+    const step2 = screen.getByText(/still uncertain about the true effect/);
     expect(step2).toBeInTheDocument();
-    // formatPercentage(-8.22) => "-8.22%", formatPercentage(8.22) => "8.22%"
     expect(step2.textContent).toContain('-8.22%');
     expect(step2.textContent).toContain('8.22%');
   });
@@ -68,45 +74,40 @@ describe('WaterfallBlock', () => {
   it('step 3 contains formatted pDecisionChange probability', () => {
     render(<WaterfallBlock {...defaultProps} pDecisionChange={0.25} />);
 
-    const step3 = screen.getByText(/informative enough/);
+    const step3 = screen.getByText(/precise enough to change/);
     expect(step3).toBeInTheDocument();
-    // formatProbabilityPercent(0.25) => "25%"
     expect(step3.textContent).toContain('25%');
   });
 
   it('step 4 contains formatted testValue as currency', () => {
     render(<WaterfallBlock {...defaultProps} testValue={12000} />);
 
-    const step4 = screen.getByText(/better decisions enabled/);
+    const step4 = screen.getByText(/improved decision-making is worth/);
     expect(step4).toBeInTheDocument();
-    // formatSmartCurrency(12000) => "$12K"
     expect(step4.textContent).toMatch(/\$12/);
   });
 
   it('step 5 contains formatted timingCost as currency (always positive)', () => {
     render(<WaterfallBlock {...defaultProps} timingCost={2500} />);
 
-    const step5 = screen.getByText(/Waiting for the test/);
+    const step5 = screen.getByText(/Running the test and waiting/);
     expect(step5).toBeInTheDocument();
-    // formatSmartCurrency(Math.abs(2500)) => "$2.5K"
     expect(step5.textContent).toMatch(/\$2/);
   });
 
   it('step 6 contains formatted netValue as currency', () => {
     render(<WaterfallBlock {...defaultProps} netValue={9500} />);
 
-    const step6 = screen.getByText(/net value of/);
+    const step6 = screen.getByText(/net value is/);
     expect(step6).toBeInTheDocument();
-    // formatSmartCurrency(9500) => "$9.5K"
     expect(step6.textContent).toMatch(/\$9/);
   });
 
   it('negative netValue renders with destructive color class on the value span', () => {
     render(<WaterfallBlock {...defaultProps} netValue={-500} />);
 
-    const step6 = screen.getByText(/net value of/);
+    const step6 = screen.getByText(/net value is/);
     expect(step6).toBeInTheDocument();
-    // The netValue span is the last span inside step 6 (first is the step number)
     const allSpans = step6.querySelectorAll('span');
     const valueSpan = allSpans[allSpans.length - 1];
     expect(valueSpan).not.toBeNull();
@@ -116,7 +117,7 @@ describe('WaterfallBlock', () => {
   it('positive netValue renders with text-primary color class on the value span', () => {
     render(<WaterfallBlock {...defaultProps} netValue={9500} />);
 
-    const step6 = screen.getByText(/net value of/);
+    const step6 = screen.getByText(/net value is/);
     const allSpans = step6.querySelectorAll('span');
     const valueSpan = allSpans[allSpans.length - 1];
     expect(valueSpan).not.toBeNull();
