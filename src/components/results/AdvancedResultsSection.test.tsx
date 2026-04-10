@@ -234,27 +234,21 @@ describe('AdvancedResultsSection card content', () => {
     expect(screen.queryByText('P(Decision Change)')).not.toBeInTheDocument();
   });
 
-  it('renders Why this result waterfall', () => {
+  it('renders Plain English explanation waterfall block', () => {
     render(<AdvancedResultsSection />);
 
-    expect(screen.getByText('Why this result?')).toBeInTheDocument();
-  });
-
-  it('renders Plain-English interpretation heading', () => {
-    render(<AdvancedResultsSection />);
-
-    expect(screen.getByText('Plain-English interpretation')).toBeInTheDocument();
+    expect(screen.getByText('Plain English explanation')).toBeInTheDocument();
+    expect(screen.queryByText('Why this result?')).not.toBeInTheDocument();
     expect(screen.queryByText('Statistical Interpretation')).not.toBeInTheDocument();
   });
 
-  it('renders guardrail interpretation for ship default', () => {
+  it('renders guardrail direction in waterfall for ship default', () => {
     render(<AdvancedResultsSection />);
 
-    // defaultDecision='ship' → guardrail interpretation
     expect(screen.getByText(/guardrail/)).toBeInTheDocument();
   });
 
-  it('renders confidence builder interpretation for dont-ship default', () => {
+  it('renders confidence builder direction in waterfall for dont-ship default', () => {
     const dontShipResults = {
       ...sampleEVSIResults,
       evsi: {
@@ -274,8 +268,8 @@ describe('AdvancedResultsSection card content', () => {
     expect(screen.getByText(/confidence builder/)).toBeInTheDocument();
   });
 
-  it('renders near-tie interpretation when prior mean is near threshold', () => {
-    // Prior mean = 0 with any-positive scenario → near-tie
+  it('renders tie-break copy when prior mean is at threshold', () => {
+    // Prior mean = 0 with any-positive scenario → exact tie
     mockWizardStore({
       inputs: {
         ...sampleInputs,
@@ -288,12 +282,7 @@ describe('AdvancedResultsSection card content', () => {
 
     render(<AdvancedResultsSection />);
 
-    // "right at the boundary" appears in both waterfall and interpretation
-    const matches = screen.getAllByText(/right at the boundary/);
-    expect(matches.length).toBeGreaterThanOrEqual(2);
-    // "doesn't affect" appears in both as well
-    const affectMatches = screen.getAllByText(/doesn't affect/);
-    expect(affectMatches.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/right at the boundary/)).toBeInTheDocument();
   });
 
   it('does not render EVSI Intuition block', () => {

@@ -24,7 +24,7 @@ import { WaterfallBlock } from './WaterfallBlock';
 import { FAQAccordion } from './FAQAccordion';
 import { ExportButton } from '@/components/export/ExportButton';
 import { Input } from '@/components/ui/input';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import {
   formatProbabilityPercent,
   formatPercentage,
@@ -64,19 +64,6 @@ function computeIsTie(
   return false;
 }
 
-/**
- * Derive a human-readable label for the shipping rule to use in the
- * Plain-English Interpretation block.
- */
-function getShippingRuleLabel(thresholdScenario: string | null): string {
-  if (!thresholdScenario || thresholdScenario === 'any-positive') {
-    return 'ship if the effect looks positive';
-  }
-  if (thresholdScenario === 'minimum-lift') {
-    return 'ship only if the effect clears a minimum bar';
-  }
-  return 'ship even if the effect is slightly negative';
-}
 
 export function ResultsSection() {
   const { loading, results } = useEVSICalculations();
@@ -240,31 +227,9 @@ export function ResultsSection() {
             </div>
           </div>
 
-          {/* "Why this result?" waterfall -- visible by default per RCI-02/D-05 */}
-          <WaterfallBlock
-            defaultDecision={results.evsi.defaultDecision}
-            priorLow={priorLow}
-            priorHigh={priorHigh}
-            priorMean={priorMean}
-            shippingRuleLabel={formatThreshold({
-              scenario: (inputs.thresholdScenario ?? 'any-positive') as 'any-positive' | 'minimum-lift' | 'accept-loss',
-              unit: inputs.thresholdUnit,
-              value: inputs.thresholdValue,
-            }).toLowerCase()}
-            pDecisionChange={results.evsi.probabilityTestChangesDecision}
-            testValue={results.evsi.evsiDollars}
-            timingCost={results.evsi.evsiDollars - results.netValueDollars}
-            netValue={results.netValueDollars}
-            isTie={isTie}
-          />
-
-          {/* Plain-English Interpretation — explains the starting decision logic */}
+          {/* Plain English explanation — waterfall with integrated interpretation */}
           {(() => {
-            const shippingRuleLabel = getShippingRuleLabel(inputs.thresholdScenario);
-            const formattedMean = `${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`;
-            const defaultLabel = results.evsi.defaultDecision === 'ship' ? 'ship' : 'not ship';
-
-            // Derive directional interpretation sentence
+            // Derive directional interpretation sentence for step 1
             const pStopsShip = results.evsi.pStopsShip ?? 0;
             const pConvincesShip = results.evsi.pConvincesShip ?? 0;
             let directionSentence: string;
@@ -280,33 +245,23 @@ export function ResultsSection() {
             }
 
             return (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-blue-900">
-                    Plain-English interpretation
-                  </h4>
-                  <p className="text-sm text-blue-800 leading-relaxed">
-                    {isTie ? (
-                      <>
-                        Your expected effect ({formattedMean}) is right at the boundary of your
-                        shipping rule ({shippingRuleLabel}). At this point, shipping and not shipping
-                        are equally good — the calculator defaults
-                        to <strong>{defaultLabel}</strong>, but this choice doesn&apos;t affect the
-                        test&apos;s value. In this setup, {directionSentence}
-                      </>
-                    ) : (
-                      <>
-                        Your expected effect ({formattedMean})
-                        {results.evsi.defaultDecision === 'ship' ? ' meets ' : ' doesn\u2019t meet '}
-                        your shipping rule ({shippingRuleLabel}), so the calculator starts
-                        from <strong>{defaultLabel}</strong>.
-                        In this case, {directionSentence}
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
+              <WaterfallBlock
+                defaultDecision={results.evsi.defaultDecision}
+                priorLow={priorLow}
+                priorHigh={priorHigh}
+                priorMean={priorMean}
+                shippingRuleLabel={formatThreshold({
+                  scenario: (inputs.thresholdScenario ?? 'any-positive') as 'any-positive' | 'minimum-lift' | 'accept-loss',
+                  unit: inputs.thresholdUnit,
+                  value: inputs.thresholdValue,
+                }).toLowerCase()}
+                directionSentence={directionSentence}
+                pDecisionChange={results.evsi.probabilityTestChangesDecision}
+                testValue={results.evsi.evsiDollars}
+                timingCost={results.evsi.evsiDollars - results.netValueDollars}
+                netValue={results.netValueDollars}
+                isTie={isTie}
+              />
             );
           })()}
 

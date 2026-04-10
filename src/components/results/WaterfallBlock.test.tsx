@@ -14,6 +14,7 @@ const defaultProps = {
   priorHigh: 8.22,
   priorMean: 0.0,
   shippingRuleLabel: 'any positive impact',
+  directionSentence: 'the test is valuable mainly as a guardrail: it often helps you avoid shipping when the downside is still plausible.',
   pDecisionChange: 0.25,
   testValue: 12000,
   timingCost: 2500,
@@ -21,13 +22,13 @@ const defaultProps = {
 };
 
 describe('WaterfallBlock', () => {
-  it('renders heading "Why this result?" as h4 inside section with aria-label', () => {
+  it('renders heading "Plain English explanation" as h4 inside section with aria-label', () => {
     render(<WaterfallBlock {...defaultProps} />);
 
-    const section = document.querySelector('section[aria-label="Why this result?"]');
+    const section = document.querySelector('section[aria-label="Plain English explanation"]');
     expect(section).toBeInTheDocument();
 
-    const heading = screen.getByRole('heading', { name: 'Why this result?' });
+    const heading = screen.getByRole('heading', { name: 'Plain English explanation' });
     expect(heading.tagName).toBe('H4');
   });
 
@@ -43,21 +44,24 @@ describe('WaterfallBlock', () => {
   });
 
   it('step 1 shows explicit comparison when not near-tie (ship)', () => {
-    render(<WaterfallBlock {...defaultProps} defaultDecision="ship" priorMean={3.0} shippingRuleLabel="any positive impact" />);
+    render(<WaterfallBlock {...defaultProps} defaultDecision="ship" priorMean={3.0} shippingRuleLabel="any positive impact" directionSentence="the test is valuable mainly as a guardrail." />);
 
-    const step1 = screen.getByText(/best estimate of the effect/);
-    expect(step1).toBeInTheDocument();
-    expect(step1.textContent).toContain('+3.0%');
-    expect(step1.textContent).toContain('meets');
-    expect(step1.textContent).toContain('ship');
+    const steps = document.querySelectorAll('li');
+    const step1Text = steps[0].textContent ?? '';
+    expect(step1Text).toContain('+3.0%');
+    expect(step1Text).toContain('meets');
+    expect(step1Text).toContain('ship');
+    expect(step1Text).toContain('guardrail');
   });
 
   it('step 1 shows "doesn\u2019t meet" when decision is dont-ship', () => {
-    render(<WaterfallBlock {...defaultProps} defaultDecision="dont-ship" priorMean={1.0} shippingRuleLabel="minimum lift of +2%" />);
+    render(<WaterfallBlock {...defaultProps} defaultDecision="dont-ship" priorMean={1.0} shippingRuleLabel="minimum lift of +2%" directionSentence="the test is valuable mainly as a confidence builder." />);
 
-    const step1 = screen.getByText(/best estimate of the effect/);
-    expect(step1.textContent).toContain('doesn\u2019t meet');
-    expect(step1.textContent).toContain('not ship');
+    const steps = document.querySelectorAll('li');
+    const step1Text = steps[0].textContent ?? '';
+    expect(step1Text).toContain('doesn\u2019t meet');
+    expect(step1Text).toContain('not ship');
+    expect(step1Text).toContain('confidence builder');
   });
 
   it('step 1 shows near-tie copy when isTie is true', () => {
@@ -132,14 +136,13 @@ describe('WaterfallBlock', () => {
     expect(valueSpan.className).toContain('text-primary');
   });
 
-  it('component has correct card styling (bg-card border border-border rounded-xl)', () => {
+  it('component has blue info panel styling', () => {
     const { container } = render(<WaterfallBlock {...defaultProps} />);
 
     const section = container.querySelector('section');
     expect(section).toBeInTheDocument();
-    expect(section!.className).toContain('bg-card');
-    expect(section!.className).toContain('border');
-    expect(section!.className).toContain('border-border');
-    expect(section!.className).toContain('rounded-xl');
+    expect(section!.className).toContain('bg-blue-50');
+    expect(section!.className).toContain('border-blue-200');
+    expect(section!.className).toContain('rounded-lg');
   });
 });
