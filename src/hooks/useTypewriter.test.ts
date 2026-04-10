@@ -3,13 +3,13 @@ import { renderHook, act } from '@testing-library/react';
 import { useTypewriter } from './useTypewriter';
 
 /**
- * Helper: advance fake timers by 30ms per step, n times.
+ * Helper: advance fake timers by one word-reveal tick (30ms) n times.
  * Each step allows React to process the state update and schedule the next setTimeout.
  */
-function advanceChars(n: number) {
+function advanceWords(n: number) {
   for (let i = 0; i < n; i++) {
     act(() => {
-      vi.advanceTimersByTime(12);
+      vi.advanceTimersByTime(30);
     });
   }
 }
@@ -40,32 +40,36 @@ describe('useTypewriter', () => {
   });
 
   it('returns empty string initially for non-empty input text', () => {
-    const { result } = renderHook(() => useTypewriter('Hello'));
+    const { result } = renderHook(() => useTypewriter('Hello world'));
     expect(result.current.displayed).toBe('');
     expect(result.current.isComplete).toBe(false);
   });
 
-  it('reveals text character by character at 12ms intervals', () => {
-    const { result } = renderHook(() => useTypewriter('Hello'));
+  it('reveals text word by word at 30ms intervals', () => {
+    const { result } = renderHook(() => useTypewriter('Hello world foo'));
 
     // Initially empty
     expect(result.current.displayed).toBe('');
 
-    // After 1 step: 1 character
-    advanceChars(1);
-    expect(result.current.displayed).toBe('H');
+    // After 1 tick: first word
+    advanceWords(1);
+    expect(result.current.displayed).toBe('Hello');
 
-    // After 2nd step: 2 characters
-    advanceChars(1);
-    expect(result.current.displayed).toBe('He');
+    // After 2nd tick: first two words (includes the space before "world")
+    advanceWords(1);
+    expect(result.current.displayed).toBe('Hello world');
+
+    // After 3rd tick: all three words
+    advanceWords(1);
+    expect(result.current.displayed).toBe('Hello world foo');
   });
 
-  it('shows full text and isComplete=true after sufficient time', () => {
-    const text = 'Hi!';
+  it('shows full text and isComplete=true after sufficient ticks', () => {
+    const text = 'one two three';
     const { result } = renderHook(() => useTypewriter(text));
 
-    // Advance one step per character
-    advanceChars(text.length);
+    // 3 words → 3 ticks
+    advanceWords(3);
 
     expect(result.current.displayed).toBe(text);
     expect(result.current.isComplete).toBe(true);
@@ -74,20 +78,19 @@ describe('useTypewriter', () => {
   it('resets displayed text when input text changes', () => {
     const { result, rerender } = renderHook(
       ({ text }: { text: string }) => useTypewriter(text),
-      { initialProps: { text: 'First' } }
+      { initialProps: { text: 'First message' } }
     );
 
-    // Advance to complete first message (5 chars)
-    advanceChars('First'.length);
-    expect(result.current.displayed).toBe('First');
+    // Complete first message (2 words)
+    advanceWords(2);
+    expect(result.current.displayed).toBe('First message');
     expect(result.current.isComplete).toBe(true);
 
     // Change the text — should reset
     act(() => {
-      rerender({ text: 'Second' });
+      rerender({ text: 'Second one' });
     });
 
-    // After reset, displayed should start fresh (empty — index=0 was reset)
     expect(result.current.isComplete).toBe(false);
     expect(result.current.displayed).toBe('');
   });
@@ -113,6 +116,14 @@ describe('useTypewriter', () => {
 
     // Should immediately show full text — no timers needed
     expect(result.current.displayed).toBe(text);
+    expect(result.current.isComplete).toBe(true);
+  });
+
+  it('handles single-word text', () => {
+    const { result } = renderHook(() => useTypewriter('Hello'));
+
+    advanceWords(1);
+    expect(result.current.displayed).toBe('Hello');
     expect(result.current.isComplete).toBe(true);
   });
 });

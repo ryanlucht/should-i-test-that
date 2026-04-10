@@ -91,11 +91,19 @@ export function LearningBitsOverlay({ messageText, onClose }: LearningBitsOverla
         {/* Screen reader: full message text (always present) */}
         <span className="sr-only">{messageText}</span>
 
-        {/* Visual typewriter text — Space Grotesk regular per D-03 */}
-        <p className="text-sm leading-relaxed text-foreground lb-font" aria-hidden="true">
-          {renderDialogueText(displayed)}
-          {isComplete && <BouncingDots />}
-        </p>
+        {/* Ghost text — invisible but reserves the full box height so the
+            overlay doesn't grow as words appear (prevents layout shift). */}
+        <div className="relative">
+          <p className="text-sm leading-relaxed text-foreground lb-font invisible" aria-hidden="true">
+            {renderDialogueText(messageText)}
+            <BouncingDots />
+          </p>
+          {/* Visible typewriter text — overlaid on the ghost */}
+          <p className="text-sm leading-relaxed text-foreground lb-font absolute inset-0" aria-hidden="true">
+            {renderDialogueText(displayed)}
+            {isComplete && <BouncingDots />}
+          </p>
+        </div>
       </div>
     </div>
   );
