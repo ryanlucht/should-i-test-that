@@ -19,7 +19,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 23: Homepage & Welcome Experience** - New homepage with Learning Bits welcome sequence, logo, start/skip flow, and footer update (completed 2026-03-26)
 - [x] **Phase 24: Shareable Walkthrough URLs** - Encode calculator state into URLs with guided mode flag, schema versioning, and copy-to-clipboard (completed 2026-04-06)
 - [x] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification (completed 2026-04-08)
-- [ ] **Phase 25.1: Results Card Improvements** - Plain-English waterfall, directional decision impact, card renames, FAQ accordion explainers
+- [x] **Phase 25.1: Results Card Improvements** - Plain-English waterfall, directional decision impact, card renames, FAQ accordion explainers (completed 2026-04-10)
 - [ ] **Phase 25.2: Stats Engine V3 Audit Fixes** - Deterministic effective-prior metrics, infeasible-prior warning, traffic-population documentation, Student-t display fix, timing-costs sign handling, URL validation tightening
 - [ ] **Phase 26: AWS Deployment** - Serverless deployment following Datadog community-golden-paths
 
@@ -175,13 +175,13 @@ Plans:
   4. Statistical Interpretation callout uses mainDecisionMechanism phrasing per SPEC
   5. Four FAQ accordion explainers are collapsed by default and expand independently with dynamic content
   6. A non-statistician can answer: what to do, why worth money, why this much, waiting cost, and directional protection
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 25.1-01-PLAN.md -- Add pStopsShip/pConvincesShip directional probabilities to engine types, MC loops, fast-path, and hook
 - [x] 25.1-02-PLAN.md -- WaterfallBlock component, SupportingCard grid updates (Shipping rule, Decision impact), Statistical Interpretation update, layout reorder
-- [ ] 25.1-03-PLAN.md -- FAQAccordion component with four collapsed explainers, wire into ResultsSection, remove EVSI Intuition block
-- [ ] 25.1-04-PLAN.md -- PM visual review checkpoint for results page redesign
+- [x] 25.1-03-PLAN.md -- FAQAccordion component with four collapsed explainers, wire into ResultsSection, remove EVSI Intuition block
+- [x] 25.1-04-PLAN.md -- PM visual review checkpoint for results page redesign
 
 **UI hint**: yes
 
@@ -231,7 +231,7 @@ Plans:
 | 23. Homepage & Welcome Experience | 2/2 | Complete    | 2026-03-26 |
 | 24. Shareable Walkthrough URLs | 3/3 | Complete    | 2026-04-06 |
 | 25. Polish, Accessibility & Export | 3/3 | Complete    | 2026-04-08 |
-| 25.1. Results Card Improvements | 2/4 | In Progress|  |
+| 25.1. Results Card Improvements | 4/4 | Complete    | 2026-04-10 |
 | 25.2. Stats Engine V3 Audit Fixes | 0/3 | Not started | - |
 | 26. AWS Deployment | 0/TBD | Not started | - |
 
