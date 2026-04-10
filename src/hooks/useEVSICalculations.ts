@@ -30,7 +30,7 @@ import { calculateNetValueMonteCarlo } from '@/lib/calculations/net-value';
 import { computeInfeasibleTailMass, TRUNCATION_THRESHOLD } from '@/lib/calculations/feasibility';
 import { buildPriorFromInputs } from '@/lib/prior';
 import { getPriorMean } from '@/lib/calculations/distributions';
-import type { EVSIInputs, EVSIResults, PriorDistribution, NetValueInputs, NetValueResults, CalculationWarning } from '@/lib/calculations/types';
+import type { EVSIInputs, EVSIResults, NetValueInputs, NetValueResults, CalculationWarning } from '@/lib/calculations/types';
 
 /**
  * Combined results from EVSI calculation

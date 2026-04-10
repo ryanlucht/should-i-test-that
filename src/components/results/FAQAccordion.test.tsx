@@ -47,7 +47,7 @@ describe('FAQAccordion', () => {
   it('Test 3: clicking an accordion trigger expands it (aria-expanded true) and shows answer content', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('[role="button"]')!;
+    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('button')!;
     expect(trigger1).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.click(trigger1);
@@ -60,7 +60,7 @@ describe('FAQAccordion', () => {
   it('Test 4: clicking an expanded accordion collapses it', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('[role="button"]')!;
+    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('button')!;
 
     // Expand
     fireEvent.click(trigger1);
@@ -75,8 +75,8 @@ describe('FAQAccordion', () => {
   it('Test 5: accordions are independent (opening one does not close another)', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('[role="button"]')!;
-    const trigger2 = screen.getByText("How is the value of better decisions calculated?").closest('[role="button"]')!;
+    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('button')!;
+    const trigger2 = screen.getByText("How is the value of better decisions calculated?").closest('button')!;
 
     // Open first
     fireEvent.click(trigger1);
@@ -90,36 +90,38 @@ describe('FAQAccordion', () => {
     expect(trigger1).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('Test 6: Enter key toggles accordion', () => {
+  it('Test 6: keyboard activation toggles accordion (native button handles Enter/Space)', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('[role="button"]')!;
+    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('button')!;
     expect(trigger1).toHaveAttribute('aria-expanded', 'false');
-
-    fireEvent.keyDown(trigger1, { key: 'Enter' });
+    // Native <button> converts Enter/Space to click events in real browsers.
+    // jsdom doesn't simulate this, so we test via click — the guarantee comes from
+    // using a native button element, not from a custom onKeyDown handler.
+    fireEvent.click(trigger1);
     expect(trigger1).toHaveAttribute('aria-expanded', 'true');
 
-    fireEvent.keyDown(trigger1, { key: 'Enter' });
+    fireEvent.click(trigger1);
     expect(trigger1).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('Test 7: Space key toggles accordion', () => {
+  it('Test 7: keyboard activation toggles independent accordion', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger3 = screen.getByText("What would make this test worth more? Worth less?").closest('[role="button"]')!;
+    const trigger3 = screen.getByText("What would make this test worth more? Worth less?").closest('button')!;
     expect(trigger3).toHaveAttribute('aria-expanded', 'false');
 
-    fireEvent.keyDown(trigger3, { key: ' ' });
+    fireEvent.click(trigger3);
     expect(trigger3).toHaveAttribute('aria-expanded', 'true');
 
-    fireEvent.keyDown(trigger3, { key: ' ' });
+    fireEvent.click(trigger3);
     expect(trigger3).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('Test 8: Accordion 1 answer contains traffic and valuePerConversion values', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('[role="button"]')!;
+    const trigger1 = screen.getByText("What's driving the value you've calculated?").closest('button')!;
     fireEvent.click(trigger1);
 
     // traffic = 10000 → formatNumber(10000) = "10,000"
@@ -131,7 +133,7 @@ describe('FAQAccordion', () => {
   it('Test 9: Accordion 2 answer contains testValue formatted as currency', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger2 = screen.getByText("How is the value of better decisions calculated?").closest('[role="button"]')!;
+    const trigger2 = screen.getByText("How is the value of better decisions calculated?").closest('button')!;
     fireEvent.click(trigger2);
 
     // testValue = 12000 → formatSmartCurrency(12000) = "$12K"
@@ -141,7 +143,7 @@ describe('FAQAccordion', () => {
   it('Test 10: Accordion 4 answer contains timingCost formatted as currency', () => {
     render(<FAQAccordion {...defaultProps} />);
 
-    const trigger4 = screen.getByText("Why does waiting reduce the value?").closest('[role="button"]')!;
+    const trigger4 = screen.getByText("Why does waiting reduce the value?").closest('button')!;
     fireEvent.click(trigger4);
 
     // timingCost = 2500 → formatSmartCurrency(Math.abs(2500)) = "$2.5K"

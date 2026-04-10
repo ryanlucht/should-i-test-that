@@ -59,21 +59,15 @@ function AccordionItem({
 }) {
   return (
     <div>
-      <div
+      <button
+        type="button"
         className={cn(
-          'flex justify-between items-center cursor-pointer rounded px-1 -mx-1 py-2 transition-colors',
-          'hover:bg-muted/50'
+          'flex w-full justify-between items-center cursor-pointer rounded px-1 -mx-1 py-2 transition-colors',
+          'hover:bg-muted/50',
+          'bg-transparent border-none text-left'
         )}
         onClick={onToggle}
-        role="button"
         aria-expanded={isOpen}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
       >
         <span className="text-sm font-semibold text-foreground">{label}</span>
         {isOpen ? (
@@ -81,7 +75,7 @@ function AccordionItem({
         ) : (
           <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
-      </div>
+      </button>
       {isOpen && (
         <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 space-y-2 mt-1">
           {children}

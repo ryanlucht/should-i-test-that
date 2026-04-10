@@ -1,16 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
- * Character delay for typewriter animation in milliseconds.
- * Per CONTEXT.md D-03: speed is executor discretion; 12ms for fast, fluid pacing
- * so users don't wait long on longer dialogue messages.
+ * Delay between revealing each word in milliseconds.
+ * Word-level batching feels more natural than character-by-character because
+ * the user always sees complete, readable units (similar to token streaming
+ * in chat UIs). ~30ms/word keeps total duration similar to the old 6ms/char
+ * approach for typical message lengths.
  */
-const CHAR_DELAY_MS = 6;
+const WORD_DELAY_MS = 30;
+
+/**
+ * Find the end index of the next word from `fromIndex`.
+ * A "word" = optional leading whitespace + a run of non-whitespace chars.
+ * Returns text.length when no more words remain.
+ */
+function nextWordEnd(text: string, fromIndex: number): number {
+  let i = fromIndex;
+  // Skip whitespace between words
+  while (i < text.length && /\s/.test(text[i])) i++;
+  // Skip word characters
+  while (i < text.length && !/\s/.test(text[i])) i++;
+  return i;
+}
 
 /**
  * useTypewriter
  *
- * Reveals text character-by-character at CHAR_DELAY_MS intervals.
+ * Reveals text word-by-word at WORD_DELAY_MS intervals.
  * Respects prefers-reduced-motion: if active, renders full text immediately.
  *
  * @param text - The message string to animate
@@ -21,17 +37,15 @@ const CHAR_DELAY_MS = 6;
  * Usage: const { displayed, isComplete } = useTypewriter(message);
  */
 export function useTypewriter(text: string): { displayed: string; isComplete: boolean } {
-  // Cache the reduced-motion preference on mount using a ref to avoid
-  // calling matchMedia on every render (perf optimization).
+  // Check reduced-motion preference. matchMedia().matches is a pure synchronous
+  // read — safe to call during render. Stable for the component's lifetime.
   // Guard against jsdom/test environments where matchMedia may not exist.
-  const prefersReducedMotionRef = useRef<boolean>(
+  const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false
-  );
-  const prefersReducedMotion = prefersReducedMotionRef.current;
+      : false;
 
-  // Index of the next character to reveal (0 = not started)
+  // Index into text: characters up to this point are visible (0 = not started)
   const [index, setIndex] = useState<number>(() =>
     prefersReducedMotion ? text.length : 0
   );
@@ -39,19 +53,20 @@ export function useTypewriter(text: string): { displayed: string; isComplete: bo
   // Reset index when text changes (new message starts)
   useEffect(() => {
     if (prefersReducedMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync animation state when text changes
       setIndex(text.length); // Show full text immediately
     } else {
       setIndex(0); // Restart animation from the beginning
     }
   }, [text, prefersReducedMotion]);
 
-  // Increment index one character at a time, with cleanup on unmount/re-render
+  // Advance by one word per tick, with cleanup on unmount/re-render
   useEffect(() => {
     if (prefersReducedMotion || index >= text.length) return;
 
     const timeout = setTimeout(() => {
-      setIndex((i) => i + 1);
-    }, CHAR_DELAY_MS);
+      setIndex((i) => nextWordEnd(text, i));
+    }, WORD_DELAY_MS);
 
     return () => clearTimeout(timeout);
   }, [index, text, prefersReducedMotion]);

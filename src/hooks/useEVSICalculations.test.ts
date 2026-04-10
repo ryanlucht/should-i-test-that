@@ -48,7 +48,6 @@ const setupExperimentInputs = () => {
   setInput('dailyTraffic', 5000);
   setInput('trafficSplit', 0.5);
   setInput('eligibilityFraction', 1.0);
-  setInput('conversionLatencyDays', 0);
   setInput('decisionLatencyDays', 0);
 };
 

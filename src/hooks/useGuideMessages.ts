@@ -6,12 +6,14 @@ import { useState, useEffect, useRef } from 'react';
  *
  * Per CONTEXT.md D-12: M3 (PriorShapeAccordionOpen) is re-triggerable on shape clicks.
  */
-export enum GuideTrigger {
-  None = 'none',
-  PriorShapeAccordionOpen = 'prior-shape-accordion-open',
-  PriorBoundFocus = 'prior-bound-focus',
-  AdvancedTimingOpen = 'advanced-timing-open',
-}
+export const GuideTrigger = {
+  None: 'none',
+  PriorShapeAccordionOpen: 'prior-shape-accordion-open',
+  PriorBoundFocus: 'prior-bound-focus',
+  AdvancedTimingOpen: 'advanced-timing-open',
+} as const;
+
+export type GuideTrigger = (typeof GuideTrigger)[keyof typeof GuideTrigger];
 
 /**
  * The 8 dialogue messages for the Learning Bits guide system.
@@ -119,6 +121,7 @@ export function useGuideMessages(
   useEffect(() => {
     if (triggerEvent === GuideTrigger.None) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: route trigger events to message indices
     setCurrentMessageIndex(() => {
       switch (triggerEvent) {
         case GuideTrigger.PriorShapeAccordionOpen:
@@ -138,7 +141,6 @@ export function useGuideMessages(
           return 0;
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [triggerEvent]);
 
   return {

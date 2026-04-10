@@ -121,12 +121,13 @@ function App() {
     store.setSharedBaseline({ ...decoded });
 
     // Skip welcome page — recipients land directly on the calculator (D-06)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: one-time URL hydration on mount
     setCurrentPage('calculator');
 
     // Clean the URL hash AFTER successful hydration commit.
     // Done last to preserve recoverability: if any step above fails,
     // the hash is still in the URL and can be retried.
-    window.history.replaceState(null, '', window.location.pathname);
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
   }, []);
 
   return (

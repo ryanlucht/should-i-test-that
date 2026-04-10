@@ -113,20 +113,27 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   );
 
   // Guide message routing: maps active section + trigger events to dialogue text
-  const { currentMessage } = useGuideMessages(activeSection, guideTrigger, enabledSections, guideEnabled);
+  const { currentMessage } = useGuideMessages(activeSection, guideTrigger, enabledSections);
 
-  // Trigger callbacks wired from form components to guide message system
-  const handlePriorShapeAccordionOpen = useCallback(() => {
-    setGuideTrigger(GuideTrigger.PriorShapeAccordionOpen);
+  // Trigger callbacks wired from form components to guide message system.
+  // Reset to None after firing so the same trigger can re-fire (D-12 re-triggerability).
+  const fireGuideTrigger = useCallback((trigger: GuideTrigger) => {
+    setGuideTrigger(trigger);
+    // Reset on next microtask so React processes the trigger before clearing it
+    queueMicrotask(() => setGuideTrigger(GuideTrigger.None));
   }, []);
+
+  const handlePriorShapeAccordionOpen = useCallback(() => {
+    fireGuideTrigger(GuideTrigger.PriorShapeAccordionOpen);
+  }, [fireGuideTrigger]);
 
   const handlePriorBoundFocus = useCallback(() => {
-    setGuideTrigger(GuideTrigger.PriorBoundFocus);
-  }, []);
+    fireGuideTrigger(GuideTrigger.PriorBoundFocus);
+  }, [fireGuideTrigger]);
 
   const handleAdvancedTimingOpen = useCallback(() => {
-    setGuideTrigger(GuideTrigger.AdvancedTimingOpen);
-  }, []);
+    fireGuideTrigger(GuideTrigger.AdvancedTimingOpen);
+  }, [fireGuideTrigger]);
 
   // Refs for form validation
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);

@@ -154,8 +154,8 @@ export const useWizardStore = create<WizardStore>()(
           cleanInputs = { ...currentState.inputs };
           for (const key of Object.keys(currentState.inputs) as (keyof typeof currentState.inputs)[]) {
             if (key in persisted.inputs) {
-              (cleanInputs as Record<string, unknown>)[key] =
-                (persisted.inputs as Record<string, unknown>)[key];
+              (cleanInputs as unknown as Record<string, unknown>)[key] =
+                (persisted.inputs as unknown as Record<string, unknown>)[key];
             }
           }
         }

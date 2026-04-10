@@ -150,6 +150,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
         const derived = Math.round(inputs.annualVisitors / 365);
         setValue('dailyTraffic', derived);
         setInput('dailyTraffic', derived);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: derived state sync from store (D-01 auto-derive)
         setDerivedValue(derived);
         setDerivedHint('(derived from annual visitors)');
       }
@@ -162,6 +163,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
         inputs.dailyTraffic !== null &&
         inputs.dailyTraffic !== derivedValue
       ) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: clear hint when user overrides derived value
         setDerivedHint(null);
       }
     }, [inputs.dailyTraffic, derivedValue]);

@@ -150,7 +150,7 @@ function DfPresetSelector({
  * Prior shape selector with radio cards
  */
 export const PriorShapeForm = forwardRef<PriorShapeFormHandle, PriorShapeFormProps>(
-  function PriorShapeForm({ onUseDefaultPrior, onShapeOptionClick }, ref) {
+  function PriorShapeForm({ onUseDefaultPrior: _onUseDefaultPrior, onShapeOptionClick }, ref) {
     // Get store values and setters
     const inputs = useWizardStore((state) => state.inputs);
     const setInput = useWizardStore((state) => state.setInput);

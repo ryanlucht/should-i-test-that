@@ -15,7 +15,6 @@ import {
   buildPriorFromInputs,
   computePriorFromInterval,
   computeStudentTPriorScale,
-  DEFAULT_PRIOR,
   DEFAULT_INTERVAL,
 } from './prior';
 

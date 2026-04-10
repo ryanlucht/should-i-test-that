@@ -220,10 +220,10 @@ describe('ENG-12: Rejection sampling cap and low_acceptance warning', () => {
     vi.restoreAllMocks();
   });
 
-  it('EVSI with high-rejection scenario collects more samples with 50x cap', () => {
-    // Use a prior where many samples are rejected to verify the cap increase helps
+  it('EVSI with high-rejection scenario collects samples within 10x iteration cap', () => {
+    // Use a prior where many samples are rejected to verify the cap handles it
     // Normal(0, 0.10) with CR0=0.90 has ~13% upper-bound rejection
-    // With 10x cap, we'd get fewer valid samples than with 50x cap
+    // With 10x cap (maxIterations = numSamples * 10), ~13% rejection is well within budget
     const result = calculateEVSIMonteCarlo({
       K: 1000000,
       baselineConversionRate: 0.90,
@@ -233,11 +233,11 @@ describe('ENG-12: Rejection sampling cap and low_acceptance warning', () => {
       n_variant: 5000,
     }, 5000);
 
-    // With 50x cap, should be able to collect all 5000 samples even with ~13% rejection
+    // With 10x cap, should be able to collect all 5000 samples even with ~13% rejection
     expect(result.numSamples).toBe(5000);
   });
 
-  it('net-value with high-rejection scenario collects samples with 50x cap', () => {
+  it('net-value with high-rejection scenario collects samples within 10x iteration cap', () => {
     const result = calculateNetValueMonteCarlo({
       K: 1000000,
       baselineConversionRate: 0.90,

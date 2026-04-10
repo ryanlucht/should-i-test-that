@@ -125,7 +125,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
       priorShapeDescription,
       evsi,
       netValue,
-      testDurationDays,
+      testDurationDays: _testDurationDays,
       effectivePriorMean,
     },
     ref

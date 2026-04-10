@@ -24,16 +24,30 @@ import { datadogRum } from '@datadog/browser-rum';
  */
 const ANONYMOUS_ID_KEY = 'dd_anonymous_id';
 
-export function getOrCreateAnonymousId(): string {
-  const existing = localStorage.getItem(ANONYMOUS_ID_KEY);
-  if (existing) return existing;
+/** Ephemeral fallback ID when localStorage is unavailable (private browsing, etc.) */
+let ephemeralId: string | null = null;
 
-  const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+function generateId(): string {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `anon-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
-  localStorage.setItem(ANONYMOUS_ID_KEY, id);
-  return id;
+export function getOrCreateAnonymousId(): string {
+  try {
+    const existing = localStorage.getItem(ANONYMOUS_ID_KEY);
+    if (existing) return existing;
+
+    const id = generateId();
+    localStorage.setItem(ANONYMOUS_ID_KEY, id);
+    return id;
+  } catch {
+    // localStorage unavailable (private browsing, storage quota, iframe restrictions)
+    if (!ephemeralId) {
+      ephemeralId = generateId();
+    }
+    return ephemeralId;
+  }
 }
 
 /**

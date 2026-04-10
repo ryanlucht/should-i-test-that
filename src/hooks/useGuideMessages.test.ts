@@ -22,12 +22,12 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None as GuideTrigger } }
     );
     expect(result.current.currentMessageIndex).toBe(0);
 
     act(() => {
-      rerender({ section: 'uncertainty', trigger: GuideTrigger.None });
+      rerender({ section: 'uncertainty', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(1);
   });
@@ -36,7 +36,7 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'uncertainty', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'uncertainty', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     act(() => {
@@ -49,7 +49,7 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'uncertainty', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'uncertainty', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     act(() => {
@@ -62,11 +62,11 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     act(() => {
-      rerender({ section: 'threshold', trigger: GuideTrigger.None });
+      rerender({ section: 'threshold', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(4);
   });
@@ -75,11 +75,11 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     act(() => {
-      rerender({ section: 'test-design', trigger: GuideTrigger.None });
+      rerender({ section: 'test-design', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(5);
   });
@@ -88,7 +88,7 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'test-design', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'test-design', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     act(() => {
@@ -101,11 +101,11 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     act(() => {
-      rerender({ section: 'results', trigger: GuideTrigger.None });
+      rerender({ section: 'results', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(7);
     expect(result.current.currentMessage).toContain("Here's your results");
@@ -126,7 +126,6 @@ describe('useGuideMessages', () => {
   it('does NOT advance message when scrolling to a disabled section', () => {
     // Bug: scrolling past disabled sections triggered dialogue advancement.
     // Only enabled (accessible) sections should trigger new messages.
-    const allEnabled = new Set(['baseline', 'uncertainty', 'threshold', 'test-design', 'results']);
     const onlyBaselineEnabled = new Set(['baseline']);
 
     const { result, rerender } = renderHook(
@@ -154,18 +153,18 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     // Advance to threshold (index 4)
     act(() => {
-      rerender({ section: 'threshold', trigger: GuideTrigger.None });
+      rerender({ section: 'threshold', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(4);
 
     // Scroll back to uncertainty — should NOT regress below 4
     act(() => {
-      rerender({ section: 'uncertainty', trigger: GuideTrigger.None });
+      rerender({ section: 'uncertainty', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(4);
   });
@@ -174,12 +173,12 @@ describe('useGuideMessages', () => {
     const { result, rerender } = renderHook(
       ({ section, trigger }: { section: string; trigger: GuideTrigger }) =>
         useGuideMessages(section, trigger),
-      { initialProps: { section: 'baseline', trigger: GuideTrigger.None } }
+      { initialProps: { section: 'baseline', trigger: GuideTrigger.None as GuideTrigger } }
     );
 
     // Advance to index 5 (test-design)
     act(() => {
-      rerender({ section: 'test-design', trigger: GuideTrigger.None });
+      rerender({ section: 'test-design', trigger: GuideTrigger.None as GuideTrigger });
     });
     expect(result.current.currentMessageIndex).toBe(5);
 
