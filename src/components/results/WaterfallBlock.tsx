@@ -82,10 +82,12 @@ export function WaterfallBlock({
               {isTie ? (
                 <>
                   Your expected effect ({formattedMean}) is right at the boundary of
-                  your shipping rule ({shippingRuleLabel}). At this point, shipping and
-                  not shipping are equally good — the calculator defaults
-                  to <strong>{defaultDecisionLabel}</strong>, and this choice doesn&apos;t
-                  affect the test&apos;s value. In this setup, {directionSentence}
+                  your shipping rule ({shippingRuleLabel}). Calculating the value of the
+                  test requires comparing the post-experiment information to a default
+                  decision, and in your case, your pre-experiment guess is a perfect tie
+                  between shipping and not shipping. So the calculator has broken the tie
+                  by defaulting to <strong>{defaultDecisionLabel}</strong> (don&apos;t
+                  worry, the math is equivalent). In this setup, {directionSentence}
                 </>
               ) : (
                 <>

@@ -64,14 +64,14 @@ describe('WaterfallBlock', () => {
     expect(step1Text).toContain('confidence builder');
   });
 
-  it('step 1 shows near-tie copy when isTie is true', () => {
+  it('step 1 shows tie-break copy when isTie is true', () => {
     render(<WaterfallBlock {...defaultProps} isTie={true} />);
 
-    // Near-tie copy appears in step 1 (li element)
     const steps = document.querySelectorAll('li');
     const step1Text = steps[0].textContent ?? '';
     expect(step1Text).toContain('right at the boundary');
-    expect(step1Text).toContain('t affect');
+    expect(step1Text).toContain('perfect tie');
+    expect(step1Text).toContain('math is equivalent');
   });
 
   it('step 2 contains formatted priorLow and priorHigh values', () => {
