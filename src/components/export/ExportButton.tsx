@@ -246,7 +246,7 @@ export function ExportButton(props: ExportButtonProps) {
         <ExportCard
           ref={exportRef}
           mode={mode}
-          title={analysisName || 'Should I Test That?'}
+          title={analysisName || 'Should We Test That?'}
           verdictValue={verdictValue}
           baselineConversionRate={sharedInputs.baselineConversionRate ?? 0}
           annualVisitors={sharedInputs.annualVisitors ?? 0}

@@ -1,7 +1,7 @@
 /**
  * BubblyPillLogo
  *
- * "Bubbly Pill" Frutiger Aero logo: "Should I [Test] That?"
+ * "Bubbly Pill" Frutiger Aero logo: "Should We [Test] That?"
  * "Test" sits inside a glossy purple pill with glass effect.
  *
  * Per D-01: CSS/HTML (not a static image)
@@ -14,9 +14,9 @@
 export function BubblyPillLogo() {
   return (
     <div className="flex items-center justify-center gap-3 sm:gap-4 logo-font">
-      {/* "Should I" — Noto Sans extrabold, purple text with glow */}
+      {/* "Should We" — Noto Sans extrabold, purple text with glow */}
       <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-glow text-primary">
-        Should I
+        Should We
       </span>
 
       {/* The Bubbly Pill — "Test" inside glossy purple capsule */}

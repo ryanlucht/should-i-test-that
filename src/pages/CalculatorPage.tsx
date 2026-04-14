@@ -336,7 +336,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
               onClick={onBack}
               className="text-base font-bold text-foreground leading-tight hover:text-primary transition-colors text-left"
             >
-              Experiment Value Calculator
+              Should We Test That?
             </button>
           </div>
         </div>

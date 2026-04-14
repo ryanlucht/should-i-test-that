@@ -49,8 +49,8 @@ function sanitizeFilename(title: string): string {
  * Generate export filename based on custom title and current date
  *
  * Filename patterns (per D-07):
- * - Named:   "should-i-test-that_{slug}_{YYYY-MM-DD}.png"
- * - Default: "should-i-test-that_{YYYY-MM-DD}.png"
+ * - Named:   "should-we-test-that_{slug}_{YYYY-MM-DD}.png"
+ * - Default: "should-we-test-that_{YYYY-MM-DD}.png"
  *
  * @param customTitle - Optional user-provided analysis name
  * @returns Complete filename with .png extension
@@ -62,11 +62,11 @@ function generateFilename(customTitle?: string): string {
   if (title) {
     const sanitized = sanitizeFilename(title);
     const safeTitle = sanitized || 'analysis';
-    // Per D-07: should-i-test-that_{slug}_{date}.png
-    return `should-i-test-that_${safeTitle}_${date}.png`;
+    // Per D-07: should-we-test-that_{slug}_{date}.png
+    return `should-we-test-that_${safeTitle}_${date}.png`;
   }
-  // Per D-07: should-i-test-that_{date}.png
-  return `should-i-test-that_${date}.png`;
+  // Per D-07: should-we-test-that_{date}.png
+  return `should-we-test-that_${date}.png`;
 }
 
 /**

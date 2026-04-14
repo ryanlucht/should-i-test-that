@@ -38,7 +38,7 @@ interface ExportCardProps {
   /** Basic or Advanced mode */
   mode: 'basic' | 'advanced';
 
-  /** Custom title from user input, defaults to "Should I Test That?" */
+  /** Custom title from user input, defaults to "Should We Test That?" */
   title?: string;
 
   /** Primary value to display (EVPI for basic, Net Value for advanced) */
@@ -111,7 +111,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
   function ExportCard(
     {
       mode,
-      title = 'Should I Test That?',
+      title = 'Should We Test That?',
       verdictValue,
       baselineConversionRate,
       annualVisitors,
@@ -202,7 +202,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
           gap: '12px',
           marginBottom: '16px',
         }}>
-          {/* "Should I" text */}
+          {/* "Should We" text */}
           <span style={{
             fontSize: '28px',
             fontWeight: '800',
@@ -210,7 +210,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
             fontFamily: '"Noto Sans", sans-serif',
             letterSpacing: '-0.02em',
           }}>
-            Should I
+            Should We
           </span>
 
           {/* Purple pill with "Test" */}
@@ -242,7 +242,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
         </div>
 
         {/* Analysis title — only shown when user provides a custom name */}
-        {title !== 'Should I Test That?' && (
+        {title !== 'Should We Test That?' && (
           <h1 style={{
             fontSize: '28px',
             fontWeight: '700',
@@ -588,7 +588,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
               margin: 0,
             }}
           >
-            Created with Should I Test That?
+            Created with Should We Test That?
           </p>
         </div>
       </div>

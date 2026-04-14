@@ -39,8 +39,8 @@ describe('App', () => {
 
   it('renders the Bubbly Pill logo text', () => {
     render(<App />);
-    // Logo renders "Should I", "Test", "That?" as separate spans
-    expect(screen.getByText('Should I')).toBeInTheDocument();
+    // Logo renders "Should We", "Test", "That?" as separate spans
+    expect(screen.getByText('Should We')).toBeInTheDocument();
     expect(screen.getByText('Test')).toBeInTheDocument();
     expect(screen.getByText('That?')).toBeInTheDocument();
   });
@@ -80,7 +80,7 @@ describe('App', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Start (with Guidance)' }));
     expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Experiment Value Calculator' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Should We Test That?' }));
     expect(screen.getByRole('button', { name: 'Start (with Guidance)' })).toBeInTheDocument();
   });
 
