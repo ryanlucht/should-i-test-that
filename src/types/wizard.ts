@@ -137,6 +137,13 @@ export interface WizardState {
   sharedBaseline: WizardInputs | null;
 
   /**
+   * Hardcoded net value from the shared URL, so recipients see the exact
+   * same dollar amount the sender saw (avoids MC simulation variance).
+   * Transient -- not persisted to sessionStorage. Null for regular sessions.
+   */
+  sharedNetValue: number | null;
+
+  /**
    * Optional user-provided name for the analysis. Used in export
    * filenames and as context when sharing. Not persisted to
    * sessionStorage — fresh each session. Per EXPORT-02 D-06.
@@ -171,6 +178,9 @@ export interface WizardActions {
 
   /** Store the shared URL's inputs as the baseline for diff tracking (D-08) */
   setSharedBaseline: (baseline: WizardInputs | null) => void;
+
+  /** Store the hardcoded net value from a shared URL */
+  setSharedNetValue: (value: number | null) => void;
 
   /** Set the analysis name (EXPORT-02 D-06) */
   setAnalysisName: (name: string) => void;

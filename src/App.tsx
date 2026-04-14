@@ -81,10 +81,12 @@ function App() {
     if (!hash.startsWith('#s=')) return;
 
     const encoded = hash.slice(3); // Remove "#s=" prefix
-    const decoded = decodeWizardState(encoded);
+    const result = decodeWizardState(encoded);
 
     // Invalid or malformed URL — do nothing, show welcome page normally
-    if (!decoded) return;
+    if (!result) return;
+
+    const { inputs: decoded, netValue } = result;
 
     hydrated.current = true;
 
@@ -94,6 +96,11 @@ function App() {
     // Set all decoded input values into the flat WizardInputs store
     for (const [key, value] of Object.entries(decoded)) {
       store.setInput(key as keyof WizardInputs, value as WizardInputs[keyof WizardInputs]);
+    }
+
+    // Store hardcoded net value so recipients see the exact same dollar amount
+    if (netValue != null) {
+      store.setSharedNetValue(netValue);
     }
 
     // Enable Learning Bits guide for URL recipients (D-07)

@@ -104,7 +104,7 @@ describe('App', () => {
     // Test H3: Valid hash = calculator page directly (skip welcome)
     it('H3: When URL hash is "#s={validEncoded}", App skips the welcome page and renders the calculator page directly', () => {
       window.location.hash = '#s=validEncoded';
-      vi.mocked(decodeWizardState).mockReturnValue({ ...initialInputs });
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: { ...initialInputs } });
 
       render(<App />);
       expect(screen.getByLabelText('Form progress')).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('App', () => {
       window.location.hash = '#s=validEncoded';
       // Start with guideEnabled=false to verify it gets set
       useWizardStore.setState({ guideEnabled: false });
-      vi.mocked(decodeWizardState).mockReturnValue({ ...initialInputs });
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: { ...initialInputs } });
 
       render(<App />);
       expect(useWizardStore.getState().guideEnabled).toBe(true);
@@ -140,7 +140,7 @@ describe('App', () => {
         testDurationDays: 14,
         dailyTraffic: 2000,
       };
-      vi.mocked(decodeWizardState).mockReturnValue(allFieldsInputs);
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: allFieldsInputs });
 
       render(<App />);
 
@@ -162,7 +162,7 @@ describe('App', () => {
         valuePerConversion: 50,
         // priorType, thresholdScenario, testDurationDays, dailyTraffic all remain null
       };
-      vi.mocked(decodeWizardState).mockReturnValue(section0OnlyInputs);
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: section0OnlyInputs });
 
       render(<App />);
 
@@ -177,7 +177,7 @@ describe('App', () => {
     it('H7: When URL hash is valid, setSharedBaseline is called with the decoded inputs', () => {
       window.location.hash = '#s=validEncoded';
       const decodedInputs = { ...initialInputs, baselineConversionRate: 0.05 };
-      vi.mocked(decodeWizardState).mockReturnValue(decodedInputs);
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: decodedInputs });
 
       render(<App />);
 
@@ -187,7 +187,7 @@ describe('App', () => {
     // Test H8: URL hash cleaned after successful hydration
     it('H8: After successful hydration, URL hash is cleaned (window.history.replaceState called)', () => {
       window.location.hash = '#s=validEncoded';
-      vi.mocked(decodeWizardState).mockReturnValue({ ...initialInputs });
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: { ...initialInputs } });
 
       render(<App />);
 

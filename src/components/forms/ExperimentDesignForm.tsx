@@ -222,7 +222,7 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
             {/* Daily Traffic (required, with inline derive option) */}
             <NumberInput
               name="dailyTraffic"
-              label="Total daily traffic (before eligibility)"
+              label="Total daily traffic"
               placeholder="5,000"
               tooltip="Total daily traffic to the site or app, before experiment eligibility filtering. Use Eligible traffic below to specify the share that qualifies."
               error={errors.dailyTraffic?.message}

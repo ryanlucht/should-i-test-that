@@ -29,12 +29,20 @@ const mockInputs = {
   valuePerConversion: 50,
 };
 
+// Default store shape for non-recipient (regular user) tests
+const defaultStoreState = {
+  inputs: mockInputs,
+  sharedBaseline: null,
+  sharedNetValue: null,
+  setGuideEnabled: vi.fn(),
+};
+
 describe('EVSIVerdictCard', () => {
   beforeEach(() => {
-    // Default mock: store returns test inputs
+    // Default mock: store returns test inputs, non-recipient mode
     (useWizardStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      (selector: (state: { inputs: typeof mockInputs }) => unknown) =>
-        selector({ inputs: mockInputs })
+      (selector: (state: typeof defaultStoreState) => unknown) =>
+        selector({ ...defaultStoreState })
     );
 
     // Default clipboard mock: resolves successfully

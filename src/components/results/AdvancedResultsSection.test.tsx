@@ -79,6 +79,9 @@ function mockWizardStore(overrides: Record<string, unknown> = {}) {
     inputs: sampleInputs,
     analysisName: '',
     setAnalysisName: vi.fn(),
+    sharedBaseline: null,
+    sharedNetValue: null,
+    setGuideEnabled: vi.fn(),
     ...overrides,
   };
   vi.mocked(useWizardStore).mockImplementation((selector) => {

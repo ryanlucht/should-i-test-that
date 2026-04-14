@@ -23,10 +23,10 @@
  * - SHARE-02: Share button with clipboard copy and feedback
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { formatSmartCurrency } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
-import { Loader2, Link2, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Link2, Check, AlertCircle, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWizardStore } from '@/stores/wizardStore';
 import { encodeWizardState } from '@/lib/url-codec';
@@ -45,8 +45,15 @@ export function EVSIVerdictCard({
   isLoading,
   error,
 }: EVSIVerdictCardProps) {
+  // Recipient mode: when arriving from a shared URL, use the hardcoded net value
+  const sharedBaseline = useWizardStore((state) => state.sharedBaseline);
+  const sharedNetValue = useWizardStore((state) => state.sharedNetValue);
+  const setGuideEnabled = useWizardStore((state) => state.setGuideEnabled);
+  const isRecipient = sharedBaseline !== null;
+
   // Display the raw value - no clamping. Negative values are honest.
-  const displayValue = netValueDollars;
+  // Recipients see the sender's exact value; regular users see the computed value.
+  const displayValue = isRecipient && sharedNetValue !== null ? sharedNetValue : netValueDollars;
 
   // Clipboard copy state: 'idle' | 'copied' | 'error'
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
@@ -55,17 +62,14 @@ export function EVSIVerdictCard({
   const inputs = useWizardStore((state) => state.inputs);
 
   /**
-   * Handle share button click: encode current inputs into a URL hash
-   * fragment, copy to clipboard, and show feedback for 2 seconds.
-   *
-   * On clipboard success: shows "Copied!" with checkmark
-   * On clipboard failure: shows "Unable to copy" with alert icon
-   * Both states revert to idle after 2000ms
+   * Handle share button click: encode current inputs + net value into a URL
+   * hash fragment, copy to clipboard, and show feedback for 2 seconds.
    */
   const handleShare = async () => {
-    // Encode all current wizard inputs into a compact base64url string
-    const encoded = encodeWizardState(inputs);
-    // Build the full shareable URL with #s= hash fragment
+    // Encode wizard inputs AND the net value so recipients see the same dollar amount
+    const encoded = encodeWizardState(inputs, {
+      netValue: netValueDollars ?? undefined,
+    });
     const url = `${window.location.origin}${window.location.pathname}#s=${encoded}`;
 
     try {
@@ -77,6 +81,20 @@ export function EVSIVerdictCard({
       setTimeout(() => setCopyState('idle'), 2000);
     }
   };
+
+  /**
+   * Handle "Explain" button for share URL recipients: scroll to top of
+   * calculator and re-enable Learning Bits guided walkthrough.
+   */
+  const handleExplain = useCallback(() => {
+    setGuideEnabled(true);
+    const baseline = document.getElementById('baseline');
+    if (baseline) {
+      baseline.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [setGuideEnabled]);
 
   // Determine card styling based on state
   // Warning style for negative net value (amber border)
@@ -158,31 +176,45 @@ export function EVSIVerdictCard({
         </div>
       )}
 
-      {/* Share button - only visible when results are computed (D-04) */}
+      {/* Action button - only visible when results are computed (D-04) */}
       {!isLoading && !error && displayValue !== null && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleShare}
-          className="w-full"
-        >
-          {copyState === 'copied' ? (
-            <>
-              <Check className="h-4 w-4 mr-1.5" />
-              Copied!
-            </>
-          ) : copyState === 'error' ? (
-            <>
-              <AlertCircle className="h-4 w-4 mr-1.5" />
-              Unable to copy
-            </>
-          ) : (
-            <>
-              <Link2 className="h-4 w-4 mr-1.5" />
-              Share This Analysis (I&apos;ll explain it for you!)
-            </>
-          )}
-        </Button>
+        isRecipient ? (
+          /* Recipients see "Explain" button that scrolls to top + enables Learning Bits */
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExplain}
+            className="w-full"
+          >
+            <BookOpen className="h-4 w-4 mr-1.5" />
+            Explain how this result was calculated
+          </Button>
+        ) : (
+          /* Regular users see "Share" button with clipboard copy */
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="w-full"
+          >
+            {copyState === 'copied' ? (
+              <>
+                <Check className="h-4 w-4 mr-1.5" />
+                Copied!
+              </>
+            ) : copyState === 'error' ? (
+              <>
+                <AlertCircle className="h-4 w-4 mr-1.5" />
+                Unable to copy
+              </>
+            ) : (
+              <>
+                <Link2 className="h-4 w-4 mr-1.5" />
+                Share This Analysis (I&apos;ll explain it for you!)
+              </>
+            )}
+          </Button>
+        )
       )}
     </div>
   );

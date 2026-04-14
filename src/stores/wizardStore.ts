@@ -33,6 +33,7 @@ export const useWizardStore = create<WizardStore>()(
       completedSections: [],
       guideEnabled: true, // Default ON for new sessions (D-06)
       sharedBaseline: null, // Transient — only set when arriving from a shared URL (D-08)
+      sharedNetValue: null, // Transient — hardcoded net value from shared URL
       analysisName: '', // Transient — not persisted to sessionStorage (EXPORT-02)
 
       /**
@@ -102,6 +103,10 @@ export const useWizardStore = create<WizardStore>()(
         set({ sharedBaseline: baseline });
       },
 
+      setSharedNetValue: (value) => {
+        set({ sharedNetValue: value });
+      },
+
       /**
        * Set the analysis name for export filenames and sharing context.
        * Transient — not persisted to sessionStorage (EXPORT-02 D-06).
@@ -121,6 +126,7 @@ export const useWizardStore = create<WizardStore>()(
           completedSections: [],
           guideEnabled: true, // Reset guide to default ON (D-06)
           sharedBaseline: null, // Clear baseline on reset
+          sharedNetValue: null, // Clear shared net value on reset
           analysisName: '', // Clear analysis name on reset
         });
       },

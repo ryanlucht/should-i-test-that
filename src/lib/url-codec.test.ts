@@ -163,15 +163,15 @@ describe('decodeWizardState — round-trip', () => {
     const decoded = decodeWizardState(encoded);
     expect(decoded).not.toBeNull();
     // Non-null, non-default fields should match exactly
-    expect(decoded!.baselineConversionRate).toBe(typicalScenario.baselineConversionRate);
-    expect(decoded!.annualVisitors).toBe(typicalScenario.annualVisitors);
-    expect(decoded!.valuePerConversion).toBe(typicalScenario.valuePerConversion);
-    expect(decoded!.priorType).toBe(typicalScenario.priorType);
-    expect(decoded!.priorIntervalLow).toBe(typicalScenario.priorIntervalLow);
-    expect(decoded!.priorIntervalHigh).toBe(typicalScenario.priorIntervalHigh);
-    expect(decoded!.thresholdScenario).toBe(typicalScenario.thresholdScenario);
-    expect(decoded!.testDurationDays).toBe(typicalScenario.testDurationDays);
-    expect(decoded!.dailyTraffic).toBe(typicalScenario.dailyTraffic);
+    expect(decoded!.inputs.baselineConversionRate).toBe(typicalScenario.baselineConversionRate);
+    expect(decoded!.inputs.annualVisitors).toBe(typicalScenario.annualVisitors);
+    expect(decoded!.inputs.valuePerConversion).toBe(typicalScenario.valuePerConversion);
+    expect(decoded!.inputs.priorType).toBe(typicalScenario.priorType);
+    expect(decoded!.inputs.priorIntervalLow).toBe(typicalScenario.priorIntervalLow);
+    expect(decoded!.inputs.priorIntervalHigh).toBe(typicalScenario.priorIntervalHigh);
+    expect(decoded!.inputs.thresholdScenario).toBe(typicalScenario.thresholdScenario);
+    expect(decoded!.inputs.testDurationDays).toBe(typicalScenario.testDurationDays);
+    expect(decoded!.inputs.dailyTraffic).toBe(typicalScenario.dailyTraffic);
   });
 
   it('round-trips null fields as initialInputs defaults', () => {
@@ -179,9 +179,9 @@ describe('decodeWizardState — round-trip', () => {
     const decoded = decodeWizardState(encoded);
     expect(decoded).not.toBeNull();
     // Null fields in typicalScenario should come back as initialInputs defaults
-    expect(decoded!.studentTDf).toBe(initialInputs.studentTDf); // null
-    expect(decoded!.thresholdUnit).toBe(initialInputs.thresholdUnit); // null
-    expect(decoded!.thresholdValue).toBe(initialInputs.thresholdValue); // null
+    expect(decoded!.inputs.studentTDf).toBe(initialInputs.studentTDf); // null
+    expect(decoded!.inputs.thresholdUnit).toBe(initialInputs.thresholdUnit); // null
+    expect(decoded!.inputs.thresholdValue).toBe(initialInputs.thresholdValue); // null
   });
 
   it('round-trips default values correctly', () => {
@@ -189,11 +189,11 @@ describe('decodeWizardState — round-trip', () => {
     const decoded = decodeWizardState(encoded);
     expect(decoded).not.toBeNull();
     // Default values were omitted from encoding, must be filled from initialInputs
-    expect(decoded!.visitorUnitLabel).toBe('visitors');
-    expect(decoded!.priorShape).toBe('normal');
-    expect(decoded!.trafficSplit).toBe(0.5);
-    expect(decoded!.eligibilityFraction).toBe(1.0);
-    expect(decoded!.decisionLatencyDays).toBe(0);
+    expect(decoded!.inputs.visitorUnitLabel).toBe('visitors');
+    expect(decoded!.inputs.priorShape).toBe('normal');
+    expect(decoded!.inputs.trafficSplit).toBe(0.5);
+    expect(decoded!.inputs.eligibilityFraction).toBe(1.0);
+    expect(decoded!.inputs.decisionLatencyDays).toBe(0);
   });
 
   it('round-trips all-fields scenario exactly', () => {
@@ -202,7 +202,7 @@ describe('decodeWizardState — round-trip', () => {
     expect(decoded).not.toBeNull();
     // Every field should match
     for (const key of Object.keys(allFieldsScenario) as (keyof WizardInputs)[]) {
-      expect(decoded![key]).toBe(allFieldsScenario[key]);
+      expect(decoded!.inputs[key]).toBe(allFieldsScenario[key]);
     }
   });
 });
@@ -329,7 +329,7 @@ describe('decodeWizardState — payload validation', () => {
       const encoded = btoa(payload).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
       const decoded = decodeWizardState(encoded);
       expect(decoded).not.toBeNull();
-      expect(decoded!.studentTDf).toBe(df);
+      expect(decoded!.inputs.studentTDf).toBe(df);
     }
   });
 });
@@ -353,11 +353,11 @@ describe('decodeWizardState — migration chain', () => {
     const decoded = decodeWizardState(encoded);
     expect(decoded).not.toBeNull();
     // After migration, data should be preserved
-    expect(decoded!.baselineConversionRate).toBe(0.05);
-    expect(decoded!.annualVisitors).toBe(100000);
-    expect(decoded!.valuePerConversion).toBe(25);
-    expect(decoded!.priorType).toBe('default');
-    expect(decoded!.thresholdScenario).toBe('any-positive');
+    expect(decoded!.inputs.baselineConversionRate).toBe(0.05);
+    expect(decoded!.inputs.annualVisitors).toBe(100000);
+    expect(decoded!.inputs.valuePerConversion).toBe(25);
+    expect(decoded!.inputs.priorType).toBe('default');
+    expect(decoded!.inputs.thresholdScenario).toBe('any-positive');
   });
 });
 
@@ -430,7 +430,7 @@ describe('v2 tightened validation', () => {
     const encoded = encodeWizardState({ ...typicalScenario, trafficSplit: 0.10 });
     const decoded = decodeWizardState(encoded);
     expect(decoded).not.toBeNull();
-    expect(decoded!.trafficSplit).toBe(0.10);
+    expect(decoded!.inputs.trafficSplit).toBe(0.10);
   });
 
   it('accepts baselineConversionRate of 0.001 (valid edge)', () => {
@@ -453,7 +453,7 @@ describe('v1 backward compatibility', () => {
     });
     const decoded = decodeWizardState(v1Payload);
     expect(decoded).not.toBeNull();
-    expect(decoded!.baselineConversionRate).toBe(0);
+    expect(decoded!.inputs.baselineConversionRate).toBe(0);
   });
 
   it('v1 payload with trafficSplit=0.95 still decodes (legacy loose rules)', () => {
@@ -469,6 +469,6 @@ describe('v1 backward compatibility', () => {
     });
     const decoded = decodeWizardState(v1Payload);
     expect(decoded).not.toBeNull();
-    expect(decoded!.trafficSplit).toBe(0.95);
+    expect(decoded!.inputs.trafficSplit).toBe(0.95);
   });
 });

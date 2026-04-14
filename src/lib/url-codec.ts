@@ -270,9 +270,11 @@ function validateDecodedPayload(decoded: Record<string, unknown>, version: numbe
  * 5. Base64url encode (URL-safe, no padding)
  *
  * @param inputs - The wizard inputs to encode
+ * @param extras - Optional extra fields to encode alongside inputs
+ * @param extras.netValue - Hardcoded net value so recipients see the same dollar amount
  * @returns A base64url-encoded string (does NOT include the "#s=" prefix)
  */
-export function encodeWizardState(inputs: WizardInputs): string {
+export function encodeWizardState(inputs: WizardInputs, extras?: { netValue?: number }): string {
   // Build compact object: only non-null, non-default values
   const compact: Record<string, unknown> = {};
 
@@ -284,6 +286,11 @@ export function encodeWizardState(inputs: WizardInputs): string {
     if (value !== null && value !== defaultValue) {
       compact[SHORT_KEY_MAP[key]] = value;
     }
+  }
+
+  // Encode net value so recipients see the exact same dollar amount (no MC variance)
+  if (extras?.netValue != null) {
+    compact['nv'] = extras.netValue;
   }
 
   // Always include schema version
@@ -308,9 +315,9 @@ export function encodeWizardState(inputs: WizardInputs): string {
  * 7. Validate all fields for type, enum constraints, and domain ranges
  *
  * @param encoded - Base64url-encoded string (without "#s=" prefix)
- * @returns Validated WizardInputs, or null if decoding/validation fails
+ * @returns Decoded result with inputs and optional netValue, or null if decoding/validation fails
  */
-export function decodeWizardState(encoded: string): WizardInputs | null {
+export function decodeWizardState(encoded: string): { inputs: WizardInputs; netValue?: number } | null {
   // Step 1: Base64url decode
   const json = fromBase64Url(encoded);
   if (json === null) {
@@ -356,10 +363,14 @@ export function decodeWizardState(encoded: string): WizardInputs | null {
     }
   }
 
+  // Extract net value before short-key mapping (not a WizardInputs field)
+  const rawNetValue = payload['nv'];
+  const netValue = typeof rawNetValue === 'number' ? rawNetValue : undefined;
+
   // Step 5: Map short keys back to full field names
   const expanded: Record<string, unknown> = {};
   for (const [shortKey, value] of Object.entries(payload)) {
-    if (shortKey === 'v') continue; // Skip version field
+    if (shortKey === 'v' || shortKey === 'nv') continue; // Skip version and net value fields
     const fullKey = REVERSE_KEY_MAP[shortKey];
     if (fullKey) {
       expanded[fullKey] = value;
@@ -374,5 +385,7 @@ export function decodeWizardState(encoded: string): WizardInputs | null {
   };
 
   // Step 7: Validate the merged payload (version-aware: v1 uses loose rules, v2+ tightened)
-  return validateDecodedPayload(merged, originalVersion);
+  const inputs = validateDecodedPayload(merged, originalVersion);
+  if (!inputs) return null;
+  return { inputs, netValue };
 }
