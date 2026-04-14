@@ -21,7 +21,7 @@ Transform the calculator from a dual-mode tool into a single guided EVSI experie
 - [x] **Phase 25: Polish, Accessibility & Export** - Acronym definitions, heading hierarchy, derived prefills, inclusive language, ARIA labels, reduced-motion support, export branding, and Datadog PA user identification (completed 2026-04-08)
 - [x] **Phase 25.1: Results Card Improvements** - Plain-English waterfall, directional decision impact, card renames, FAQ accordion explainers (completed 2026-04-10)
 - [x] **Phase 25.2: Stats Engine V3 Audit Fixes** - Deterministic effective-prior metrics, infeasible-prior warning, traffic-population documentation, Student-t display fix, timing-costs sign handling, URL validation tightening (completed 2026-04-10)
-- [ ] **Phase 26: Vercel Deployment** - Vercel hosting with custom domain (pivoted from AWS due to CAVM sandbox restrictions)
+- [x] **Phase 26: Vercel Deployment** - Vercel hosting with custom domain (pivoted from AWS due to CAVM sandbox restrictions) (completed 2026-04-14)
 
 ## Phase Details
 
@@ -216,11 +216,11 @@ Plans:
   1. Application is accessible at https://shouldwetestthat.com via Vercel hosting
   2. Datadog RUM/PA instrumentation reports data correctly from the production deployment
   3. Push to main triggers auto-deploy via Vercel GitHub integration
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 26-01-PLAN.md -- vercel.json SPA rewrites + GitHub Actions CI workflow for PRs
-- [ ] 26-02-PLAN.md -- Manual Vercel project setup, custom domain, GoDaddy DNS, Datadog RUM verification
+- [x] 26-01-PLAN.md -- vercel.json SPA rewrites + GitHub Actions CI workflow for PRs
+- [x] 26-02-PLAN.md -- Manual Vercel project setup, custom domain, GoDaddy DNS, Datadog RUM verification
 
 ## Progress
 
@@ -238,7 +238,7 @@ Plans:
 | 25. Polish, Accessibility & Export | 3/3 | Complete    | 2026-04-08 |
 | 25.1. Results Card Improvements | 4/4 | Complete    | 2026-04-10 |
 | 25.2. Stats Engine V3 Audit Fixes | 3/3 | Complete    | 2026-04-10 |
-| 26. Vercel Deployment | 0/2 | Not started | - |
+| 26. Vercel Deployment | 2/2 | Complete    | 2026-04-14 |
 
 ## Coverage Validation
 
