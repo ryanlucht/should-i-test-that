@@ -318,5 +318,25 @@ Plans:
 
 **Coverage:** 71/71 requirements mapped (100%)
 
+### Phase 28: Address final code review findings
+
+**Goal:** Fix all bugs and regressions from Phase 27 code review, v5 statistics audit, and Codex adversarial review: build error, accept-loss URL regression, dirty-section re-invalidation, stale shared net-value, integer URL constraints, Student-t posterior robustness, low-acceptance warning wiring, and engine code cleanup
+**Requirements**: CR28-01, CR28-02, CR28-03, CR28-04, CR28-05, SA28-01, SA28-02, SA28-03
+**Depends on:** Phase 27
+**Success Criteria** (what must be TRUE):
+  1. npm run build succeeds without TS2352 error
+  2. Accept-loss share URLs round-trip correctly (encode then decode preserves negative thresholdValue)
+  3. Completing a wizard section does not immediately re-invalidate that section
+  4. Recipients who edit shared analyses see live computed values, not the sender's stale net-value
+  5. URL decoder rejects fractional annualVisitors, testDurationDays, and decisionLatencyDays
+  6. Student-t posterior mean uses adaptive bounds incorporating both prior quantiles and likelihood window
+  7. checkLowAcceptanceWarning is called in both EVSI and net-value MC engines
+  8. Inline warning duplicates replaced with shared helpers from feasibility.ts
+**Plans:** 2 plans
+
+Plans:
+- [ ] 28-01-PLAN.md -- Fix build error, accept-loss URL validation, dirty-section loop, stale shared net-value, integer constraints
+- [ ] 28-02-PLAN.md -- Student-t posterior robustness, low-acceptance warning wiring, shared warning helpers and SE reuse
+
 ---
 *Roadmap created: 2026-03-23*
