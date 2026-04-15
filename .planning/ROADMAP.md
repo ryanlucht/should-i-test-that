@@ -224,7 +224,7 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 25.1 > 25.2 > 26
+**Execution Order:** 19 > 20 > 21 > 22 > 22.1 > 23 > 24 > 25 > 25.1 > 25.2 > 26 > 27
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -239,6 +239,7 @@ Plans:
 | 25.1. Results Card Improvements | 4/4 | Complete    | 2026-04-10 |
 | 25.2. Stats Engine V3 Audit Fixes | 3/3 | Complete    | 2026-04-10 |
 | 26. Vercel Deployment | 2/2 | Complete    | 2026-04-14 |
+| 27. Code Review & Stats Audit V4 | 0/5 | Planned    | -- |
 
 ## Coverage Validation
 
@@ -315,8 +316,86 @@ Plans:
 | Other-3 | 25.2 | Yes |
 | Simplification-4 | 25.2 | Yes |
 | DEPLOY-01 | 26 | Yes |
+| SA-1 | 27 | Yes |
+| SA-2 | 27 | Yes |
+| SA-3 | 27 | Yes |
+| SA-4 | 27 | Yes |
+| SA-5 | 27 | Yes |
+| SA-6 | 27 | Yes |
+| SA-7 | 27 | Yes |
+| SA-10a | 27 | Yes |
+| SA-10b | 27 | Yes |
+| SA-10c | 27 | Yes |
+| SA-10d | 27 | Yes |
+| SA-10e | 27 | Yes |
+| SA-11 | 27 | Yes |
+| CR-1 | 27 | Yes |
+| CR-2 | 27 | Yes |
+| CR-3 | 27 | Yes |
+| CR-4 | 27 | Yes |
+| CR-5 | 27 | Yes |
 
-**Coverage:** 71/71 requirements mapped (100%)
+**Coverage:** 89/89 requirements mapped (100%)
+
+### Phase 27: Code Review & Statistics Audit V4 Fixes
+
+**Goal:** Address all findings from the 2026-04-14 code review and v4 statistics audit: fix Student-t effective-prior Simpson integration (exact CDF/PDF), restore Normal truncation-aware posterior mean, propagate infeasible-prior state explicitly, fix stale-value bug when editing completed sections, harden URL codec (UTF-8 safe encoding, form-schema validation), fix tie detection for dollar thresholds, and clean up reporting/code inconsistencies
+
+**Source documents:**
+- `/Users/ryan.lucht/Downloads/should-i-test-that-statistics-audit-v4.md` (10 findings)
+- `CODE_REVIEW_2026-04-14.md` (5 findings)
+
+**Depends on:** Phase 26
+
+**Findings to address:**
+
+Stats Audit V4 (High):
+- SA-1: Student-t effective-prior uses coarse Simpson grid over full feasible interval -- catastrophically wrong for low CR0 (replace with exact CDF/PDF)
+- SA-2: Normal posterior truncation correction regressed -- `computePosteriorMean()` Normal branch is untruncated conjugate again
+
+Stats Audit V4 (Medium):
+- SA-3: Impossible-prior still fabricates `defaultDecision` and `effectivePriorMean` from raw prior instead of propagating explicit invalid state
+- SA-4: Reporting mixes raw prior midpoint with effective feasible prior in waterfall/export
+- SA-5: Tie detection compares percentages to dollars when threshold is in dollar units
+- SA-6: Timing-cost decomposition is difference of two separate MC runs, but copy claims per-iteration
+- SA-7: Student-t posterior grid uses hardcoded 6*sigma instead of quantile-based bounds
+- SA-10a-e: Code simplification (duplicate warning logic, hardcoded feasibility bounds, limited effective-prior exposure, unreachable interpretation branch, naming)
+- SA-11: Box-Muller transform in `sampleStandardNormal()` discards the sine component -- cache it to halve RNG calls across MC loops
+
+Stats Audit V4 (Not addressed -- modeling choices, not bugs):
+- SA-8: Observation model assumes lift-independent Normal noise (documented modeling assumption)
+- SA-9: Traffic semantics are clearer now; remaining edge cases are modeling choices
+
+Code Review (High):
+- CR-1: Results/share/export use stale store values after user edits a completed section without re-submitting
+
+Code Review (Medium):
+- CR-2: URL hydration trusts values the forms would reject (no Zod schema validation)
+- CR-3: Share URL btoa() throws on non-ASCII unit labels (replace with TextEncoder/TextDecoder)
+- CR-4: Plain-English explanation wrong for dollar thresholds / truncation-shifted priors (overlaps SA-4/SA-5)
+
+Code Review (Low):
+- CR-5: README stale testing instructions
+
+**Requirements**: SA-1, SA-2, SA-3, SA-4, SA-5, SA-6, SA-7, SA-10a, SA-10b, SA-10c, SA-10d, SA-10e, SA-11, CR-1, CR-2, CR-3, CR-4, CR-5
+
+**Success Criteria** (what must be TRUE):
+  1. Student-t `effectiveProbClears` for symmetric prior at threshold=0 returns ~0.5 regardless of CR0 (not 0.86+ for low CR0)
+  2. Normal posterior mean in Monte Carlo path uses truncation-aware formula when truncation is material
+  3. Infeasible prior produces explicit invalid state -- no fabricated `defaultDecision` or `effectivePriorMean`
+  4. Editing a completed section invalidates it and recomputes results from current form state
+  5. Share URL generation works with non-ASCII unit labels (UTF-8 safe encoding)
+  6. URL hydration validates decoded inputs against form schemas before marking sections complete
+  7. Tie detection normalizes dollar thresholds to lift units before comparison
+  8. Waterfall/export use effective feasible prior (not raw midpoint) for decision explanation
+**Plans:** 5 plans
+
+Plans:
+- [ ] 27-01-PLAN.md -- Student-t exact CDF/PDF effective-prior, Normal truncated posterior mean, quantile-bounded Student-t grid (SA-1, SA-2, SA-7)
+- [ ] 27-02-PLAN.md -- Stale-value section invalidation on input edit (CR-1)
+- [ ] 27-03-PLAN.md -- UTF-8 safe URL encoding and tightened decode validation (CR-2, CR-3)
+- [ ] 27-04-PLAN.md -- Infeasible-prior propagation, reporting consistency, tie detection fix (SA-3, SA-4, SA-5, CR-4)
+- [ ] 27-05-PLAN.md -- Code cleanup: Box-Muller cache, feasibility dedup, stale comments, README (SA-6, SA-10a-e, SA-11, CR-5)
 
 ---
 *Roadmap created: 2026-03-23*
