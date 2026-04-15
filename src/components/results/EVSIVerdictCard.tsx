@@ -73,7 +73,7 @@ export function EVSIVerdictCard({
    * Handle share button click: encode current inputs + net value into a URL
    * hash fragment, copy to clipboard, and show feedback for 2 seconds.
    */
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     try {
       // Encode wizard inputs AND the net value so recipients see the same dollar amount
       // Moved inside try/catch so encoding failures (e.g., unexpected input) are caught (CR-3)
@@ -89,7 +89,7 @@ export function EVSIVerdictCard({
       setCopyState('error');
       setTimeout(() => setCopyState('idle'), 2000);
     }
-  };
+  }, [inputs, netValueDollars]);
 
   /**
    * Handle "Explain" button for share URL recipients: scroll to top of
