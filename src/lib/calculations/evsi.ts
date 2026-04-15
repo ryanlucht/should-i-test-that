@@ -29,6 +29,7 @@ import { standardNormalPDF, standardNormalCDF } from './statistics';
 import { normalPdf, seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
 import { checkInfeasiblePriorWarning } from './feasibility';
+import { studentTQuantileBounds } from './student-t-helpers';
 import type { EVSIInputs, EVSIResults, CalculationWarning } from './types';
 import jStat from 'jstat';
 
@@ -314,15 +315,18 @@ function computePosteriorMeanGrid(
     L_min = Math.max(-1, prior.low_L!);
     L_max = Math.min(prior.high_L!, feasibleMax);
   } else if (prior.type === 'student-t') {
-    // Student-t is unbounded but we use practical bounds
-    // Center around prior mean, extend by 6 scale parameters
-    // This provides practical coverage for numerical integration
-    // (exact coverage depends on df; heavier tails = less coverage)
-    // Per Accuracy-07: Clamp upper bound to feasibility constraint
+    // Student-t is unbounded; use quantile-based bounds for adaptive tail coverage.
+    // SA-7 fix (v4 audit Finding 7): The old hardcoded mu +/- 6*sigma missed
+    // meaningful tail mass for low-df Student-t (e.g., df=3 has ~2.7% mass
+    // beyond 6*sigma). Using studentTQuantileBounds() adapts to the actual
+    // tail weight of each df value.
+    // Quantile bounds at 0.0001/0.9999 capture 99.98% of the distribution mass.
+    // Per Accuracy-07: Clamp to feasibility constraint.
     const mu = prior.mu_L!;
     const sigma = prior.sigma_L!;
-    L_min = Math.max(-1, mu - 6 * sigma);
-    L_max = Math.min(mu + 6 * sigma, feasibleMax);
+    const gridBounds = studentTQuantileBounds(mu, sigma, prior.df!, 0.0001, 0.9999);
+    L_min = Math.max(-1, gridBounds.low);
+    L_max = Math.min(gridBounds.high, feasibleMax);
   } else {
     // Fallback for any other type (shouldn't reach here)
     L_min = -1;
@@ -447,9 +451,14 @@ export function computePosteriorMean(
 
   if (prior.type === 'normal') {
     // ===========================================
-    // Closed-form for Normal-Normal conjugacy
+    // Closed-form for Normal-Normal conjugacy + truncation correction (SA-2 fix)
     // ===========================================
     // Source: https://stephens999.github.io/fiveMinuteStats/bayes_conjugate_normal_mean.html
+    //
+    // SA-2 (v4 audit Finding 2): The hook/worker routing sends truncation-sensitive
+    // Normal cases to Monte Carlo specifically because truncation matters. The MC path
+    // must therefore use a truncation-aware posterior mean, not the untruncated conjugate.
+    // Without this, decisions flip incorrectly for high CR0 cases (e.g., CR0=0.99).
     const sigma_prior = prior.sigma_L!;
     const mu_prior = prior.mu_L!;
 
@@ -466,9 +475,31 @@ export function computePosteriorMean(
 
     const w = prior_variance / (prior_variance + data_variance);
 
-    // Posterior mean: weighted average of data and prior mean
+    // Untruncated posterior mean: weighted average of data and prior mean
     // E[L|L_hat] = w * L_hat + (1-w) * mu_prior
-    return w * L_hat + (1 - w) * mu_prior;
+    const posteriorMu = w * L_hat + (1 - w) * mu_prior;
+    // Posterior standard deviation (from Normal-Normal conjugacy)
+    const posteriorSigma = Math.sqrt((prior_variance * data_variance) / (prior_variance + data_variance));
+
+    // SA-2: Check if feasibility truncation is material for this posterior.
+    // When CR0 is high (e.g., 0.99), L_max = 1/CR0 - 1 is tiny (~0.01),
+    // and the untruncated posterior mean can be far above L_max.
+    // In that case, we must return the truncated-Normal posterior mean.
+    const { L_min, L_max } = liftFeasibilityBounds(CR0);
+    const alpha = (L_min - posteriorMu) / posteriorSigma;
+    const beta = (L_max - posteriorMu) / posteriorSigma;
+    const PhiAlpha = standardNormalCDF(alpha);
+    const PhiBeta = standardNormalCDF(beta);
+    const truncatedMass = PhiBeta - PhiAlpha;
+
+    // If truncation removes more than 0.1% of posterior mass, use truncated mean.
+    // This threshold matches TRUNCATION_THRESHOLD (0.001) used in feasibility.ts
+    // for routing decisions.
+    if (truncatedMass < 1 - 0.001) {
+      return truncatedNormalMeanTwoSided(posteriorMu, posteriorSigma, L_min, L_max);
+    }
+
+    return posteriorMu;
   }
 
   // ===========================================
