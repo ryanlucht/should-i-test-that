@@ -22,8 +22,8 @@
  * - Session persistence for inputs (not navigation)
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Calculator } from 'lucide-react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Calculator, Loader2 } from 'lucide-react';
 import { LearningBitsOverlay } from '@/components/guide/LearningBitsOverlay';
 import { LearningBitsBubble } from '@/components/guide/LearningBitsBubble';
 import { useGuideMessages, GuideTrigger } from '@/hooks/useGuideMessages';
@@ -46,8 +46,16 @@ import {
   ExperimentDesignForm,
   type ExperimentDesignFormHandle,
 } from '@/components/forms/ExperimentDesignForm';
-import { ResultsSection } from '@/components/results';
 import { useScrollSpy } from '@/hooks/useScrollSpy';
+
+// Lazy-load ResultsSection (and its heavy deps: recharts, jstat, html-to-image)
+// to keep the initial bundle small. Import directly from the module file (not the
+// barrel index.ts) so the tree-shaker doesn't eagerly pull in other barrel exports.
+const ResultsSection = lazy(() =>
+  import('@/components/results/AdvancedResultsSection').then((m) => ({
+    default: m.ResultsSection,
+  }))
+);
 import { useWizardStore } from '@/stores/wizardStore';
 import { trackStepCompleted } from '@/lib/analytics';
 
@@ -436,8 +444,12 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                   />
                 )}
 
-                {/* Results section - EVSI verdict with CoD breakdown */}
-                {section.id === 'results' && <ResultsSection />}
+                {/* Results section - EVSI verdict with CoD breakdown (lazy-loaded) */}
+                {section.id === 'results' && (
+                  <Suspense fallback={<div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}>
+                    <ResultsSection />
+                  </Suspense>
+                )}
               </div>
 
               {/* Navigation buttons */}
