@@ -398,5 +398,43 @@ describe('wizardStore', () => {
       // Assert: completedSections unchanged (0 and 1 are both < 3)
       expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
     });
+
+    it('integration: full invalidation + re-completion flow (CR-1 end-to-end)', () => {
+      // 1. Complete all sections
+      const store = useWizardStore.getState();
+      [0, 1, 2, 3].forEach((s) => store.markSectionComplete(s));
+
+      // 2. Verify Results (section 4) is accessible
+      expect(useWizardStore.getState().canAccessSection(4)).toBe(true);
+
+      // 3. Simulate editing section 0 (form fires onSectionDirty -> invalidateSection(0))
+      useWizardStore.getState().invalidateSection(0);
+
+      // 4. All sections invalidated (all >= 0)
+      expect(useWizardStore.getState().completedSections).toEqual([]);
+
+      // 5. Results no longer accessible
+      expect(useWizardStore.getState().canAccessSection(4)).toBe(false);
+
+      // 6. Re-complete section 0 (user clicks Continue after re-submitting)
+      useWizardStore.getState().markSectionComplete(0);
+
+      // 7. Section 1 is accessible (section 0 complete) but section 2 is not
+      expect(useWizardStore.getState().canAccessSection(1)).toBe(true);
+      expect(useWizardStore.getState().canAccessSection(2)).toBe(false);
+
+      // 8. Re-complete remaining sections progressively
+      useWizardStore.getState().markSectionComplete(1);
+      expect(useWizardStore.getState().canAccessSection(2)).toBe(true);
+
+      useWizardStore.getState().markSectionComplete(2);
+      expect(useWizardStore.getState().canAccessSection(3)).toBe(true);
+
+      useWizardStore.getState().markSectionComplete(3);
+      expect(useWizardStore.getState().canAccessSection(4)).toBe(true);
+
+      // 9. All sections complete again
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2, 3]);
+    });
   });
 });

@@ -36,10 +36,18 @@ export interface BaselineMetricsFormHandle {
 }
 
 /**
+ * Props for BaselineMetricsForm
+ */
+interface BaselineMetricsFormProps {
+  /** CR-1: Callback fired when this completed section becomes dirty (user edits a field) */
+  onSectionDirty?: () => void;
+}
+
+/**
  * Baseline metrics form with three inputs and validation on blur
  */
-export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
-  function BaselineMetricsForm(_props, ref) {
+export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle, BaselineMetricsFormProps>(
+  function BaselineMetricsForm({ onSectionDirty }, ref) {
     // Get store values and setters
     const inputs = useWizardStore((state) => state.inputs);
     const setInput = useWizardStore((state) => state.setInput);
@@ -66,8 +74,18 @@ export const BaselineMetricsForm = forwardRef<BaselineMetricsFormHandle>(
       trigger,
       watch,
       setValue,
-      formState: { errors },
+      formState: { errors, isDirty },
     } = methods;
+
+    // CR-1: Detect when a completed section becomes dirty during editing.
+    // RHF tracks dirty state internally via formState.isDirty.
+    // When this form belongs to a completed section and the user edits any field,
+    // we fire onSectionDirty so CalculatorPage can invalidate downstream sections.
+    useEffect(() => {
+      if (isDirty && onSectionDirty) {
+        onSectionDirty();
+      }
+    }, [isDirty, onSectionDirty]);
 
     // Watch the unit label for the label text
     // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is the intended API

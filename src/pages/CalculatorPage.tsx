@@ -86,6 +86,8 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
     (state) => state.markSectionComplete
   );
   const canAccessSection = useWizardStore((state) => state.canAccessSection);
+  // CR-1: invalidateSection removes a section and all downstream from completedSections
+  const invalidateSection = useWizardStore((state) => state.invalidateSection);
 
   // Shared URL state — non-null when recipient arrived via shared URL
   const sharedBaseline = useWizardStore((state) => state.sharedBaseline);
@@ -134,6 +136,35 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
   const handleAdvancedTimingOpen = useCallback(() => {
     fireGuideTrigger(GuideTrigger.AdvancedTimingOpen);
   }, [fireGuideTrigger]);
+
+  // CR-1: Stable callbacks for section dirty detection.
+  // When a user edits a field in an already-completed section, the form fires
+  // onSectionDirty which calls invalidateSection to remove that section and all
+  // downstream sections from completedSections, preventing stale results.
+  // Gated on completedSections to avoid unnecessary calls during initial fill.
+  const handleBaselineDirty = useCallback(() => {
+    if (completedSections.includes(0)) {
+      invalidateSection(0);
+    }
+  }, [invalidateSection, completedSections]);
+
+  const handleUncertaintyDirty = useCallback(() => {
+    if (completedSections.includes(1)) {
+      invalidateSection(1);
+    }
+  }, [invalidateSection, completedSections]);
+
+  const handleThresholdDirty = useCallback(() => {
+    if (completedSections.includes(2)) {
+      invalidateSection(2);
+    }
+  }, [invalidateSection, completedSections]);
+
+  const handleExperimentDirty = useCallback(() => {
+    if (completedSections.includes(3)) {
+      invalidateSection(3);
+    }
+  }, [invalidateSection, completedSections]);
 
   // Refs for form validation
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
@@ -376,7 +407,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
               >
                 {/* Baseline section - actual form */}
                 {section.id === 'baseline' && (
-                  <BaselineMetricsForm ref={baselineFormRef} />
+                  <BaselineMetricsForm ref={baselineFormRef} onSectionDirty={handleBaselineDirty} />
                 )}
 
                 {/* Uncertainty section - prior selection form */}
@@ -385,12 +416,13 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                     ref={uncertaintyFormRef}
                     onPriorShapeAccordionOpen={handlePriorShapeAccordionOpen}
                     onPriorBoundFocus={handlePriorBoundFocus}
+                    onSectionDirty={handleUncertaintyDirty}
                   />
                 )}
 
                 {/* Threshold section - shipping threshold form */}
                 {section.id === 'threshold' && (
-                  <ThresholdScenarioForm ref={thresholdFormRef} />
+                  <ThresholdScenarioForm ref={thresholdFormRef} onSectionDirty={handleThresholdDirty} />
                 )}
 
                 {/* Test Design section - experiment parameters */}
@@ -398,6 +430,7 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
                   <ExperimentDesignForm
                     ref={experimentDesignFormRef}
                     onAdvancedTimingOpen={handleAdvancedTimingOpen}
+                    onSectionDirty={handleExperimentDirty}
                   />
                 )}
 
