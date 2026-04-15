@@ -41,13 +41,15 @@ export interface ExperimentDesignFormHandle {
 interface ExperimentDesignFormProps {
   /** Fires when user opens the advanced timing accordion (triggers guide M7) */
   onAdvancedTimingOpen?: () => void;
+  /** CR-1: Callback fired when this completed section becomes dirty (user edits a field) */
+  onSectionDirty?: () => void;
 }
 
 /**
  * Experiment design form with test parameters and validation on blur
  */
 export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, ExperimentDesignFormProps>(
-  function ExperimentDesignForm({ onAdvancedTimingOpen }, ref) {
+  function ExperimentDesignForm({ onAdvancedTimingOpen, onSectionDirty }, ref) {
     // Get store values and setters
     const inputs = useWizardStore((state) => state.inputs);
     const setInput = useWizardStore((state) => state.setInput);
@@ -86,8 +88,17 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
       handleSubmit,
       trigger,
       setValue,
-      formState: { errors },
+      formState: { errors, isDirty },
     } = methods;
+
+    // CR-1: Detect when a completed section becomes dirty during editing.
+    // When this form belongs to a completed section and the user edits any field,
+    // we fire onSectionDirty so CalculatorPage can invalidate downstream sections.
+    useEffect(() => {
+      if (isDirty && onSectionDirty) {
+        onSectionDirty();
+      }
+    }, [isDirty, onSectionDirty]);
 
     /**
      * Handle successful form submission - store values in Zustand
