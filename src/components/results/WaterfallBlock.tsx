@@ -40,6 +40,9 @@ interface WaterfallBlockProps {
   netValue: number;
   /** True when prior mean is exactly at the shipping threshold (tie-break) */
   isTie?: boolean;
+  /** Effective prior mean in percentage form (after feasibility truncation).
+   * When provided and different from priorMean, step 1 explains the discrepancy (SA-4/CR-4). */
+  effectivePriorMeanPercent?: number;
 }
 
 export function WaterfallBlock({
@@ -54,12 +57,22 @@ export function WaterfallBlock({
   timingCost,
   netValue,
   isTie = false,
+  effectivePriorMeanPercent,
 }: WaterfallBlockProps) {
   // Convert internal 'dont-ship' to display-friendly "not ship"
   const defaultDecisionLabel = defaultDecision === 'ship' ? 'ship' : 'not ship';
 
   // Format prior mean with sign for display
   const formattedMean = `${priorMean > 0 ? '+' : ''}${priorMean.toFixed(1)}%`;
+
+  // SA-4/CR-4: Detect when truncation materially shifts the effective prior mean.
+  // When effectivePriorMeanPercent is provided and differs from priorMean by >0.1pp,
+  // step 1 explains the adjustment from raw input to effective (truncated) prior.
+  const hasEffectiveAdjustment = effectivePriorMeanPercent !== undefined
+    && Math.abs(effectivePriorMeanPercent - priorMean) > 0.1;
+  const formattedEffectiveMean = hasEffectiveAdjustment
+    ? `${effectivePriorMeanPercent! > 0 ? '+' : ''}${effectivePriorMeanPercent!.toFixed(1)}%`
+    : undefined;
 
   return (
     <section
@@ -88,6 +101,15 @@ export function WaterfallBlock({
                   between shipping and not shipping. So the calculator has broken the tie
                   by defaulting to <strong>{defaultDecisionLabel}</strong> (don&apos;t
                   worry, the math is equivalent). In this setup, {directionSentence}
+                </>
+              ) : hasEffectiveAdjustment ? (
+                <>
+                  Your expected effect ({formattedMean}) is adjusted to {formattedEffectiveMean} after
+                  accounting for the range of feasible outcomes. This adjusted expectation
+                  {defaultDecision === 'ship' ? ' meets ' : ' doesn\u2019t meet '}
+                  your shipping rule ({shippingRuleLabel}), so the calculator starts
+                  from <strong>{defaultDecisionLabel}</strong>.
+                  In this case, {directionSentence}
                 </>
               ) : (
                 <>

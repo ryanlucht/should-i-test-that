@@ -145,4 +145,60 @@ describe('WaterfallBlock', () => {
     expect(section!.className).toContain('border-blue-200');
     expect(section!.className).toContain('rounded-lg');
   });
+
+  // ---------------------------------------------------------------------------
+  // SA-4/CR-4: Effective prior mean in waterfall step 1
+  // ---------------------------------------------------------------------------
+
+  it('step 1 shows adjusted prior text when effectivePriorMeanPercent differs from priorMean (SA-4/CR-4)', () => {
+    // priorMean = 5.0% but effective = 3.2% after truncation (differs by >0.1pp)
+    render(
+      <WaterfallBlock
+        {...defaultProps}
+        priorMean={5.0}
+        defaultDecision="ship"
+        effectivePriorMeanPercent={3.2}
+      />
+    );
+
+    const steps = document.querySelectorAll('li');
+    const step1Text = steps[0].textContent ?? '';
+    // Should mention the raw expected effect and the adjusted value
+    expect(step1Text).toContain('+5.0%');
+    expect(step1Text).toContain('+3.2%');
+    expect(step1Text).toContain('adjusted');
+    expect(step1Text).toContain('feasible outcomes');
+  });
+
+  it('step 1 shows normal text when effectivePriorMeanPercent is not provided', () => {
+    render(
+      <WaterfallBlock
+        {...defaultProps}
+        priorMean={5.0}
+        defaultDecision="ship"
+      />
+    );
+
+    const steps = document.querySelectorAll('li');
+    const step1Text = steps[0].textContent ?? '';
+    expect(step1Text).toContain('+5.0%');
+    expect(step1Text).toContain('meets');
+    expect(step1Text).not.toContain('adjusted');
+  });
+
+  it('step 1 shows normal text when effectivePriorMeanPercent is within 0.1pp of priorMean', () => {
+    // priorMean = 5.0, effective = 5.05 (only 0.05pp difference, < 0.1 threshold)
+    render(
+      <WaterfallBlock
+        {...defaultProps}
+        priorMean={5.0}
+        defaultDecision="ship"
+        effectivePriorMeanPercent={5.05}
+      />
+    );
+
+    const steps = document.querySelectorAll('li');
+    const step1Text = steps[0].textContent ?? '';
+    expect(step1Text).not.toContain('adjusted');
+  });
 });

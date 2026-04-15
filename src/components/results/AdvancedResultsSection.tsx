@@ -41,33 +41,22 @@ import type { PriorDistribution } from '@/lib/calculations/types';
 export const TRUNCATION_DISPLAY_THRESHOLD = 0.001;
 
 /**
- * Determine whether the prior mean is exactly at the shipping threshold
- * (an actual tie, not a near-miss). This triggers special copy explaining
- * the tie-break convention.
+ * Determine whether the effective prior mean is at the shipping threshold.
+ * All comparisons in lift-unit space (decimal) for unit consistency (SA-5).
  *
- * Uses a tiny epsilon (0.01 percentage points) for floating-point tolerance
- * only — not to create a "near-tie" band.
- * - 'any-positive': threshold is 0%, so |priorMean| < 0.01
- * - 'minimum-lift': threshold is thresholdValue, so |priorMean - threshold| < 0.01
- * - 'accept-loss': threshold is -thresholdValue, so |priorMean + threshold| < 0.01
+ * Uses threshold_L from the engine (already normalized to decimal lift units
+ * regardless of whether user entered dollars or percentage), so dollar
+ * thresholds are handled correctly.
+ *
+ * @param effectivePriorMeanDecimal - Effective prior mean in decimal lift units
+ * @param threshold_L - Threshold in decimal lift units (from engine)
  */
 function computeIsTie(
-  priorMean: number,
-  thresholdScenario: string | null,
-  thresholdValue: number | null,
+  effectivePriorMeanDecimal: number,
+  threshold_L: number,
 ): boolean {
-  const TIE_EPSILON = 0.01; // floating-point tolerance only
-
-  if (!thresholdScenario || thresholdScenario === 'any-positive') {
-    return Math.abs(priorMean) < TIE_EPSILON;
-  }
-  if (thresholdScenario === 'minimum-lift' && thresholdValue != null) {
-    return Math.abs(priorMean - thresholdValue) < TIE_EPSILON;
-  }
-  if (thresholdScenario === 'accept-loss' && thresholdValue != null) {
-    return Math.abs(priorMean + thresholdValue) < TIE_EPSILON;
-  }
-  return false;
+  const TIE_EPSILON = 0.0001; // 0.01 percentage points in decimal lift
+  return Math.abs(effectivePriorMeanDecimal - threshold_L) < TIE_EPSILON;
 }
 
 
@@ -144,13 +133,12 @@ export function ResultsSection() {
   // Keep priorMean alias for backward compatibility with downstream uses
   const priorMean = rawPriorMean;
 
-  // Tie detection: when prior mean is exactly at the shipping threshold,
-  // the starting decision is a tie-break and needs explanation
-  const isTie = computeIsTie(
-    priorMean,
-    inputs.thresholdScenario,
-    inputs.thresholdValue,
-  );
+  // Tie detection: when effective prior mean is exactly at the shipping threshold,
+  // the starting decision is a tie-break and needs explanation.
+  // SA-5: Compare in decimal lift units using threshold_L from engine (handles dollar thresholds correctly).
+  const isTie = results
+    ? computeIsTie(effectivePriorMean, results.threshold_L)
+    : false;
 
   return (
     <div className="space-y-6">
@@ -179,6 +167,19 @@ export function ResultsSection() {
             </div>
           )}
 
+          {/* SA-3: Infeasible prior message -- suppresses interpretive cards below */}
+          {results.isInfeasiblePrior && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-medium">Prior belief is infeasible</p>
+              <p className="mt-1">
+                Your prior belief is incompatible with the baseline conversion rate.
+                The entire range of outcomes you specified falls outside what is
+                mathematically feasible. Please revise your prior interval or baseline
+                rate to see meaningful results.
+              </p>
+            </div>
+          )}
+
           {/* Value Breakdown Card */}
           <ValueBreakdownCard
             evsiDollars={results.evsi.evsiDollars}
@@ -191,6 +192,9 @@ export function ResultsSection() {
             Value scaled to all annual visitors (assumes full rollout after test).
           </p>
 
+          {/* SA-3: Suppress interpretive cards when prior is infeasible */}
+          {!results.isInfeasiblePrior && (
+          <>
           {/* Supporting Cards Grid */}
           <div className="bg-card rounded-lg border overflow-hidden shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
@@ -299,6 +303,7 @@ export function ResultsSection() {
                 timingCost={results.evsi.evsiDollars - results.netValueDollars}
                 netValue={results.netValueDollars}
                 isTie={isTie}
+                effectivePriorMeanPercent={truncationMaterial ? effectivePriorMean * 100 : undefined}
               />
             );
           })()}
@@ -338,6 +343,8 @@ export function ResultsSection() {
             timingCost={results.evsi.evsiDollars - results.netValueDollars}
             netValue={results.netValueDollars}
           />
+          </>
+          )}
         </>
       )}
     </div>

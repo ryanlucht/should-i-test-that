@@ -135,7 +135,9 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
 
     // Format prior display with shape for Advanced mode
     const priorShapeText = priorShapeDescription ? ` (${priorShapeDescription})` : '';
-    const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% expected lift${priorShapeText}`;
+    // SA-4: When truncation is material, label as "Prior input" to distinguish from engine-used effective prior
+    const priorLabel = showEffectiveMeanAnnotation ? 'Prior input' : 'expected lift';
+    const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% ${priorLabel}${priorShapeText}`;
     const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
 
     // Effective prior mean annotation (NaN guard, same as AdvancedResultsSection)
@@ -423,7 +425,7 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
                   margin: '4px 0 0 0',
                 }}
               >
-                (effective: {safeEffectiveMean > 0 ? '+' : ''}{(safeEffectiveMean * 100).toFixed(1)}%)
+                Engine uses: {safeEffectiveMean > 0 ? '+' : ''}{(safeEffectiveMean * 100).toFixed(1)}% (adjusted for feasible conversion range)
               </p>
             )}
           </div>

@@ -54,6 +54,9 @@ const sampleEVSIResults: EVSICalculationResults = {
   },
   warnings: [],
   effectivePriorMean: 0.0, // matches rawPriorMean for default scenario (no truncation)
+  effectiveProbClears: 0.68,
+  isInfeasiblePrior: false,
+  threshold_L: 0.02, // 2% lift threshold in decimal
 };
 
 // Flat inputs matching the actual WizardInputs shape used by useWizardStore
@@ -264,6 +267,16 @@ describe('AdvancedResultsSection card content', () => {
 
   it('renders tie-break copy when prior mean is at threshold', () => {
     // Prior mean = 0 with any-positive scenario → exact tie
+    // SA-5: computeIsTie now uses effectivePriorMean (decimal) and threshold_L from results
+    const tieResults: EVSICalculationResults = {
+      ...sampleEVSIResults,
+      effectivePriorMean: 0.0, // 0% lift in decimal
+      threshold_L: 0.0,        // any-positive → threshold_L = 0
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: tieResults,
+    });
     mockWizardStore({
       inputs: {
         ...sampleInputs,
@@ -347,5 +360,147 @@ describe('TRUNCATION_DISPLAY_THRESHOLD boundary', () => {
 
     // Should show the truncation disclosure
     expect(screen.getByText(/After feasibility truncation/)).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SA-3: Infeasible-prior suppression tests
+// ---------------------------------------------------------------------------
+
+describe('Infeasible prior suppression (SA-3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows infeasibility message when isInfeasiblePrior is true', () => {
+    const infeasibleResults: EVSICalculationResults = {
+      ...sampleEVSIResults,
+      isInfeasiblePrior: true,
+      effectivePriorMean: 0.0, // fallback value
+      effectiveProbClears: 0,
+      evsi: {
+        ...sampleEVSIResults.evsi,
+        evsiDollars: 0,
+        probabilityTestChangesDecision: 0,
+      },
+      netValueDollars: 0,
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: infeasibleResults,
+    });
+    mockWizardStore();
+
+    render(<AdvancedResultsSection />);
+
+    // Should show the infeasibility message
+    expect(screen.getByText('Prior belief is infeasible')).toBeInTheDocument();
+    expect(screen.getByText(/incompatible with the baseline conversion rate/)).toBeInTheDocument();
+  });
+
+  it('suppresses waterfall block when isInfeasiblePrior is true', () => {
+    const infeasibleResults: EVSICalculationResults = {
+      ...sampleEVSIResults,
+      isInfeasiblePrior: true,
+      effectivePriorMean: 0.0,
+      effectiveProbClears: 0,
+      netValueDollars: 0,
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: infeasibleResults,
+    });
+    mockWizardStore();
+
+    render(<AdvancedResultsSection />);
+
+    // Waterfall, supporting cards, export should NOT be rendered
+    expect(screen.queryByText('Plain English explanation')).not.toBeInTheDocument();
+    expect(screen.queryByText('Decision impact')).not.toBeInTheDocument();
+    expect(screen.queryByText('Export PNG')).not.toBeInTheDocument();
+  });
+
+  it('shows interpretive cards when isInfeasiblePrior is false', () => {
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: sampleEVSIResults, // isInfeasiblePrior: false
+    });
+    mockWizardStore();
+
+    render(<AdvancedResultsSection />);
+
+    // Should show normal results (waterfall, supporting cards, export)
+    expect(screen.getByText('Plain English explanation')).toBeInTheDocument();
+    expect(screen.getByText('Decision impact')).toBeInTheDocument();
+    expect(screen.queryByText('Prior belief is infeasible')).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SA-5: Dollar-threshold tie detection tests
+// ---------------------------------------------------------------------------
+
+describe('Dollar-threshold tie detection (SA-5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('detects tie when effectivePriorMean equals threshold_L in lift units', () => {
+    // Scenario: dollar threshold that normalizes to threshold_L = 0.03 (3% lift)
+    // effectivePriorMean = 0.03 (exactly at threshold) -> should be a tie
+    const tieResults: EVSICalculationResults = {
+      ...sampleEVSIResults,
+      effectivePriorMean: 0.03, // exactly at threshold_L
+      threshold_L: 0.03,        // 3% lift in decimal
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: tieResults,
+    });
+    // Set inputs with dollar threshold (the old code would compare % vs $, missing the tie)
+    mockWizardStore({
+      inputs: {
+        ...sampleInputs,
+        priorIntervalLow: -3,
+        priorIntervalHigh: 9,  // midpoint = 3% in percentage form
+        thresholdScenario: 'minimum-lift',
+        thresholdUnit: 'dollars',
+        thresholdValue: 500,    // dollar value -- irrelevant for comparison, threshold_L matters
+      },
+    });
+
+    render(<AdvancedResultsSection />);
+
+    // Should render tie-break copy
+    expect(screen.getByText(/right at the boundary/)).toBeInTheDocument();
+    expect(screen.getByText(/perfect tie/)).toBeInTheDocument();
+  });
+
+  it('does NOT detect tie when effectivePriorMean differs from threshold_L', () => {
+    const noTieResults: EVSICalculationResults = {
+      ...sampleEVSIResults,
+      effectivePriorMean: 0.05, // 5% lift
+      threshold_L: 0.02,        // 2% lift -- not a tie
+    };
+    vi.mocked(useEVSICalculations).mockReturnValue({
+      loading: false,
+      results: noTieResults,
+    });
+    mockWizardStore({
+      inputs: {
+        ...sampleInputs,
+        priorIntervalLow: -3,
+        priorIntervalHigh: 13,
+        thresholdScenario: 'minimum-lift',
+        thresholdUnit: 'dollars',
+        thresholdValue: 500,
+      },
+    });
+
+    render(<AdvancedResultsSection />);
+
+    // Should NOT render tie-break copy
+    expect(screen.queryByText(/right at the boundary/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/perfect tie/)).not.toBeInTheDocument();
   });
 });
