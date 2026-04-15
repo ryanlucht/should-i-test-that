@@ -71,6 +71,18 @@ export const useWizardStore = create<WizardStore>()(
       },
 
       /**
+       * Invalidate a section and all downstream sections.
+       * When a user edits a completed section, this removes it and all
+       * later sections from completedSections, forcing re-validation
+       * before Results can be accessed again (CR-1).
+       */
+      invalidateSection: (section: number) => {
+        set((state) => ({
+          completedSections: state.completedSections.filter((s) => s < section),
+        }));
+      },
+
+      /**
        * Check if user can access a specific section
        * User can only access section N if all sections 0..N-1 are completed
        * Section 0 is always accessible
