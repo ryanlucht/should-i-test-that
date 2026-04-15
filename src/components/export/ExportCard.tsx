@@ -133,13 +133,6 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     // Format the primary verdict value
     const formattedValue = formatSmartCurrency(verdictValue);
 
-    // Format prior display with shape for Advanced mode
-    const priorShapeText = priorShapeDescription ? ` (${priorShapeDescription})` : '';
-    // SA-4: When truncation is material, label as "Prior input" to distinguish from engine-used effective prior
-    const priorLabel = showEffectiveMeanAnnotation ? 'Prior input' : 'expected lift';
-    const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% ${priorLabel}${priorShapeText}`;
-    const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
-
     // Effective prior mean annotation (NaN guard, same as AdvancedResultsSection)
     // Threshold: 0.001 lift units = 0.1 percentage points
     const TRUNCATION_DISPLAY_THRESHOLD = 0.001;
@@ -152,6 +145,13 @@ export const ExportCard = forwardRef<HTMLDivElement, ExportCardProps>(
     const rawPriorMeanDecimal = rawPriorMean / 100;
     const showEffectiveMeanAnnotation = safeEffectiveMean !== undefined &&
       Math.abs(safeEffectiveMean - rawPriorMeanDecimal) > TRUNCATION_DISPLAY_THRESHOLD;
+
+    // Format prior display with shape for Advanced mode
+    const priorShapeText = priorShapeDescription ? ` (${priorShapeDescription})` : '';
+    // SA-4: When truncation is material, label as "Prior input" to distinguish from engine-used effective prior
+    const priorLabel = showEffectiveMeanAnnotation ? 'Prior input' : 'expected lift';
+    const priorDisplay = `${prior.meanPercent > 0 ? '+' : ''}${prior.meanPercent.toFixed(1)}% ${priorLabel}${priorShapeText}`;
+    const priorInterval = `90% confident: ${formatPercentage(prior.lowPercent)} to ${formatPercentage(prior.highPercent)}`;
 
     // Format threshold display — unit-aware via formatThreshold (audit P5)
     const thresholdDisplay = formatThreshold({
