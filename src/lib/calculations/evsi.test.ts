@@ -2206,6 +2206,79 @@ describe('SA-7: Student-t posterior grid quantile-based bounds (Phase 27-01)', (
 });
 
 // ===========================================
+// SA28-01: Student-t posterior mean robustness (Phase 28-02)
+// ===========================================
+// The Student-t posterior grid can produce incorrect decisions in extreme but
+// realistic edge cases. These regression tests verify the adaptive-bounds fix.
+
+describe('Student-t posterior mean robustness (SA28-01)', () => {
+  // Test 1: Deep upper truncation / optimistic prior (v5 audit case 1)
+  // mu=0.2 with CR0=0.99 means L_max=0.010101 — all prior mass above L_max
+  // is truncated. L_hat=-0.05 is far below L_max. Old code returned ~L_max
+  // because the grid only covered prior quantiles, missing the likelihood peak.
+  it('deep truncation: posterior mean is materially negative, not near L_max', () => {
+    const prior: PriorDistribution = { type: 'student-t', mu_L: 0.2, sigma_L: 0.02, df: 10 };
+    const result = computePosteriorMean(-0.05, 0.01, prior, 0.99);
+    // L_max for CR0=0.99 is 1/0.99 - 1 = 0.010101
+    // Posterior mean should be materially negative (exact: -0.045798)
+    // Definitely not near L_max (0.0101) which was the old buggy output
+    expect(result).toBeLessThan(-0.02);
+  });
+
+  // Test 2: Extreme positive data in feasible Student-t tail (v5 audit case 2)
+  // mu=0, df=3 (heavy tails) with L_hat=0.5 and CR0=0.5 (L_max=1).
+  // Old code clipped at prior 99.99th quantile (~0.44), missing the likelihood peak at 0.5.
+  it('extreme feasible tail: posterior mean follows evidence, not clipped at prior quantile', () => {
+    const prior: PriorDistribution = { type: 'student-t', mu_L: 0, sigma_L: 0.02, df: 3 };
+    const result = computePosteriorMean(0.5, 0.01, prior, 0.5);
+    // L_max for CR0=0.5 is 1
+    // Posterior mean should follow the strong positive evidence (exact: 0.499202)
+    // Definitely not clipped near the prior 99.99th quantile (~0.44)
+    expect(result).toBeGreaterThan(0.48);
+  });
+
+  // Test 3: Wide prior, narrow likelihood (Codex HIGH concern about grid under-resolution)
+  // Very wide prior (sigma=0.5, df=3) + very narrow likelihood (SE=0.005).
+  // Without adaptive grid resolution, a 500-point grid spanning the wide interval
+  // would under-resolve the tiny likelihood peak.
+  it('wide prior, narrow likelihood: posterior mean close to L_hat', () => {
+    const prior: PriorDistribution = { type: 'student-t', mu_L: 0, sigma_L: 0.5, df: 3 };
+    const result = computePosteriorMean(0.05, 0.005, prior, 0.1);
+    // Very wide prior (sigma=0.5, df=3 has heavy tails) + very narrow likelihood (SE=0.005)
+    // L_max for CR0=0.1 is 9.0 (very wide feasible range)
+    // Posterior should be strongly pulled toward L_hat=0.05 by the narrow likelihood
+    // Despite the wide grid interval, adaptive resolution should capture the peak
+    expect(result).toBeGreaterThan(0.03);
+    expect(result).toBeLessThan(0.07);
+  });
+
+  // Test 4: Normal case — no regression from the adaptive bounds change
+  it('normal case: reasonable shrinkage toward prior', () => {
+    const prior: PriorDistribution = { type: 'student-t', mu_L: 0, sigma_L: 0.04, df: 5 };
+    const result = computePosteriorMean(0.05, 0.02, prior, 0.1);
+    // Moderate evidence near prior center -- should shrink toward prior
+    expect(result).toBeGreaterThan(0.01);
+    expect(result).toBeLessThan(0.05);
+  });
+
+  // Test 5: Emergency fallback is NOT triggered for any regression case
+  // Verifies that the grid integration succeeds (not the clamped-L_hat fallback)
+  it('emergency fallback not triggered for regression cases', () => {
+    // Deep truncation case
+    const result1 = computePosteriorMean(-0.05, 0.01,
+      { type: 'student-t', mu_L: 0.2, sigma_L: 0.02, df: 10 }, 0.99);
+    const feasMax1 = 1 / 0.99 - 1; // 0.010101
+    expect(result1).not.toBeCloseTo(Math.max(-1, Math.min(feasMax1, -0.05)), 5);
+
+    // Extreme feasible tail case
+    const result2 = computePosteriorMean(0.5, 0.01,
+      { type: 'student-t', mu_L: 0, sigma_L: 0.02, df: 3 }, 0.5);
+    const feasMax2 = 1 / 0.5 - 1; // 1.0
+    expect(result2).not.toBeCloseTo(Math.max(-1, Math.min(feasMax2, 0.5)), 5);
+  });
+});
+
+// ===========================================
 // Directional Probability Tests (Plan 25.1-01)
 // ===========================================
 
