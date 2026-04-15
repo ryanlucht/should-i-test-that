@@ -129,16 +129,20 @@ export function computeEffectivePriorMetrics(
     }
 
     // ===========================================
-    // Student-t prior: 200-point composite Simpson's rule
+    // Student-t prior: exact CDF/PDF formulas (SA-1 fix, Phase 27-01)
     // ===========================================
-    // Addresses review concern: Student-t numerical integration.
-    // Uses composite Simpson's 1/3 rule with 200 intervals (201 nodes).
-    // Convergence: O(h^4) for smooth Student-t pdf on typical feasibility
-    // intervals gives >6 digits of precision, far exceeding the MC noise
-    // it replaces.
+    // Per v4 statistics audit Finding 1: The old 200-point Simpson integration
+    // was catastrophically wrong for low CR0 because the fixed grid spans
+    // the huge feasible interval [L_min, L_max] while the Student-t prior mass
+    // is concentrated in a tiny region around mu. For CR0=0.01, L_max=99 and
+    // a 200-step grid has step size ~0.5, missing the ~0.04 wide prior entirely.
+    //
+    // The fix uses exact CDF/PDF formulas on the standardized Student-t.
+    // For a location-scale Student-t: X = mu + scale * Z, where Z ~ t(df).
+    // We standardize to Z-space and use jStat.studentt.cdf/pdf directly.
     case 'student-t': {
       const mu = prior.mu_L!;
-      const sigma = prior.sigma_L!;
+      const sigma = prior.sigma_L!; // scale parameter of location-scale Student-t
       const df = prior.df!;
 
       // Guard: sigma=0 (point mass)
@@ -152,62 +156,58 @@ export function computeEffectivePriorMetrics(
         return { effectivePriorMean: NaN, effectiveProbClears: NaN };
       }
 
-      // Number of Simpson's rule intervals (must be even)
-      const N = 200;
-      const h = (L_max - L_min) / N;
+      // Standardize feasibility bounds to Z-space: Z = (L - mu) / scale
+      // a = standardized lower bound, b = standardized upper bound
+      const a = (L_min - mu) / sigma;
+      const b = (L_max - mu) / sigma;
 
-      // Compute integrals in a single pass:
-      // Z       = integral of pdf(L) over [L_min, L_max]           (normalization)
-      // sumLpdf = integral of L * pdf(L) over [L_min, L_max]       (for mean)
-      // aboveT  = integral of pdf(L) over [max(threshold_L, L_min), L_max] (for probClears)
-      //
-      // Simpson's 1/3 rule: integral ≈ (h/3) * [f(x0) + 4*f(x1) + 2*f(x2) + 4*f(x3) + ... + f(xN)]
-      // Weights: endpoints get 1, odd indices get 4, even indices get 2
-      let Z = 0;
-      let sumLpdf = 0;
-      let aboveT = 0;
+      // Z = P(a <= Z <= b) = F(b) - F(a), where F is the standard t CDF
+      // This is the total feasible mass under the location-scale Student-t prior
+      const Fa = jStat.studentt.cdf(a, df);
+      const Fb = jStat.studentt.cdf(b, df);
+      const Z = Fb - Fa;
 
-      // Threshold clamped to integration domain
-      const threshClamped = Math.max(L_min, Math.min(L_max, threshold_L));
-
-      for (let i = 0; i <= N; i++) {
-        const L = L_min + i * h;
-
-        // Location-scale Student-t pdf: f(L) = t_df((L-mu)/sigma) / sigma
-        const z = (L - mu) / sigma;
-        const pdfVal = jStat.studentt.pdf(z, df) / sigma;
-
-        // Simpson's weight: 1 at endpoints, 4 at odd, 2 at even
-        let w: number;
-        if (i === 0 || i === N) {
-          w = 1;
-        } else if (i % 2 === 1) {
-          w = 4;
-        } else {
-          w = 2;
-        }
-
-        Z += w * pdfVal;
-        sumLpdf += w * L * pdfVal;
-        if (L >= threshClamped) {
-          aboveT += w * pdfVal;
-        }
-      }
-
-      // Multiply by h/3 (Simpson's rule factor)
-      Z *= h / 3;
-      sumLpdf *= h / 3;
-      aboveT *= h / 3;
-
-      // Near-zero feasible mass → infeasible prior
+      // Near-zero feasible mass -> infeasible prior
       if (Z < 1e-10) {
         return { effectivePriorMean: NaN, effectiveProbClears: NaN };
       }
 
-      // Truncated mean: E[L | L_min <= L <= L_max] = (integral of L*pdf) / Z
-      const effectivePriorMean = sumLpdf / Z;
-      // P(L >= threshold | L in [L_min, L_max]) = (integral of pdf above threshold) / Z
-      const effectiveProbClears = aboveT / Z;
+      // --- effectiveProbClears ---
+      // P(L >= threshold_L | L_min <= L <= L_max)
+      //   = (F(b) - F(t_clamped)) / Z
+      // where t_clamped is threshold standardized and clamped to [a, b]
+      const t_std = (threshold_L - mu) / sigma;
+      const t_clamped = Math.max(a, Math.min(b, t_std));
+      const Ft = jStat.studentt.cdf(t_clamped, df);
+      const effectiveProbClears = (Fb - Ft) / Z;
+
+      // --- effectivePriorMean ---
+      // Truncated mean of standardized Student-t on [a, b]:
+      //   E[Z | a <= Z <= b] = ((df + a^2) * f(a) - (df + b^2) * f(b)) / ((df - 1) * Z_std)
+      // where f = standard Student-t PDF, Z_std = F(b) - F(a).
+      //
+      // Then: effectivePriorMean = mu + scale * E[Z | a <= Z <= b]
+      //
+      // This formula requires df > 1. For df = 1 (Cauchy), the mean does not exist.
+      // Product constrains df to {3, 5, 10} so df <= 1 should never be reached.
+      if (df <= 1) {
+        // Unsupported: Cauchy (df=1) has no finite mean.
+        // Product constrains df to {3, 5, 10} so this should never be reached.
+        // Fall back to median (mu clamped to feasible range) as a safe default.
+        const clampedMu = Math.max(L_min, Math.min(mu, L_max));
+        return { effectivePriorMean: clampedMu, effectiveProbClears };
+      }
+
+      const fa = jStat.studentt.pdf(a, df); // standard t PDF at lower bound
+      const fb = jStat.studentt.pdf(b, df); // standard t PDF at upper bound
+
+      // Truncated mean formula for standard Student-t (df > 1):
+      // E[Z | a <= Z <= b] = ((df + a^2)*f(a) - (df + b^2)*f(b)) / ((df-1) * Z)
+      const truncatedStdMean =
+        ((df + a * a) * fa - (df + b * b) * fb) / ((df - 1) * Z);
+
+      // Convert back from Z-space to L-space: L = mu + scale * Z
+      const effectivePriorMean = mu + sigma * truncatedStdMean;
 
       return { effectivePriorMean, effectiveProbClears };
     }
