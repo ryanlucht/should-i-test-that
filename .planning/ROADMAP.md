@@ -332,11 +332,11 @@ Plans:
   6. Student-t posterior mean uses adaptive bounds incorporating both prior quantiles and likelihood window
   7. checkLowAcceptanceWarning is called in both EVSI and net-value MC engines
   8. Inline warning duplicates replaced with shared helpers from feasibility.ts
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 28-01-PLAN.md -- Fix build error, accept-loss URL validation, dirty-section loop, stale shared net-value, integer constraints
-- [ ] 28-02-PLAN.md -- Student-t posterior robustness, low-acceptance warning wiring, shared warning helpers and SE reuse
+- [x] 28-01-PLAN.md -- Fix build error, accept-loss URL validation, dirty-section loop, stale shared net-value, integer constraints
+- [x] 28-02-PLAN.md -- Student-t posterior robustness, low-acceptance warning wiring, shared warning helpers and SE reuse
 
 ---
 *Roadmap created: 2026-03-23*

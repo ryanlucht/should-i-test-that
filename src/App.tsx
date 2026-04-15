@@ -152,7 +152,7 @@ function App() {
     // Done last to preserve recoverability: if any step above fails,
     // the hash is still in the URL and can be retried.
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  }, []);
+  }, [setGuideEnabled]);
 
   return (
     <>
