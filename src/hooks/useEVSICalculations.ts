@@ -53,6 +53,14 @@ export interface EVSICalculationResults {
   warnings: CalculationWarning[];
   /** Effective prior mean under feasibility truncation (for UI consumption) */
   effectivePriorMean: number;
+  /** Effective probability of clearing threshold (for UI consumption -- SA-10c) */
+  effectiveProbClears: number;
+  /** True when prior has zero feasible mass -- signals UI to suppress interpretive cards (SA-3).
+   * Type lives here (hook level) because the hook is where effective metrics are computed.
+   * Engine (EVSIResults) returns NaN metrics + warning for this case. */
+  isInfeasiblePrior: boolean;
+  /** Normalized threshold in decimal lift units (for consistent tie detection / waterfall -- SA-5) */
+  threshold_L: number;
 }
 
 /**
@@ -97,7 +105,7 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
 
   // Cache effective prior metrics computed in useEffect for reuse in finalResults useMemo.
   // Avoids redundant recomputation of computeEffectivePriorMetrics (deterministic but unnecessary).
-  const effectiveMetricsRef = useRef<{ effectivePriorMean: number } | null>(null);
+  const effectiveMetricsRef = useRef<{ effectivePriorMean: number; effectiveProbClears: number } | null>(null);
 
   // ===========================================
   // Step 1: Validate inputs and derive parameters
@@ -387,13 +395,26 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
     // so the ref always holds the correct value for the current validatedInputs).
     // Falls back to recomputation only if the ref is unexpectedly null.
     const cachedMetrics = effectiveMetricsRef.current;
-    const effectiveMean = cachedMetrics
-      ? cachedMetrics.effectivePriorMean
-      : computeEffectivePriorMetrics(evsiInputs.prior, evsiInputs.threshold_L, evsiInputs.baselineConversionRate).effectivePriorMean;
-    // Fallback to raw prior mean when effective mean is NaN (infeasible prior)
-    const effectivePriorMean = Number.isFinite(effectiveMean)
-      ? effectiveMean
-      : getPriorMean(evsiInputs.prior);
+    const fallbackMetrics = cachedMetrics
+      ?? computeEffectivePriorMetrics(evsiInputs.prior, evsiInputs.threshold_L, evsiInputs.baselineConversionRate);
+    const rawEffectiveMean = fallbackMetrics.effectivePriorMean;
+    const rawEffectiveProbClears = fallbackMetrics.effectiveProbClears;
+
+    // SA-3: Detect infeasible prior from NaN effective metrics.
+    // When the entire prior interval falls outside the feasible conversion range,
+    // computeEffectivePriorMetrics returns NaN for both mean and probClears.
+    const isInfeasiblePrior = !Number.isFinite(rawEffectiveMean);
+
+    // When infeasible, fall back to raw prior mean for display purposes,
+    // but the isInfeasiblePrior flag tells the UI to suppress interpretive copy.
+    // This preserves backward compat without fabricating a meaningful decision.
+    const effectivePriorMean = isInfeasiblePrior
+      ? getPriorMean(evsiInputs.prior)
+      : rawEffectiveMean;
+
+    // SA-10c: Expose effective probability of clearing threshold for UI consumption.
+    // Zero when infeasible (no feasible mass can clear any threshold).
+    const effectiveProbClears = isInfeasiblePrior ? 0 : rawEffectiveProbClears;
 
     // Merge warnings from EVSI and net-value calculations (audit Priority 8b)
     // Use warning code as dedup key to avoid showing duplicate messages
@@ -415,6 +436,9 @@ export function useEVSICalculations(): UseEVSICalculationsResult {
       sampleSizes,
       warnings: mergedWarnings,
       effectivePriorMean,
+      effectiveProbClears,
+      isInfeasiblePrior,
+      threshold_L: evsiInputs.threshold_L,
     };
   }, [validatedInputs, workerResults, netValueResults]);
 
