@@ -28,7 +28,7 @@ import { sample, cdf, getPriorMean } from './distributions';
 import { computePosteriorMean, computeEffectivePriorMetrics } from './evsi';
 import { seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
-import { checkInfeasiblePriorWarning } from './feasibility';
+import { checkInfeasiblePriorWarning, checkRareEventsWarning, checkLowAcceptanceWarning, checkHighRejectionWarning } from './feasibility';
 import type { NetValueInputs, NetValueResults, CalculationWarning } from './types';
 
 /**
@@ -278,22 +278,12 @@ export function calculateNetValueMonteCarlo(
   const SE = seOfRelativeLift(CR0, n_control, n_variant);
 
   // ===========================================
-  // Step 2.5: Check for rare events warning (Accuracy-08)
+  // Step 2.5: Check for rare events warning (SA28-03: shared helper)
   // ===========================================
-  // The Normal approximation for lift becomes unreliable when expected
-  // conversions per arm are low (<20). Warn user to consider alternatives.
-  // Threshold condition: min(n_control * CR0, n_variant * CR0) < 20
   const warnings: CalculationWarning[] = [];
-  const expectedConvControl = n_control * CR0;
-  const expectedConvVariant = n_variant * CR0;
-  const minExpectedConversions = Math.min(expectedConvControl, expectedConvVariant);
-
-  if (minExpectedConversions < 20) {
-    warnings.push({
-      code: 'rare_events',
-      message:
-        'Expected conversions per group are low (<20). The normal approximation for lift may be less accurate. Consider increasing test duration or traffic.',
-    });
+  const rareEventsWarning = checkRareEventsWarning(n_control, n_variant, CR0);
+  if (rareEventsWarning) {
+    warnings.push(rareEventsWarning);
   }
 
   // ===========================================
@@ -432,20 +422,17 @@ export function calculateNetValueMonteCarlo(
   }
 
   // ===========================================
-  // Step 5.5: Check for high rejection rate warning (Edge Case 6)
+  // Step 5.5: Check for high rejection rate warning (SA28-03: shared helper)
   // ===========================================
-  // High rejection indicates prior places substantial mass outside feasible bounds.
-  // This can lead to metrics that don't reflect the full prior distribution.
-  // Threshold: >10% rejection rate triggers warning.
-  const totalAttempted = validSamples + rejectedSamples;
-  if (totalAttempted > 0) {
-    const rejectionRate = rejectedSamples / totalAttempted;
-    if (rejectionRate > 0.10) {
-      warnings.push({
-        code: 'high_rejection',
-        message: `High rejection rate (${Math.round(rejectionRate * 100)}%) due to prior mass outside feasible conversion bounds. Consider narrowing prior or adjusting baseline rate.`,
-      });
-    }
+  const highRejectionWarning = checkHighRejectionWarning(validSamples, rejectedSamples);
+  if (highRejectionWarning) {
+    warnings.push(highRejectionWarning);
+  }
+
+  // SA28-02: Check for low acceptance rate
+  const lowAcceptanceWarning = checkLowAcceptanceWarning(validSamples, numSamples);
+  if (lowAcceptanceWarning) {
+    warnings.push(lowAcceptanceWarning);
   }
 
   // ===========================================

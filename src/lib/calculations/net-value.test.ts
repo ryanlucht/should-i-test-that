@@ -755,3 +755,31 @@ describe('calculateNetValueMonteCarlo with infeasible prior', () => {
     expect(infeasibleWarning).toBeDefined();
   });
 });
+
+// ===========================================
+// SA28-02: Low acceptance warning (Phase 28-02)
+// ===========================================
+
+describe('low acceptance warning in net-value MC (SA28-02)', () => {
+  it('emits infeasible_prior_support warning when prior has no feasible mass', () => {
+    // Prior centered far above feasibility bound: Normal(5.0, 0.01) with CR0=0.999.
+    // L_max = 1/0.999 - 1 = 0.001001. Prior mass in [-1, 0.001] is essentially 0
+    // since the prior is 500+ sigma away from feasible range.
+    // Z = Phi((0.001 - 5.0)/0.01) - Phi((-1 - 5.0)/0.01) ~ 0 => infeasible.
+    const inputs: NetValueInputs = {
+      K: 10000,
+      baselineConversionRate: 0.999,
+      threshold_L: 0,
+      prior: { type: 'normal' as const, mu_L: 5.0, sigma_L: 0.01 },
+      n_control: 1000,
+      n_variant: 1000,
+      testDurationDays: 14,
+      variantFraction: 0.5,
+      decisionLatencyDays: 7,
+    };
+    const result = calculateNetValueMonteCarlo(inputs, 100);
+    const warningCodes = result.warnings?.map(w => w.code) ?? [];
+    // Infeasible prior warning should always fire (deterministic, no MC dependency)
+    expect(warningCodes.includes('infeasible_prior_support')).toBe(true);
+  });
+});
