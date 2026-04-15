@@ -319,4 +319,84 @@ describe('wizardStore', () => {
       expect(useWizardStore.getState().sharedBaseline).toBe(null);
     });
   });
+
+  describe('invalidateSection (CR-1)', () => {
+    it('removes target section and all downstream from completedSections', () => {
+      // Setup: complete sections 0-3
+      const store = useWizardStore.getState();
+      [0, 1, 2, 3].forEach((s) => store.markSectionComplete(s));
+      expect(useWizardStore.getState().completedSections).toEqual(
+        expect.arrayContaining([0, 1, 2, 3])
+      );
+
+      // Act: invalidate section 1 (should remove 1, 2, 3)
+      useWizardStore.getState().invalidateSection(1);
+
+      // Assert: only section 0 survives
+      expect(useWizardStore.getState().completedSections).toEqual([0]);
+    });
+
+    it('removes all sections when invalidating section 0', () => {
+      // Setup: complete sections 0-3
+      const store = useWizardStore.getState();
+      [0, 1, 2, 3].forEach((s) => store.markSectionComplete(s));
+
+      // Act: invalidate section 0 (should remove all since all >= 0)
+      useWizardStore.getState().invalidateSection(0);
+
+      // Assert: no completed sections remain
+      expect(useWizardStore.getState().completedSections).toEqual([]);
+    });
+
+    it('removes only the last section when invalidating the highest completed', () => {
+      // Setup: complete sections 0-3
+      const store = useWizardStore.getState();
+      [0, 1, 2, 3].forEach((s) => store.markSectionComplete(s));
+
+      // Act: invalidate section 3
+      useWizardStore.getState().invalidateSection(3);
+
+      // Assert: sections 0, 1, 2 survive
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1, 2]);
+    });
+
+    it('makes Results (section 4) inaccessible after invalidating section 0', () => {
+      // Setup: complete all sections so Results (section 4) is accessible
+      const store = useWizardStore.getState();
+      [0, 1, 2, 3].forEach((s) => store.markSectionComplete(s));
+      expect(useWizardStore.getState().canAccessSection(4)).toBe(true);
+
+      // Act: invalidate section 0
+      useWizardStore.getState().invalidateSection(0);
+
+      // Assert: Results no longer accessible
+      expect(useWizardStore.getState().canAccessSection(4)).toBe(false);
+    });
+
+    it('preserves access to section 1 but blocks section 2 after invalidating section 1', () => {
+      // Setup: complete all sections
+      const store = useWizardStore.getState();
+      [0, 1, 2, 3].forEach((s) => store.markSectionComplete(s));
+
+      // Act: invalidate section 1
+      useWizardStore.getState().invalidateSection(1);
+
+      // Assert: section 0 is complete, so section 1 is accessible
+      expect(useWizardStore.getState().canAccessSection(1)).toBe(true);
+      // But section 2 requires section 1 to be complete, which it is not
+      expect(useWizardStore.getState().canAccessSection(2)).toBe(false);
+    });
+
+    it('is a no-op when section is not in completedSections', () => {
+      // Setup: complete only sections 0 and 1
+      const store = useWizardStore.getState();
+      [0, 1].forEach((s) => store.markSectionComplete(s));
+
+      // Act: invalidate section 3 (not completed, but filter keeps s < 3)
+      useWizardStore.getState().invalidateSection(3);
+
+      // Assert: completedSections unchanged (0 and 1 are both < 3)
+      expect(useWizardStore.getState().completedSections).toEqual([0, 1]);
+    });
+  });
 });

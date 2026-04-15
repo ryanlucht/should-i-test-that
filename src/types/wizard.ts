@@ -170,6 +170,11 @@ export interface WizardActions {
   /** Mark a section as completed */
   markSectionComplete: (section: number) => void;
 
+  /** Remove a section and all downstream sections from completedSections.
+   * Called when a user edits an input in an already-completed section.
+   * This prevents stale results from being displayed/shared/exported (CR-1). */
+  invalidateSection: (section: number) => void;
+
   /** Check if user can access a specific section */
   canAccessSection: (section: number) => boolean;
 
