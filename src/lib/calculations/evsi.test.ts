@@ -2095,6 +2095,117 @@ describe('SA-1: Student-t effective-prior exact CDF/PDF (Phase 27-01)', () => {
 });
 
 // ===========================================
+// SA-2: Normal posterior truncation-aware mean (Phase 27-01)
+// ===========================================
+
+describe('SA-2: Normal posterior truncation-aware mean (Phase 27-01)', () => {
+  // The Normal branch in computePosteriorMean() currently returns the untruncated
+  // conjugate posterior mean, but the hook/worker routing sends truncation-sensitive
+  // cases to Monte Carlo specifically because truncation matters. Without the
+  // truncation correction, the MC path produces incorrect decisions.
+
+  describe('truncation-sensitive case: CR0=0.99, posterior mean above L_max', () => {
+    it('returns truncated posterior mean below L_max when truncation is material', () => {
+      // CR0=0.99 => L_max = 1/0.99 - 1 = ~0.0101
+      // Normal prior mu=0.05, sigma=0.05
+      // L_hat=0.10, SE=0.02
+      // Untruncated posterior mean: w = 0.05^2/(0.05^2+0.02^2) = 0.0025/0.0029 ≈ 0.862
+      // posteriorMu = 0.862 * 0.10 + 0.138 * 0.05 ≈ 0.093
+      // But L_max ≈ 0.0101, so 0.093 >> L_max
+      // Truncation is VERY material: must return truncated mean < L_max
+      const prior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0.05,
+        sigma_L: 0.05,
+      };
+
+      const result = computePosteriorMean(0.10, 0.02, prior, 0.99);
+
+      // Truncated posterior mean should be less than L_max ≈ 0.0101
+      const L_max = 1 / 0.99 - 1; // ≈ 0.010101
+      expect(result).toBeLessThan(L_max);
+      expect(Number.isFinite(result)).toBe(true);
+    });
+  });
+
+  describe('negligible truncation case: standard conjugate mean preserved', () => {
+    it('returns standard conjugate posterior mean when truncation is negligible', () => {
+      // CR0=0.50 => L_max = 1.0, L_min = -1.0 -- very wide bounds
+      // Normal prior mu=0, sigma=0.05
+      // Almost all posterior mass within [-1, 1], so truncation negligible
+      // Should return standard conjugate mean
+      const prior: PriorDistribution = {
+        type: 'normal',
+        mu_L: 0,
+        sigma_L: 0.05,
+      };
+
+      const L_hat = 0.03;
+      const SE = 0.02;
+
+      const result = computePosteriorMean(L_hat, SE, prior, 0.50);
+
+      // Standard conjugate mean:
+      // w = 0.05^2 / (0.05^2 + 0.02^2) = 0.0025/0.0029 ≈ 0.862
+      // posteriorMu = 0.862 * 0.03 + 0.138 * 0 ≈ 0.0259
+      const w = 0.05 ** 2 / (0.05 ** 2 + 0.02 ** 2);
+      const expectedMean = w * L_hat + (1 - w) * 0;
+
+      expect(result).toBeCloseTo(expectedMean, 4);
+    });
+  });
+});
+
+// ===========================================
+// SA-7: Student-t posterior grid quantile-based bounds (Phase 27-01)
+// ===========================================
+
+import { studentTQuantileBounds } from './student-t-helpers';
+
+describe('SA-7: Student-t posterior grid quantile-based bounds (Phase 27-01)', () => {
+  // The old code used hardcoded mu +/- 6*sigma bounds which miss meaningful
+  // tail mass for low-df Student-t distributions.
+
+  describe('regression test: quantile bounds wider than 6*sigma for df=3', () => {
+    it('quantile-based bounds are at least 2x wider than 6*sigma bounds for df=3', () => {
+      // Student-t with df=3 has very heavy tails
+      // 6*sigma bounds: [-0.30, 0.30]
+      // Quantile bounds at 0.0001/0.9999 should be substantially wider
+      const mu = 0;
+      const scale = 0.05;
+      const df = 3;
+
+      const sixSigmaWidth = 2 * 6 * scale; // 0.60
+      const quantileBounds = studentTQuantileBounds(mu, scale, df, 0.0001, 0.9999);
+      const quantileWidth = quantileBounds.high - quantileBounds.low;
+
+      // Quantile bounds should be at least 2x wider than 6*sigma
+      // For df=3, they should be ~3-4x wider
+      expect(quantileWidth).toBeGreaterThan(sixSigmaWidth * 2);
+    });
+  });
+
+  describe('quantile bounds used in posterior grid integration', () => {
+    it('Student-t df=3 posterior mean is finite and reasonable with quantile bounds', () => {
+      // Test that posterior mean computation works correctly with wider bounds
+      const prior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0,
+        sigma_L: 0.05,
+        df: 3,
+      };
+
+      const result = computePosteriorMean(0.04, 0.02, prior, 0.5);
+
+      // Should be between prior mean (0) and L_hat (0.04)
+      expect(result).toBeGreaterThan(0);
+      expect(result).toBeLessThan(0.04);
+      expect(Number.isFinite(result)).toBe(true);
+    });
+  });
+});
+
+// ===========================================
 // Directional Probability Tests (Plan 25.1-01)
 // ===========================================
 
