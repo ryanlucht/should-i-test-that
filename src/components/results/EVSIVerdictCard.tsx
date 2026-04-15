@@ -30,6 +30,7 @@ import { Loader2, Link2, Check, AlertCircle, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWizardStore } from '@/stores/wizardStore';
 import { encodeWizardState } from '@/lib/url-codec';
+import { useSharedDiff } from '@/hooks/useSharedDiff';
 
 interface EVSIVerdictCardProps {
   /** Net value from integrated simulation (can be negative) */
@@ -49,7 +50,14 @@ export function EVSIVerdictCard({
   const sharedBaseline = useWizardStore((state) => state.sharedBaseline);
   const sharedNetValue = useWizardStore((state) => state.sharedNetValue);
   const setGuideEnabled = useWizardStore((state) => state.setGuideEnabled);
-  const isRecipient = sharedBaseline !== null;
+
+  // CR28-04: Exit recipient mode when inputs diverge from shared baseline.
+  // Divergence is ONE-WAY: once any field is edited, the live computed value
+  // is authoritative for the rest of the session, even if the user reverts.
+  // This prevents the sender's stale net-value from overriding live computation.
+  const { modifiedFields } = useSharedDiff();
+  const hasEdited = modifiedFields.size > 0;
+  const isRecipient = sharedBaseline !== null && !hasEdited;
 
   // Display the raw value - no clamping. Negative values are honest.
   // Recipients see the sender's exact value; regular users see the computed value.

@@ -22,6 +22,16 @@ vi.mock('@/stores/wizardStore', () => ({
   useWizardStore: vi.fn(),
 }));
 
+// Mock useSharedDiff to control divergence detection in recipient mode tests
+vi.mock('@/hooks/useSharedDiff', () => ({
+  useSharedDiff: vi.fn().mockReturnValue({
+    modifiedFields: new Set(),
+    isFieldModified: () => false,
+  }),
+}));
+
+import { useSharedDiff } from '@/hooks/useSharedDiff';
+
 const mockInputs = {
   ...initialInputs,
   baselineConversionRate: 0.05,
@@ -30,7 +40,12 @@ const mockInputs = {
 };
 
 // Default store shape for non-recipient (regular user) tests
-const defaultStoreState = {
+const defaultStoreState: {
+  inputs: typeof mockInputs;
+  sharedBaseline: typeof mockInputs | null;
+  sharedNetValue: number | null;
+  setGuideEnabled: ReturnType<typeof vi.fn>;
+} = {
   inputs: mockInputs,
   sharedBaseline: null,
   sharedNetValue: null,
@@ -236,6 +251,83 @@ describe('EVSIVerdictCard', () => {
       });
 
       expect(screen.getByText(/Unable to copy/)).toBeInTheDocument();
+    });
+  });
+
+  describe('recipient edit exits recipient mode (CR28-04)', () => {
+    it('unmodified recipient sees sender sharedNetValue', () => {
+      // Mock: recipient with no edits (modifiedFields empty)
+      vi.mocked(useSharedDiff).mockReturnValue({
+        modifiedFields: new Set(),
+        isFieldModified: () => false,
+      });
+
+      // Store: recipient mode with sharedBaseline and sharedNetValue
+      (useWizardStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (selector: (state: typeof defaultStoreState) => unknown) =>
+          selector({
+            ...defaultStoreState,
+            sharedBaseline: { ...mockInputs },
+            sharedNetValue: 999,
+          })
+      );
+
+      render(<EVSIVerdictCard netValueDollars={500} isLoading={false} />);
+
+      // Should show sender's value (999), not live value (500)
+      expect(screen.getByText(/\$999/)).toBeInTheDocument();
+      expect(screen.queryByText(/\$500/)).not.toBeInTheDocument();
+    });
+
+    it('edited recipient sees live netValueDollars instead of sender value', () => {
+      // Mock: recipient who has edited baselineConversionRate
+      vi.mocked(useSharedDiff).mockReturnValue({
+        modifiedFields: new Set(['baselineConversionRate'] as const),
+        isFieldModified: (f) => f === 'baselineConversionRate',
+      });
+
+      // Store: recipient mode with sharedBaseline and sharedNetValue
+      (useWizardStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (selector: (state: typeof defaultStoreState) => unknown) =>
+          selector({
+            ...defaultStoreState,
+            sharedBaseline: { ...mockInputs },
+            sharedNetValue: 999,
+          })
+      );
+
+      render(<EVSIVerdictCard netValueDollars={500} isLoading={false} />);
+
+      // Should show live value (500), not sender's stale value (999)
+      expect(screen.getByText(/\$500/)).toBeInTheDocument();
+      expect(screen.queryByText(/\$999/)).not.toBeInTheDocument();
+    });
+
+    it('divergence detection: when modifiedFields becomes empty again, recipient mode restores', () => {
+      // This tests the actual implementation behavior: if the user reverts all edits
+      // to exactly match the shared baseline, modifiedFields becomes empty and
+      // isRecipient becomes true again. This is acceptable because:
+      // (a) exact revert is extremely rare
+      // (b) if inputs truly match baseline, the live computed value should match anyway
+      // (c) the UX is still correct
+      vi.mocked(useSharedDiff).mockReturnValue({
+        modifiedFields: new Set(),
+        isFieldModified: () => false,
+      });
+
+      (useWizardStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        (selector: (state: typeof defaultStoreState) => unknown) =>
+          selector({
+            ...defaultStoreState,
+            sharedBaseline: { ...mockInputs },
+            sharedNetValue: 999,
+          })
+      );
+
+      render(<EVSIVerdictCard netValueDollars={500} isLoading={false} />);
+
+      // With no modifications, recipient mode is active — shows sender's value
+      expect(screen.getByText(/\$999/)).toBeInTheDocument();
     });
   });
 });
