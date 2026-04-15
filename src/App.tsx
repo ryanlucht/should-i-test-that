@@ -31,29 +31,51 @@ import type { WizardInputs } from '@/types/wizard';
 type Page = 'welcome' | 'calculator';
 
 /**
- * Maps calculator section indices to the WizardInputs fields that must be
- * non-null for that section to be considered "complete" during URL hydration.
+ * Validate whether a section's decoded fields constitute a valid, complete section.
+ * Goes beyond non-null checks to enforce the same constraints as form schemas (CR-2).
  *
- * This prevents blanket section completion when some inputs are missing from
- * the shared URL. Only marks section N complete if ALL its required fields
- * are non-null in the decoded payload.
- *
- * Section mapping (matches CalculatorPage section order):
- *   0 = Baseline Metrics
- *   1 = Uncertainty / Prior
- *   2 = Threshold
- *   3 = Test Design (Experiment Design)
+ * Section 0 (Baseline): All three business inputs must be non-null
+ * Section 1 (Uncertainty): priorType must be set. If 'custom', interval bounds must be valid.
+ * Section 2 (Threshold): scenario must be set. If not 'any-positive', unit+value must be present.
+ * Section 3 (Experiment): duration and traffic must be non-null
  */
-const SECTION_REQUIRED_FIELDS: Record<number, (keyof WizardInputs)[]> = {
-  // Section 0 — Baseline Metrics: must have all three business inputs
-  0: ['baselineConversionRate', 'annualVisitors', 'valuePerConversion'],
-  // Section 1 — Uncertainty: must have prior type selected
-  1: ['priorType'],
-  // Section 2 — Threshold: must have a threshold scenario selected
-  2: ['thresholdScenario'],
-  // Section 3 — Test Design: must have duration and traffic inputs
-  3: ['testDurationDays', 'dailyTraffic'],
-};
+function validateSectionFields(section: number, decoded: Record<string, unknown>): boolean {
+  switch (section) {
+    case 0:
+      return (
+        decoded.baselineConversionRate !== null &&
+        decoded.annualVisitors !== null &&
+        decoded.valuePerConversion !== null
+      );
+    case 1: {
+      if (decoded.priorType === null) return false;
+      if (decoded.priorType === 'custom') {
+        // Custom prior requires valid interval bounds
+        if (decoded.priorIntervalLow === null || decoded.priorIntervalHigh === null) return false;
+        const low = decoded.priorIntervalLow as number;
+        const high = decoded.priorIntervalHigh as number;
+        if (low >= high) return false;
+      }
+      return true;
+    }
+    case 2: {
+      if (decoded.thresholdScenario === null) return false;
+      if (decoded.thresholdScenario !== 'any-positive') {
+        // Non-default scenario requires unit and value
+        if (decoded.thresholdUnit === null || decoded.thresholdValue === null) return false;
+        if ((decoded.thresholdValue as number) <= 0) return false;
+      }
+      return true;
+    }
+    case 3:
+      return (
+        decoded.testDurationDays !== null &&
+        decoded.dailyTraffic !== null
+      );
+    default:
+      return false;
+  }
+}
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('welcome');
@@ -114,10 +136,8 @@ function App() {
      * in the decoded inputs. This avoids blanket all-complete when the
      * sender only filled in some sections.
      */
-    for (const [sectionStr, requiredFields] of Object.entries(SECTION_REQUIRED_FIELDS)) {
-      const section = Number(sectionStr);
-      const allPresent = requiredFields.every((field) => decoded[field] !== null);
-      if (allPresent) {
+    for (let section = 0; section <= 3; section++) {
+      if (validateSectionFields(section, decoded as Record<string, unknown>)) {
         store.markSectionComplete(section);
       }
     }
