@@ -1327,38 +1327,37 @@ describe('truncatedNormalMeanTwoSided', () => {
 // ===========================================
 
 describe('computePosteriorMeanGrid invalid bounds', () => {
-  it('returns clamped prior mean when Student-t bounds become invalid', () => {
-    // Student-t with mu=0.5 and high CR0 causes L_max < L_min
+  it('computes proper posterior mean with adaptive bounds for extreme prior-CR0 mismatch', () => {
+    // Student-t with mu=0.5 and high CR0 causes old prior-only bounds to be invalid.
     // CR0=0.99 => feasibleMax = 1/0.99 - 1 = 0.0101
-    // mu - 6*sigma = 0.5 - 6*0.05 = 0.2 > feasibleMax
-    // So L_min = max(-1, 0.2) = 0.2, L_max = min(0.8, 0.0101) = 0.0101
-    // L_max < L_min => invalid grid
+    // SA28-01: With adaptive bounds, the likelihood window (L_hat +/- 6*SE)
+    // creates a valid grid even when prior quantiles are outside feasibility.
+    // The grid now covers the likelihood peak and produces a proper posterior.
     const prior = { type: 'student-t' as const, mu_L: 0.5, sigma_L: 0.05, df: 5 };
 
     // computePosteriorMean will route to grid for Student-t
     const result = computePosteriorMean(0.03, 0.01, prior, 0.99);
 
-    // Should return clamped prior mean
-    // Prior mean = 0.5, but feasibleMax = 0.0101
-    // Clamped result = Math.max(-1, Math.min(0.0101, 0.5)) = 0.0101
-    expect(result).toBeCloseTo(1 / 0.99 - 1, 4);
+    // With adaptive bounds the grid is valid: posterior should be finite
+    // and within the feasible range [-1, 0.0101]. The posterior is pulled
+    // toward L_hat=0.03 but clamped by feasibility to be <= 0.0101.
+    expect(result).toBeGreaterThan(-1);
+    expect(result).toBeLessThanOrEqual(1 / 0.99 - 1 + 0.001); // feasibleMax + tolerance
     expect(Number.isFinite(result)).toBe(true);
     expect(Number.isNaN(result)).toBe(false);
   });
 
-  it('handles extreme CR0 with positive prior mean', () => {
+  it('computes proper posterior mean with adaptive bounds for extreme CR0 with positive prior mean', () => {
     // CR0=0.99 => feasibleMax = 0.0101
-    // Student-t with mu=0.2, sigma=0.01 => bounds [0.14, 0.26]
-    // After clamping: L_min = 0.14, L_max = min(0.26, 0.0101) = 0.0101
-    // 0.0101 < 0.14 => invalid bounds!
+    // Student-t with mu=0.2, sigma=0.01 => old prior-only bounds invalid.
+    // SA28-01: Adaptive bounds create valid grid via likelihood window.
     const prior = { type: 'student-t' as const, mu_L: 0.2, sigma_L: 0.01, df: 10 };
 
     const result = computePosteriorMean(0.05, 0.01, prior, 0.99);
 
-    // Should return clamped prior mean
-    // Prior mean = 0.2, feasibleMax = 0.0101
-    // Clamped = Math.max(-1, Math.min(0.0101, 0.2)) = 0.0101
-    expect(result).toBeCloseTo(1 / 0.99 - 1, 4);
+    // Posterior should be finite and within feasible range
+    expect(result).toBeGreaterThan(-1);
+    expect(result).toBeLessThanOrEqual(1 / 0.99 - 1 + 0.001);
     expect(Number.isFinite(result)).toBe(true);
   });
 

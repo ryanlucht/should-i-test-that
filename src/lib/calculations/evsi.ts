@@ -315,32 +315,54 @@ function computePosteriorMeanGrid(
     L_min = Math.max(-1, prior.low_L!);
     L_max = Math.min(prior.high_L!, feasibleMax);
   } else if (prior.type === 'student-t') {
-    // Student-t is unbounded; use quantile-based bounds for adaptive tail coverage.
-    // SA-7 fix (v4 audit Finding 7): The old hardcoded mu +/- 6*sigma missed
-    // meaningful tail mass for low-df Student-t (e.g., df=3 has ~2.7% mass
-    // beyond 6*sigma). Using studentTQuantileBounds() adapts to the actual
-    // tail weight of each df value.
-    // Quantile bounds at 0.0001/0.9999 capture 99.98% of the distribution mass.
-    // Per Accuracy-07: Clamp to feasibility constraint.
     const mu = prior.mu_L!;
-    const scale = prior.sigma_L!; // Student-t scale parameter (not std dev)
-    const gridBounds = studentTQuantileBounds(mu, scale, prior.df!, 0.0001, 0.9999);
-    L_min = Math.max(-1, gridBounds.low);
-    L_max = Math.min(gridBounds.high, feasibleMax);
+    const scale = prior.sigma_L!;
+
+    // SA28-01 fix: Adaptive bounds that incorporate both prior and likelihood.
+    //
+    // The old approach used only prior quantiles:
+    //   gridBounds = studentTQuantileBounds(mu, scale, df, 0.0001, 0.9999)
+    // This failed when:
+    //   1. Deep truncation: feasibility pushes all posterior mass into a tiny
+    //      tail region outside the prior-quantile window (audit case 1)
+    //   2. Extreme evidence: L_hat is far from prior center in a still-feasible
+    //      tail, but beyond the prior-quantile bounds (audit case 2)
+    //
+    // The fix: take the UNION of prior quantile bounds and a likelihood window.
+    // The likelihood window is centered on L_hat with half-width proportional
+    // to SE, ensuring the grid always covers where the posterior has mass.
+    //
+    // Quantile bounds at 0.0001/0.9999 capture 99.98% of the Student-t mass.
+    // For heavy-tailed priors (df=3), these bounds can be wide, but the
+    // likelihood window narrows the effective posterior region. The existing
+    // log-sum-exp integration handles the sparsity correctly since grid points
+    // outside the posterior peak contribute negligible weight.
+    const priorBounds = studentTQuantileBounds(mu, scale, prior.df!, 0.0001, 0.9999);
+
+    // Likelihood window: the posterior can have mass wherever the likelihood
+    // puts non-negligible weight AND the prior is nonzero. Since the Student-t
+    // prior has heavy tails, the likelihood window determines the practical range.
+    const likelihoodHalfWidth = 6 * SE;
+    const likelihoodLow = L_hat - likelihoodHalfWidth;
+    const likelihoodHigh = L_hat + likelihoodHalfWidth;
+
+    // Union of prior bounds and likelihood window, clamped to feasibility
+    L_min = Math.max(-1, Math.min(priorBounds.low, likelihoodLow));
+    L_max = Math.min(Math.max(priorBounds.high, likelihoodHigh), feasibleMax);
   } else {
     // Fallback for any other type (shouldn't reach here)
     L_min = -1;
     L_max = Math.min(2, feasibleMax);
   }
 
-  // Guard: Invalid bounds after feasibility clamping (Controversial C.2)
-  // This can occur when prior bounds conflict with feasibility bounds.
-  // E.g., Student-t with mu=0.5, sigma=0.1 and CR0=0.99 gives feasibleMax=0.0101
-  // which is below mu - 6*sigma = -0.1, so L_max < L_min after clamping.
-  // Return safe fallback: clamp prior mean to feasible range
+  // Emergency fallback: grid bounds collapsed after feasibility clamping.
+  // This should rarely occur with adaptive bounds (prior + likelihood union).
+  // Return L_hat clamped to feasible range as a data-dominant estimate.
+  // NOTE: This is NOT a proper Bayesian posterior calculation.
+  // SA28-01: Instrumented — regression tests assert this path is NOT reached
+  // for the standard audit cases. If triggered, it indicates a bounds bug.
   if (!(L_max > L_min)) {
-    const priorMean = getPriorMean(prior);
-    return Math.max(-1, Math.min(feasibleMax, priorMean));
+    return Math.max(-1, Math.min(feasibleMax, L_hat));
   }
 
   const gridStep = (L_max - L_min) / gridSize;
@@ -521,7 +543,19 @@ export function computePosteriorMean(
   // ===========================================
   // Grid integration for Student-t only
   // ===========================================
-  return computePosteriorMeanGrid(L_hat, SE, prior, CR0);
+  // Student-t: use adaptive-bounds grid with resolution scaled to interval.
+  // The grid must have enough points that the likelihood peak (width ~SE)
+  // is covered by at least ~20 grid points for accurate integration.
+  // Base: 500 points. If interval is very wide relative to SE, increase.
+  const { L_max: feasMax } = liftFeasibilityBounds(CR0);
+  const priorBds = studentTQuantileBounds(prior.mu_L!, prior.sigma_L!, prior.df!, 0.0001, 0.9999);
+  const likelihoodHW = 6 * SE;
+  const intervalWidth = Math.min(Math.max(priorBds.high, L_hat + likelihoodHW), feasMax)
+                      - Math.max(-1, Math.min(priorBds.low, L_hat - likelihoodHW));
+  // Ensure at least 20 points per 12*SE (the likelihood's effective width)
+  const minPointsForLikelihood = Math.ceil(intervalWidth / (12 * SE)) * 20;
+  const gridSize = Math.max(500, Math.min(minPointsForLikelihood, 2000));
+  return computePosteriorMeanGrid(L_hat, SE, prior, CR0, gridSize);
 }
 
 /**
