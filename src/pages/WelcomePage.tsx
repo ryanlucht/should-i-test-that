@@ -39,7 +39,7 @@ interface WelcomePageProps {
  * Verbatim copy per D-06. _vibes_ renders as italic via renderDialogueText.
  */
 const WELCOME_TEXT =
-  "You have a new idea to try, or some code that needs to be deployed. Should you go through the effort of A/B testing it first?\n\nDon't answer that question with _vibes_! We can make that determination empirically, by calculating the actual dollar value of the information we'd gain with a test. All we have to do is define the stakes of the decision, and come up with a plausible range of possible outcomes.\n\nI'll walk you through the entire calculation. Ready to start?";
+  "You have a new idea to try, or some code that needs to be deployed. Should you go through the effort of A/B testing it first?\n\nDon't answer that question with _vibes_! We can make that determination empirically, by calculating the expected dollar value of the information we'd gain with a test. All we have to do is define the stakes of the decision, and come up with a plausible range of possible outcomes.\n\nI'll walk you through the entire calculation. Ready to start?";
 
 /**
  * Renders dialogue text with _word_ patterns converted to <em> elements.
