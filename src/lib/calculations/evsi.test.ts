@@ -1957,6 +1957,144 @@ describe('infeasible prior handling', () => {
 });
 
 // ===========================================
+// SA-1: Student-t exact CDF/PDF regression tests (Phase 27-01)
+// ===========================================
+
+describe('SA-1: Student-t effective-prior exact CDF/PDF (Phase 27-01)', () => {
+  // The old Simpson integration was catastrophically wrong for low CR0 because
+  // the fixed grid spans the huge feasible interval while prior mass is tiny.
+  // These tests verify the exact CDF/PDF formulas produce correct results.
+
+  const scale = 0.0408; // calibrated from -8.22% to +8.22% 90% interval
+
+  describe('symmetric prior at threshold=0: effectiveProbClears should be ~0.5', () => {
+    // For a symmetric Student-t prior centered at 0, P(L >= 0 | feasible) = 0.5
+    // regardless of CR0 (since the truncation is symmetric around 0 for practical purposes).
+    // Old code produced 0.86+ for CR0=0.05 and 0.99993 for CR0=0.01.
+
+    const crValues = [
+      { CR0: 0.20, label: 'CR0=0.20' },
+      { CR0: 0.10, label: 'CR0=0.10' },
+      { CR0: 0.05, label: 'CR0=0.05' },
+      { CR0: 0.03, label: 'CR0=0.03' },
+      { CR0: 0.01, label: 'CR0=0.01' },
+    ];
+
+    for (const { CR0, label } of crValues) {
+      it(`${label}: returns effectiveProbClears within 0.01 of 0.5`, () => {
+        const prior: PriorDistribution = {
+          type: 'student-t',
+          mu_L: 0,
+          sigma_L: scale,
+          df: 5,
+        };
+
+        const result = computeEffectivePriorMetrics(prior, 0, CR0);
+
+        // Exact answer is ~0.5000005 for all CR0 values
+        expect(result.effectiveProbClears).toBeCloseTo(0.5, 1); // within 0.05
+        expect(Math.abs(result.effectiveProbClears - 0.5)).toBeLessThan(0.01);
+      });
+    }
+  });
+
+  describe('asymmetric prior (mu=0.02): effectivePriorMean should stay near 0.02', () => {
+    // The old code produced mean=0.00002 for CR0=0.01 and mean=-0.994 for CR0=0.001.
+    // Exact answer stays essentially 0.0200 for all CR0 values.
+
+    const crValues = [
+      { CR0: 0.20, label: 'CR0=0.20' },
+      { CR0: 0.05, label: 'CR0=0.05' },
+      { CR0: 0.01, label: 'CR0=0.01' },
+    ];
+
+    for (const { CR0, label } of crValues) {
+      it(`${label}: returns effectivePriorMean within 0.001 of 0.02`, () => {
+        const prior: PriorDistribution = {
+          type: 'student-t',
+          mu_L: 0.02,
+          sigma_L: scale,
+          df: 5,
+        };
+
+        const result = computeEffectivePriorMetrics(prior, 0.01, CR0);
+
+        // Exact answer stays essentially 0.0200
+        expect(Math.abs(result.effectivePriorMean - 0.02)).toBeLessThan(0.001);
+      });
+    }
+  });
+
+  describe('sigma=0 point mass guard preserved', () => {
+    it('sigma=0 point mass within bounds returns correct metrics', () => {
+      const prior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0.05,
+        sigma_L: 0,
+        df: 5,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5);
+
+      expect(result.effectivePriorMean).toBe(0.05);
+      expect(result.effectiveProbClears).toBe(1);
+    });
+
+    it('sigma=0 point mass outside bounds returns NaN pair', () => {
+      const prior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 5.0, // outside L_max for CR0=0.5
+        sigma_L: 0,
+        df: 5,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5);
+
+      expect(result.effectivePriorMean).toBeNaN();
+      expect(result.effectiveProbClears).toBeNaN();
+    });
+  });
+
+  describe('near-zero feasible mass returns NaN pair', () => {
+    it('Student-t prior with nearly all mass outside feasible range returns NaN', () => {
+      // Student-t centered far outside feasible bounds
+      const prior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 50.0, // far above any feasible L_max
+        sigma_L: 0.01, // very narrow
+        df: 10,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5);
+
+      expect(result.effectivePriorMean).toBeNaN();
+      expect(result.effectiveProbClears).toBeNaN();
+    });
+  });
+
+  describe('df <= 1 (Cauchy) guard', () => {
+    it('df=1 returns safe fallback (clamped mu) without error', () => {
+      // df=1 is Cauchy, which has no finite mean.
+      // Product constrains df to {3, 5, 10} but we guard defensively.
+      const prior: PriorDistribution = {
+        type: 'student-t',
+        mu_L: 0.05,
+        sigma_L: 0.04,
+        df: 1,
+      };
+
+      const result = computeEffectivePriorMetrics(prior, 0, 0.5);
+
+      // Should return finite values (safe fallback), not NaN or error
+      expect(Number.isFinite(result.effectivePriorMean)).toBe(true);
+      expect(Number.isFinite(result.effectiveProbClears)).toBe(true);
+      expect(result.effectiveProbClears).toBeGreaterThanOrEqual(0);
+      expect(result.effectiveProbClears).toBeLessThanOrEqual(1);
+    });
+  });
+});
+
+// ===========================================
 // Directional Probability Tests (Plan 25.1-01)
 // ===========================================
 
