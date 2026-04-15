@@ -185,6 +185,11 @@ export const ExperimentDesignForm = forwardRef<ExperimentDesignFormHandle, Exper
 
     // Sync form with store changes (e.g., if store is reset)
     // Use != null to check for both null AND undefined (handles stale session data)
+    // NOTE: This effect and the auto-derive effect (above) are mutually exclusive
+    // on inputs.dailyTraffic: auto-derive fires only when dailyTraffic === null,
+    // while this sync effect fires only when dailyTraffic != null. This prevents
+    // conflicting setValue calls in the same render cycle. If consolidating these
+    // effects in a future refactor, ensure auto-derive runs before store sync.
     useEffect(() => {
       if (inputs.testDurationDays != null) {
         setValue('testDurationDays', inputs.testDurationDays);
