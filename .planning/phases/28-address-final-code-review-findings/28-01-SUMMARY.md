@@ -49,7 +49,7 @@ Centralized threshold sign validation, fixed TS2352 build error, added integer c
 | Task | Name | Commit | Key Files |
 |------|------|--------|-----------|
 | 1 | Fix build error, centralize threshold sign validation, add integer constraints (CR28-01, CR28-02, CR28-05) | 751ae4d | url-codec.ts, url-codec.test.ts, App.tsx, App.test.tsx |
-| 2 | Fix dirty-section re-invalidation loop with multi-cycle coverage (CR28-03) | dacd662 | BaselineMetricsForm.tsx, UncertaintyPriorForm.tsx, ThresholdScenarioForm.tsx, ExperimentDesignForm.tsx, CalculatorPage.test.tsx |
+| 2 | Fix dirty-section re-invalidation loop with multi-cycle coverage (CR28-03) | dacd662, edd31ca | CalculatorPage.tsx, BaselineMetricsForm.tsx, UncertaintyPriorForm.tsx, ThresholdScenarioForm.tsx, ExperimentDesignForm.tsx, CalculatorPage.test.tsx |
 | 3 | Fix stale shared net-value with one-way divergence (CR28-04) | df06d07 | EVSIVerdictCard.tsx, EVSIVerdictCard.test.tsx |
 
 ## Changes Made
@@ -119,4 +119,4 @@ None. The changes tighten validation (T-28-01 mitigated via centralized `validat
 
 ## Self-Check: PASSED
 
-All 11 modified/created files verified present. All 3 task commits (751ae4d, dacd662, df06d07) verified in git log. 111 tests pass across 4 test files. Build succeeds. Lint clean.
+All 12 modified/created files verified present. All 4 task commits (751ae4d, dacd662, edd31ca, df06d07) verified in git log. 653 tests pass (full suite). Build succeeds. Lint clean.
