@@ -13,8 +13,8 @@
  *
  * Mathematical notes (for statistician audit):
  * - Net Value = E[ValueWithTest] - E[ValueWithoutTest]
- * - Final result is clamped to >= 0 to avoid negative values due to Monte Carlo noise
- *   (information cannot hurt in expectation, so negative net value is an artifact)
+ * - Net value is preserved honestly (can be negative when timing costs exceed
+ *   information value). Only the implied test budget ceiling is clamped to >= 0.
  * - ValueWithTest = ValueDuringTest + ValueDuringLatency + ValueAfterDecision
  * - ValueWithoutTest = K * (L - T) if default=ship, else 0
  *
@@ -26,7 +26,7 @@
 
 import { sample, cdf, getPriorMean } from './distributions';
 import { computePosteriorMean, computeEffectivePriorMetrics } from './evsi';
-import { seOfRelativeLift, sampleStandardNormal } from './abtest-math';
+import { seOfRelativeLift, sampleStandardNormal, liftFeasibilityBounds } from './abtest-math';
 import { determineDefaultDecision } from './derived';
 import { checkInfeasiblePriorWarning } from './feasibility';
 import type { NetValueInputs, NetValueResults, CalculationWarning } from './types';
@@ -337,13 +337,11 @@ export function calculateNetValueMonteCarlo(
   const probClearsThreshold = effectivePriorMetrics.effectiveProbClears;
 
   // ===========================================
-  // Step 4: Feasibility bounds for lift
+  // Step 4: Feasibility bounds for lift (SA-10b: use shared helper)
   // ===========================================
   // CR1 = CR0 * (1 + L) must be in [0, 1]
-  // L_min = -1 (CR1 = 0)
-  // L_max = (1/CR0) - 1 (CR1 = 1)
-  const L_min = -1;
-  const L_max = 1 / CR0 - 1;
+  // L_min = -1 (CR1 = 0), L_max = (1/CR0) - 1 (CR1 = 1)
+  const { L_min, L_max } = liftFeasibilityBounds(CR0);
 
   // ===========================================
   // Step 5: Monte Carlo simulation

@@ -1,8 +1,8 @@
 /**
- * Derived Value Functions for EVPI Calculation
+ * Derived calculation utilities for EVSI-based analysis.
  *
- * These functions convert user inputs into the canonical forms
- * needed for EVPI calculation. All functions are pure with no side effects.
+ * Shared helpers for K-factor derivation, threshold normalization,
+ * sample size computation, and decision logic.
  *
  * Per SPEC.md Section 4 (Notation) and Section 8 (Calculations).
  */

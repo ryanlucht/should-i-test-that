@@ -30,19 +30,45 @@ export function liftFeasibilityBounds(CR0: number): { L_min: number; L_max: numb
 
 /**
  * Sample from standard normal distribution using Box-Muller transform
+ * with cached spare value.
+ *
+ * SA-11: Caches the sine component (z2) to halve the number of
+ * Math.random() calls in Monte Carlo loops (5000+ iterations for
+ * EVSI and net-value).
  *
  * Mathematical basis:
- *   z = sqrt(-2 * ln(U1)) * cos(2 * pi * U2)
+ *   z1 = sqrt(-2 * ln(U1)) * cos(2 * pi * U2)
+ *   z2 = sqrt(-2 * ln(U1)) * sin(2 * pi * U2)
  *   where U1, U2 ~ Uniform(0,1)
+ *
+ * Both z1 and z2 are independent N(0,1) samples. Standard Box-Muller
+ * discards z2; caching it halves the number of Math.random() calls.
  *
  * Guard: U1 is clamped to minimum 1e-16 to prevent Math.log(0) = -Infinity
  *
  * @returns Random sample from N(0,1)
  */
+let _boxMullerSpare: number | null = null;
+
 export function sampleStandardNormal(): number {
+  if (_boxMullerSpare !== null) {
+    const spare = _boxMullerSpare;
+    _boxMullerSpare = null;
+    return spare;
+  }
+
   const u1 = Math.max(Math.random(), 1e-16);
   const u2 = Math.random();
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  const r = Math.sqrt(-2 * Math.log(u1));
+  const theta = 2 * Math.PI * u2;
+
+  _boxMullerSpare = r * Math.sin(theta);
+  return r * Math.cos(theta);
+}
+
+/** @internal Reset spare cache -- for testing only */
+export function _resetBoxMullerSpare(): void {
+  _boxMullerSpare = null;
 }
 
 /**

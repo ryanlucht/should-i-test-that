@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   liftFeasibilityBounds,
   sampleStandardNormal,
+  _resetBoxMullerSpare,
   normalPdf,
   seOfRelativeLift,
 } from './abtest-math';
@@ -25,6 +26,54 @@ describe('liftFeasibilityBounds', () => {
     const bounds = liftFeasibilityBounds(0.01);
     expect(bounds.L_min).toBe(-1);
     expect(bounds.L_max).toBeCloseTo(99, 5);
+  });
+});
+
+describe('sampleStandardNormal (Box-Muller with spare cache)', () => {
+  beforeEach(() => {
+    _resetBoxMullerSpare();
+  });
+
+  it('uses cached spare on alternating calls (halves RNG calls)', () => {
+    _resetBoxMullerSpare();
+    const randomSpy = vi.spyOn(Math, 'random');
+
+    // First call: generates two samples, returns cos component, caches sin component
+    // Should call Math.random() exactly 2 times (u1, u2)
+    const z1 = sampleStandardNormal();
+    expect(randomSpy).toHaveBeenCalledTimes(2);
+    expect(Number.isFinite(z1)).toBe(true);
+
+    // Second call: returns cached spare, no new Math.random() calls
+    const z2 = sampleStandardNormal();
+    expect(randomSpy).toHaveBeenCalledTimes(2); // Still 2, not 4
+    expect(Number.isFinite(z2)).toBe(true);
+
+    // Third call: cache is empty, generates fresh pair
+    const z3 = sampleStandardNormal();
+    expect(randomSpy).toHaveBeenCalledTimes(4); // Now 4 (2 more)
+    expect(Number.isFinite(z3)).toBe(true);
+
+    randomSpy.mockRestore();
+  });
+
+  it('returns finite numbers from N(0,1)', () => {
+    for (let i = 0; i < 100; i++) {
+      const z = sampleStandardNormal();
+      expect(Number.isFinite(z)).toBe(true);
+    }
+  });
+
+  it('produces samples with approximately zero mean over many draws', () => {
+    _resetBoxMullerSpare();
+    const N = 10000;
+    let sum = 0;
+    for (let i = 0; i < N; i++) {
+      sum += sampleStandardNormal();
+    }
+    const mean = sum / N;
+    // Mean should be close to 0 (within ~3 standard errors)
+    expect(Math.abs(mean)).toBeLessThan(0.1);
   });
 });
 

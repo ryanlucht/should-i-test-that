@@ -143,11 +143,11 @@ export function computeEffectivePriorMetrics(
     // We standardize to Z-space and use jStat.studentt.cdf/pdf directly.
     case 'student-t': {
       const mu = prior.mu_L!;
-      const sigma = prior.sigma_L!; // scale parameter of location-scale Student-t
+      const scale = prior.sigma_L!; // Student-t scale parameter (not std dev)
       const df = prior.df!;
 
-      // Guard: sigma=0 (point mass)
-      if (sigma === 0) {
+      // Guard: scale=0 (point mass)
+      if (scale === 0) {
         if (mu >= L_min && mu <= L_max) {
           return {
             effectivePriorMean: mu,
@@ -159,8 +159,8 @@ export function computeEffectivePriorMetrics(
 
       // Standardize feasibility bounds to Z-space: Z = (L - mu) / scale
       // a = standardized lower bound, b = standardized upper bound
-      const a = (L_min - mu) / sigma;
-      const b = (L_max - mu) / sigma;
+      const a = (L_min - mu) / scale;
+      const b = (L_max - mu) / scale;
 
       // Z = P(a <= Z <= b) = F(b) - F(a), where F is the standard t CDF
       // This is the total feasible mass under the location-scale Student-t prior
@@ -177,7 +177,7 @@ export function computeEffectivePriorMetrics(
       // P(L >= threshold_L | L_min <= L <= L_max)
       //   = (F(b) - F(t_clamped)) / Z
       // where t_clamped is threshold standardized and clamped to [a, b]
-      const t_std = (threshold_L - mu) / sigma;
+      const t_std = (threshold_L - mu) / scale;
       const t_clamped = Math.max(a, Math.min(b, t_std));
       const Ft = jStat.studentt.cdf(t_clamped, df);
       const effectiveProbClears = (Fb - Ft) / Z;
@@ -208,7 +208,7 @@ export function computeEffectivePriorMetrics(
         ((df + a * a) * fa - (df + b * b) * fb) / ((df - 1) * Z);
 
       // Convert back from Z-space to L-space: L = mu + scale * Z
-      const effectivePriorMean = mu + sigma * truncatedStdMean;
+      const effectivePriorMean = mu + scale * truncatedStdMean;
 
       return { effectivePriorMean, effectiveProbClears };
     }
@@ -323,8 +323,8 @@ function computePosteriorMeanGrid(
     // Quantile bounds at 0.0001/0.9999 capture 99.98% of the distribution mass.
     // Per Accuracy-07: Clamp to feasibility constraint.
     const mu = prior.mu_L!;
-    const sigma = prior.sigma_L!;
-    const gridBounds = studentTQuantileBounds(mu, sigma, prior.df!, 0.0001, 0.9999);
+    const scale = prior.sigma_L!; // Student-t scale parameter (not std dev)
+    const gridBounds = studentTQuantileBounds(mu, scale, prior.df!, 0.0001, 0.9999);
     L_min = Math.max(-1, gridBounds.low);
     L_max = Math.min(gridBounds.high, feasibleMax);
   } else {
