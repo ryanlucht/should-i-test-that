@@ -19,7 +19,7 @@
  *   T_$ = -Loss_$ (user enters 5, we store -5)
  */
 
-import { useEffect, useImperativeHandle, forwardRef, useCallback, useState } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useCallback, useState, useRef } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -249,13 +249,17 @@ export const ThresholdScenarioForm = forwardRef<ThresholdScenarioFormHandle, Thr
       formState: { errors, isDirty },
     } = methods;
 
-    // CR-1: Detect when a completed section becomes dirty during editing.
-    // When this form belongs to a completed section and the user edits any field,
-    // we fire onSectionDirty so CalculatorPage can invalidate downstream sections.
+    // CR28-03: Fire invalidation only on the false-to-true transition of isDirty.
+    // A stable ref tracks previous dirty state so that callback identity changes
+    // (from completedSections updates) do not re-fire the invalidation.
+    const wasDirtyRef = useRef(isDirty);
+
     useEffect(() => {
-      if (isDirty && onSectionDirty) {
+      // Only fire on the clean-to-dirty transition (false -> true)
+      if (isDirty && !wasDirtyRef.current && onSectionDirty) {
         onSectionDirty();
       }
+      wasDirtyRef.current = isDirty;
     }, [isDirty, onSectionDirty]);
 
     // Watch the scenario to show/hide inline inputs
