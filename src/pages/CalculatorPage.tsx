@@ -137,34 +137,36 @@ export function CalculatorPage({ onBack }: CalculatorPageProps) {
     fireGuideTrigger(GuideTrigger.AdvancedTimingOpen);
   }, [fireGuideTrigger]);
 
-  // CR-1: Stable callbacks for section dirty detection.
-  // When a user edits a field in an already-completed section, the form fires
-  // onSectionDirty which calls invalidateSection to remove that section and all
-  // downstream sections from completedSections, preventing stale results.
-  // Gated on completedSections to avoid unnecessary calls during initial fill.
+  // CR28-03: Read completedSections from ref to keep callback identity stable.
+  // Updated synchronously on every render so it cannot desynchronize.
+  // This prevents dirty-callback identity changes when completedSections updates,
+  // which was causing the form useEffect to re-fire invalidation on just-completed sections.
+  const completedSectionsRef = useRef(completedSections);
+  completedSectionsRef.current = completedSections;
+
   const handleBaselineDirty = useCallback(() => {
-    if (completedSections.includes(0)) {
+    if (completedSectionsRef.current.includes(0)) {
       invalidateSection(0);
     }
-  }, [invalidateSection, completedSections]);
+  }, [invalidateSection]);
 
   const handleUncertaintyDirty = useCallback(() => {
-    if (completedSections.includes(1)) {
+    if (completedSectionsRef.current.includes(1)) {
       invalidateSection(1);
     }
-  }, [invalidateSection, completedSections]);
+  }, [invalidateSection]);
 
   const handleThresholdDirty = useCallback(() => {
-    if (completedSections.includes(2)) {
+    if (completedSectionsRef.current.includes(2)) {
       invalidateSection(2);
     }
-  }, [invalidateSection, completedSections]);
+  }, [invalidateSection]);
 
   const handleExperimentDirty = useCallback(() => {
-    if (completedSections.includes(3)) {
+    if (completedSectionsRef.current.includes(3)) {
       invalidateSection(3);
     }
-  }, [invalidateSection, completedSections]);
+  }, [invalidateSection]);
 
   // Refs for form validation
   const baselineFormRef = useRef<BaselineMetricsFormHandle>(null);
