@@ -52,9 +52,11 @@ export function EVSIVerdictCard({
   const setGuideEnabled = useWizardStore((state) => state.setGuideEnabled);
 
   // CR28-04: Exit recipient mode when inputs diverge from shared baseline.
-  // Divergence is ONE-WAY: once any field is edited, the live computed value
-  // is authoritative for the rest of the session, even if the user reverts.
-  // This prevents the sender's stale net-value from overriding live computation.
+  // Divergence is revert-aware: while any field differs from the shared baseline,
+  // the live computed value is authoritative. If the recipient fully reverts all
+  // edits (modifiedFields becomes empty), recipient mode restores and shows the
+  // sender's value again. This is acceptable because exact revert is rare, and
+  // if inputs truly match baseline the live value should match anyway.
   const { modifiedFields } = useSharedDiff();
   const hasEdited = modifiedFields.size > 0;
   const isRecipient = sharedBaseline !== null && !hasEdited;
