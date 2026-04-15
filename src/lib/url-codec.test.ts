@@ -10,6 +10,7 @@ import {
   encodeWizardState,
   decodeWizardState,
   SCHEMA_VERSION,
+  validateThresholdSign,
 } from './url-codec';
 import type { WizardInputs } from '@/types/wizard';
 import { initialInputs } from '@/types/wizard';
@@ -609,5 +610,126 @@ describe('v1 backward compatibility', () => {
     const decoded = decodeWizardState(v1Payload);
     expect(decoded).not.toBeNull();
     expect(decoded!.inputs.trafficSplit).toBe(0.95);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CR28-02: accept-loss round-trip
+// ---------------------------------------------------------------------------
+
+describe('accept-loss round-trip (CR28-02)', () => {
+  it('encode accept-loss inputs round-trips through decode with identical values', () => {
+    // accept-loss scenario: user enters 5 as loss magnitude, stored as -5
+    const acceptLossInputs: WizardInputs = {
+      ...typicalScenario,
+      thresholdScenario: 'accept-loss',
+      thresholdUnit: 'dollars',
+      thresholdValue: -5, // Negative per sign convention
+    };
+    const encoded = encodeWizardState(acceptLossInputs);
+    const decoded = decodeWizardState(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.inputs.thresholdScenario).toBe('accept-loss');
+    expect(decoded!.inputs.thresholdUnit).toBe('dollars');
+    expect(decoded!.inputs.thresholdValue).toBe(-5);
+  });
+
+  it('rejects minimum-lift with negative thresholdValue', () => {
+    // minimum-lift must have positive thresholdValue
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      thresholdScenario: 'minimum-lift',
+      thresholdUnit: 'dollars',
+      thresholdValue: -5,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects accept-loss with positive thresholdValue', () => {
+    // accept-loss must have negative thresholdValue (stored as -acceptableLoss)
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      thresholdScenario: 'accept-loss',
+      thresholdUnit: 'dollars',
+      thresholdValue: 5,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CR28-05: integer constraints for v2+ URLs
+// ---------------------------------------------------------------------------
+
+describe('integer constraints (CR28-05)', () => {
+  it('rejects fractional annualVisitors for v2 URLs', () => {
+    const encoded = encodeWizardState({
+      ...typicalScenario,
+      annualVisitors: 1000.5,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects fractional testDurationDays for v2 URLs', () => {
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      testDurationDays: 14.3,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects fractional decisionLatencyDays for v2 URLs', () => {
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      decisionLatencyDays: 7.7,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateThresholdSign helper unit tests
+// ---------------------------------------------------------------------------
+
+describe('validateThresholdSign helper', () => {
+  it('returns true for any-positive regardless of thresholdValue', () => {
+    expect(validateThresholdSign('any-positive', 5, 'dollars')).toBe(true);
+    expect(validateThresholdSign('any-positive', -5, 'dollars')).toBe(true);
+    expect(validateThresholdSign('any-positive', null, null)).toBe(true);
+  });
+
+  it('returns true for null scenario', () => {
+    expect(validateThresholdSign(null, 5, 'dollars')).toBe(true);
+  });
+
+  it('returns true for minimum-lift with positive thresholdValue', () => {
+    expect(validateThresholdSign('minimum-lift', 5, 'dollars')).toBe(true);
+  });
+
+  it('returns false for minimum-lift with negative thresholdValue', () => {
+    expect(validateThresholdSign('minimum-lift', -5, 'dollars')).toBe(false);
+  });
+
+  it('returns false for minimum-lift with zero thresholdValue', () => {
+    expect(validateThresholdSign('minimum-lift', 0, 'dollars')).toBe(false);
+  });
+
+  it('returns true for accept-loss with negative thresholdValue', () => {
+    expect(validateThresholdSign('accept-loss', -5, 'dollars')).toBe(true);
+  });
+
+  it('returns false for accept-loss with positive thresholdValue', () => {
+    expect(validateThresholdSign('accept-loss', 5, 'dollars')).toBe(false);
+  });
+
+  it('returns false for accept-loss with zero thresholdValue', () => {
+    expect(validateThresholdSign('accept-loss', 0, 'dollars')).toBe(false);
+  });
+
+  it('returns false when unit or value is null for non-any-positive scenario', () => {
+    expect(validateThresholdSign('minimum-lift', null, 'dollars')).toBe(false);
+    expect(validateThresholdSign('minimum-lift', 5, null)).toBe(false);
+    expect(validateThresholdSign('accept-loss', null, 'dollars')).toBe(false);
+    expect(validateThresholdSign('accept-loss', -5, null)).toBe(false);
   });
 });

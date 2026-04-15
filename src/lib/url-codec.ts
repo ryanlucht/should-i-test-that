@@ -152,6 +152,27 @@ const ENUM_CONSTRAINTS = {
 };
 
 /**
+ * Validates threshold sign convention for a given scenario.
+ * Centralized to prevent drift between decode validation and hydration validation.
+ * - 'minimum-lift': thresholdValue must be positive (user enters positive lift target)
+ * - 'accept-loss': thresholdValue must be negative (stored as -acceptableLoss)
+ * - 'any-positive': thresholdValue is irrelevant (skip check)
+ *
+ * @returns true if valid, false if sign is wrong for the scenario
+ */
+export function validateThresholdSign(
+  scenario: string | null,
+  thresholdValue: number | null,
+  thresholdUnit: string | null
+): boolean {
+  if (scenario === null || scenario === 'any-positive') return true;
+  if (thresholdUnit === null || thresholdValue === null) return false;
+  if (scenario === 'minimum-lift' && thresholdValue <= 0) return false;
+  if (scenario === 'accept-loss' && thresholdValue >= 0) return false;
+  return true;
+}
+
+/**
  * Validates a decoded payload (full keys, post-migration, post-merge with initialInputs).
  *
  * Versioned validation strategy (addresses Codex review concern):
@@ -284,12 +305,22 @@ function validateDecodedPayload(decoded: Record<string, unknown>, version: numbe
     // decisionLatencyDays must be non-negative (experimentDesignSchema: .min(0))
     if (d.decisionLatencyDays !== null && (d.decisionLatencyDays as number) < 0) return null;
 
+    // --- Integer constraints (form schemas require whole numbers) ---
+    // annualVisitors: baselineMetricsSchema .int()
+    if (d.annualVisitors !== null && !Number.isInteger(d.annualVisitors as number)) return null;
+    // testDurationDays: experimentDesignSchema .int()
+    if (d.testDurationDays !== null && !Number.isInteger(d.testDurationDays as number)) return null;
+    // decisionLatencyDays: experimentDesignSchema .int()
+    if (d.decisionLatencyDays !== null && !Number.isInteger(d.decisionLatencyDays as number)) return null;
+
     // --- Threshold scenario consistency (thresholdScenarioSchema) ---
-    if (d.thresholdScenario !== null && d.thresholdScenario !== 'any-positive') {
-      // Non-default scenario requires both unit and value
-      if (d.thresholdUnit === null || d.thresholdValue === null) return null;
-      // thresholdValue must be positive for minimum-lift and accept-loss
-      if ((d.thresholdValue as number) <= 0) return null;
+    // Uses shared helper to prevent sign-rule drift between decode and hydration (Codex review)
+    if (!validateThresholdSign(
+      d.thresholdScenario as string | null,
+      d.thresholdValue as number | null,
+      d.thresholdUnit as string | null
+    )) {
+      return null;
     }
 
     // --- Prior interval rules (priorSelectionSchema) ---

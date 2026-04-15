@@ -22,7 +22,7 @@ import { useState, useEffect, useRef } from 'react';
 import { WelcomePage } from '@/pages/WelcomePage';
 import { CalculatorPage } from '@/pages/CalculatorPage';
 import { useWizardStore } from '@/stores/wizardStore';
-import { decodeWizardState } from '@/lib/url-codec';
+import { decodeWizardState, validateThresholdSign } from '@/lib/url-codec';
 import type { WizardInputs } from '@/types/wizard';
 
 /**
@@ -39,7 +39,7 @@ type Page = 'welcome' | 'calculator';
  * Section 2 (Threshold): scenario must be set. If not 'any-positive', unit+value must be present.
  * Section 3 (Experiment): duration and traffic must be non-null
  */
-function validateSectionFields(section: number, decoded: Record<string, unknown>): boolean {
+function validateSectionFields(section: number, decoded: WizardInputs): boolean {
   switch (section) {
     case 0:
       return (
@@ -52,18 +52,15 @@ function validateSectionFields(section: number, decoded: Record<string, unknown>
       if (decoded.priorType === 'custom') {
         // Custom prior requires valid interval bounds
         if (decoded.priorIntervalLow === null || decoded.priorIntervalHigh === null) return false;
-        const low = decoded.priorIntervalLow as number;
-        const high = decoded.priorIntervalHigh as number;
-        if (low >= high) return false;
+        if (decoded.priorIntervalLow >= decoded.priorIntervalHigh) return false;
       }
       return true;
     }
     case 2: {
       if (decoded.thresholdScenario === null) return false;
-      if (decoded.thresholdScenario !== 'any-positive') {
-        // Non-default scenario requires unit and value
-        if (decoded.thresholdUnit === null || decoded.thresholdValue === null) return false;
-        if ((decoded.thresholdValue as number) <= 0) return false;
+      // Use shared helper for sign validation (prevents drift with decoder — Codex review)
+      if (!validateThresholdSign(decoded.thresholdScenario, decoded.thresholdValue, decoded.thresholdUnit)) {
+        return false;
       }
       return true;
     }
@@ -137,7 +134,7 @@ function App() {
      * sender only filled in some sections.
      */
     for (let section = 0; section <= 3; section++) {
-      if (validateSectionFields(section, decoded as Record<string, unknown>)) {
+      if (validateSectionFields(section, decoded)) {
         store.markSectionComplete(section);
       }
     }

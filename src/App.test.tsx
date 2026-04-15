@@ -4,11 +4,16 @@ import App from './App';
 import { useWizardStore } from '@/stores/wizardStore';
 import { initialInputs } from '@/types/wizard';
 
-// Mock the url-codec module so tests control what decodeWizardState returns
-vi.mock('@/lib/url-codec', () => ({
-  decodeWizardState: vi.fn(),
-  encodeWizardState: vi.fn().mockReturnValue('encoded-test-string'),
-}));
+// Mock the url-codec module so tests control what decodeWizardState returns.
+// Import the real validateThresholdSign since App.tsx uses it for section validation.
+vi.mock('@/lib/url-codec', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/url-codec')>();
+  return {
+    ...actual,
+    decodeWizardState: vi.fn(),
+    encodeWizardState: vi.fn().mockReturnValue('encoded-test-string'),
+  };
+});
 
 import { decodeWizardState } from '@/lib/url-codec';
 
@@ -275,6 +280,33 @@ describe('App', () => {
 
       const { completedSections } = useWizardStore.getState();
       expect(completedSections).not.toContain(1);
+    });
+
+    // Test H12 (CR28-02): accept-loss with negative thresholdValue marks section 2 complete
+    it('H12: marks section 2 complete for accept-loss with negative thresholdValue', () => {
+      window.location.hash = '#s=validEncoded';
+      const acceptLossInputs = {
+        ...initialInputs,
+        baselineConversionRate: 0.05,
+        annualVisitors: 100000,
+        valuePerConversion: 50,
+        priorType: 'default' as const,
+        thresholdScenario: 'accept-loss' as const,
+        thresholdUnit: 'dollars' as const,
+        thresholdValue: -5, // Negative per sign convention: stored as -acceptableLoss
+        testDurationDays: 14,
+        dailyTraffic: 2000,
+      };
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: acceptLossInputs });
+
+      render(<App />);
+
+      const { completedSections } = useWizardStore.getState();
+      // All sections should be complete including section 2 (threshold)
+      expect(completedSections).toContain(0);
+      expect(completedSections).toContain(1);
+      expect(completedSections).toContain(2);
+      expect(completedSections).toContain(3);
     });
   });
 });
