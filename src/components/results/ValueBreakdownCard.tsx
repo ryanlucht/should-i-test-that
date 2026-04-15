@@ -39,7 +39,9 @@ export function ValueBreakdownCard({
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Timing costs = EVSI - Net Value
-  // This captures value lost during test period and latency
+  // This is a derived decomposition (difference of two MC summaries),
+  // not a directly simulated per-iteration quantity.
+  // It captures the estimated value lost during the test period and decision latency.
   const timingCostsDollars = evsiDollars - netValueDollars;
 
   // Display the raw net value -- no clamping. Negative values are honest.
@@ -104,8 +106,7 @@ export function ValueBreakdownCard({
               </p>
             )}
             <p className="pt-1 border-t border-muted">
-              These timing effects are computed per Monte Carlo iteration, capturing
-              the true opportunity cost regardless of your default decision.
+              Estimated from the difference between gross test value and net value.
             </p>
           </div>
         )}

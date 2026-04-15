@@ -272,13 +272,10 @@ export function ResultsSection() {
           {/* Plain English explanation — waterfall with integrated interpretation */}
           {(() => {
             // Derive directional interpretation sentence for step 1
-            const pStopsShip = results.evsi.pStopsShip ?? 0;
-            const pConvincesShip = results.evsi.pConvincesShip ?? 0;
+            // SA-10d: Under the current model, only one directional flip probability
+            // is non-zero for a given result, making a both-directions branch unreachable.
             let directionSentence: string;
-            if (pStopsShip > 0.01 && pConvincesShip > 0.01) {
-              directionSentence =
-                'the test is meaningful in both directions: it can either prevent a rollout or increase confidence to launch.';
-            } else if (results.evsi.defaultDecision === 'ship') {
+            if (results.evsi.defaultDecision === 'ship') {
               directionSentence =
                 'the test is valuable mainly as a guardrail: it often helps you avoid shipping when the downside is still plausible.';
             } else {

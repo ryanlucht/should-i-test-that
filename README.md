@@ -112,16 +112,16 @@ src/
 
 ```bash
 # Run all tests
-npm test
+npx vitest run
 
 # Run tests in watch mode
-npm run test:watch
+npx vitest
 
-# Run with coverage
-npm run test:coverage
+# Run a specific test file
+npx vitest run src/lib/calculations/evsi.test.ts
 ```
 
-463 tests covering:
+570+ tests covering:
 - Statistical primitives (PDF, CDF, truncated distributions)
 - EVPI and EVSI calculations (including edge cases)
 - Distribution functions (Normal, Student-t, Uniform)
