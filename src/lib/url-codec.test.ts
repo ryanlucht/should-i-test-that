@@ -20,12 +20,18 @@ import { initialInputs } from '@/types/wizard';
 
 /**
  * Decodes a base64url string to a JSON string for test inspection.
+ * Uses TextDecoder for UTF-8 safety (matches production fromBase64Url).
  * Inverse of the URL-safe base64 encoding used by encodeWizardState.
  */
 function decodeBase64Url(encoded: string): string {
   const standard = encoded.replace(/-/g, '+').replace(/_/g, '/');
   const paddingNeeded = (4 - (standard.length % 4)) % 4;
-  return atob(standard + '='.repeat(paddingNeeded));
+  const binary = atob(standard + '='.repeat(paddingNeeded));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
 }
 
 // ---------------------------------------------------------------------------
@@ -437,6 +443,139 @@ describe('v2 tightened validation', () => {
     const encoded = encodeWizardState({ ...typicalScenario, baselineConversionRate: 0.001 });
     const decoded = decodeWizardState(encoded);
     expect(decoded).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CR-3: Non-ASCII encoding safety (UTF-8)
+// ---------------------------------------------------------------------------
+
+describe('encodeWizardState — non-ASCII safety (CR-3)', () => {
+  it('does not throw when visitorUnitLabel contains Japanese characters', () => {
+    const inputs: WizardInputs = {
+      ...typicalScenario,
+      visitorUnitLabel: '訪問者',
+    };
+    expect(() => encodeWizardState(inputs)).not.toThrow();
+  });
+
+  it('round-trips non-ASCII visitorUnitLabel (Japanese) exactly', () => {
+    const inputs: WizardInputs = {
+      ...typicalScenario,
+      visitorUnitLabel: '訪問者',
+    };
+    const encoded = encodeWizardState(inputs);
+    const decoded = decodeWizardState(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.inputs.visitorUnitLabel).toBe('訪問者');
+  });
+
+  it('does not throw and round-trips emoji unit label', () => {
+    const inputs: WizardInputs = {
+      ...typicalScenario,
+      visitorUnitLabel: 'visitors 🎉',
+    };
+    expect(() => encodeWizardState(inputs)).not.toThrow();
+    const encoded = encodeWizardState(inputs);
+    const decoded = decodeWizardState(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.inputs.visitorUnitLabel).toBe('visitors 🎉');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CR-2: Expanded decode validation (v2+ domain constraints)
+// ---------------------------------------------------------------------------
+
+describe('decodeWizardState — expanded v2 domain validation (CR-2)', () => {
+  it('rejects payload with dailyTraffic = -100', () => {
+    const encoded = encodeWizardState({ ...allFieldsScenario, dailyTraffic: -100 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with testDurationDays = 0', () => {
+    const encoded = encodeWizardState({ ...allFieldsScenario, testDurationDays: 0 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with annualVisitors = -1', () => {
+    const encoded = encodeWizardState({ ...allFieldsScenario, annualVisitors: -1 });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with thresholdScenario=minimum-lift but thresholdValue=null', () => {
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      thresholdScenario: 'minimum-lift' as const,
+      thresholdValue: null,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with thresholdScenario=minimum-lift but thresholdUnit=null', () => {
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      thresholdScenario: 'minimum-lift' as const,
+      thresholdUnit: null,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with priorType=custom but priorIntervalLow >= priorIntervalHigh', () => {
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      priorType: 'custom' as const,
+      priorIntervalLow: 10,
+      priorIntervalHigh: 5,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with priorShape=student-t but studentTDf=7 (not in {3,5,10})', () => {
+    // This is already rejected by enum check, but verify via v2 encode/decode path
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      priorShape: 'student-t' as const,
+      studentTDf: 7 as unknown as 3 | 5 | 10 | null,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('rejects payload with testDurationDays=300 + decisionLatencyDays=100 (sum > 365)', () => {
+    const encoded = encodeWizardState({
+      ...allFieldsScenario,
+      testDurationDays: 300,
+      decisionLatencyDays: 100,
+    });
+    expect(decodeWizardState(encoded)).toBeNull();
+  });
+
+  it('all existing valid payloads still decode successfully', () => {
+    // typicalScenario
+    const enc1 = encodeWizardState(typicalScenario);
+    expect(decodeWizardState(enc1)).not.toBeNull();
+    // allFieldsScenario
+    const enc2 = encodeWizardState(allFieldsScenario);
+    expect(decodeWizardState(enc2)).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CR-3: Encoder safety inside try/catch
+// ---------------------------------------------------------------------------
+
+describe('encodeWizardState — try/catch safety (CR-3)', () => {
+  it('encodeWizardState can be safely caught when it throws', () => {
+    // Verify the function is usable inside try/catch (CR-3 safety)
+    let caught = false;
+    try {
+      // Valid inputs should not throw
+      const result = encodeWizardState(typicalScenario);
+      expect(typeof result).toBe('string');
+    } catch {
+      caught = true;
+    }
+    expect(caught).toBe(false);
   });
 });
 

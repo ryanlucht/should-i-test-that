@@ -66,13 +66,14 @@ export function EVSIVerdictCard({
    * hash fragment, copy to clipboard, and show feedback for 2 seconds.
    */
   const handleShare = async () => {
-    // Encode wizard inputs AND the net value so recipients see the same dollar amount
-    const encoded = encodeWizardState(inputs, {
-      netValue: netValueDollars ?? undefined,
-    });
-    const url = `${window.location.origin}${window.location.pathname}#s=${encoded}`;
-
     try {
+      // Encode wizard inputs AND the net value so recipients see the same dollar amount
+      // Moved inside try/catch so encoding failures (e.g., unexpected input) are caught (CR-3)
+      const encoded = encodeWizardState(inputs, {
+        netValue: netValueDollars ?? undefined,
+      });
+      const url = `${window.location.origin}${window.location.pathname}#s=${encoded}`;
+
       await navigator.clipboard.writeText(url);
       setCopyState('copied');
       setTimeout(() => setCopyState('idle'), 2000);

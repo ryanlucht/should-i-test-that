@@ -98,27 +98,41 @@ const MIGRATIONS: Record<number, (payload: Record<string, unknown>) => Record<st
 
 /**
  * Encodes a string to base64url format (URL-safe, no padding).
+ * Uses TextEncoder for UTF-8 safety so non-ASCII characters (e.g.,
+ * Japanese unit labels, emoji) don't throw (CR-3 fix).
  * Converts standard base64 (+, /) to URL-safe equivalents (-, _)
  * and strips trailing '=' padding.
  */
 function toBase64Url(input: string): string {
-  return btoa(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // UTF-8 safe: encode string to bytes first, then to base64 (CR-3)
+  const bytes = new TextEncoder().encode(input);
+  // Convert Uint8Array to binary string for btoa
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 /**
  * Decodes a base64url string back to a regular string.
- * Restores standard base64 characters before calling atob.
+ * Uses TextDecoder for UTF-8 safety so non-ASCII characters round-trip
+ * correctly (CR-3 fix). Restores standard base64 characters before
+ * calling atob, then converts through Uint8Array for proper UTF-8 decoding.
  * Returns null if the input is invalid base64.
  */
 function fromBase64Url(input: string): string | null {
   try {
-    // Restore standard base64 chars
     const standard = input.replace(/-/g, '+').replace(/_/g, '/');
-    // Re-add padding: base64 length must be a multiple of 4
-    // Padding needed = (4 - (length % 4)) % 4
     const paddingNeeded = (4 - (standard.length % 4)) % 4;
     const padded = standard + '='.repeat(paddingNeeded);
-    return atob(padded);
+    const binary = atob(padded);
+    // Convert binary string back to UTF-8 bytes (CR-3)
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
   } catch {
     return null;
   }
@@ -246,6 +260,60 @@ function validateDecodedPayload(decoded: Record<string, unknown>, version: numbe
     const ef = d.eligibilityFraction as number;
     if (ef <= 0 || ef > 1) {
       return null;
+    }
+  }
+
+  // --- v2+ domain constraints (aligned with form Zod schemas, CR-2) ---
+  // These checks only apply to v2+ URLs to preserve backward compatibility
+  // for previously shared v1 links.
+  if (version >= 2) {
+    // --- Positive-required fields (aligned with form Zod schemas) ---
+
+    // dailyTraffic must be positive (experimentDesignSchema: .positive())
+    if (d.dailyTraffic !== null && (d.dailyTraffic as number) <= 0) return null;
+
+    // testDurationDays must be positive integer >= 1 (experimentDesignSchema: .positive().int())
+    if (d.testDurationDays !== null && (d.testDurationDays as number) < 1) return null;
+
+    // annualVisitors must be >= 1 (baselineMetricsSchema: .min(1))
+    if (d.annualVisitors !== null && (d.annualVisitors as number) < 1) return null;
+
+    // valuePerConversion must be >= 0.01 (baselineMetricsSchema: .min(0.01))
+    if (d.valuePerConversion !== null && (d.valuePerConversion as number) < 0.01) return null;
+
+    // decisionLatencyDays must be non-negative (experimentDesignSchema: .min(0))
+    if (d.decisionLatencyDays !== null && (d.decisionLatencyDays as number) < 0) return null;
+
+    // --- Threshold scenario consistency (thresholdScenarioSchema) ---
+    if (d.thresholdScenario !== null && d.thresholdScenario !== 'any-positive') {
+      // Non-default scenario requires both unit and value
+      if (d.thresholdUnit === null || d.thresholdValue === null) return null;
+      // thresholdValue must be positive for minimum-lift and accept-loss
+      if ((d.thresholdValue as number) <= 0) return null;
+    }
+
+    // --- Prior interval rules (priorSelectionSchema) ---
+    if (d.priorType === 'custom') {
+      if (d.priorIntervalLow !== null && d.priorIntervalHigh !== null) {
+        const low = d.priorIntervalLow as number;
+        const high = d.priorIntervalHigh as number;
+        // low must be strictly less than high
+        if (low >= high) return null;
+        // Interval must not be impossibly narrow (0.001 in decimal = 0.1 in percentage)
+        // URL stores in percentage form, so check >= 0.1
+        if (high - low < 0.1) return null;
+      }
+    }
+
+    // --- Student-t df consistency ---
+    // studentTDf is already validated against {3, 5, 10} by enum check above,
+    // but also ensure it is present when priorShape is 'student-t'
+    if (d.priorShape === 'student-t' && d.studentTDf === null) return null;
+
+    // --- Cross-field constraint: horizon (experimentDesignSchema superRefine) ---
+    // Test duration + decision latency cannot exceed 365 days (the analysis horizon)
+    if (d.testDurationDays !== null && d.decisionLatencyDays !== null) {
+      if ((d.testDurationDays as number) + (d.decisionLatencyDays as number) > 365) return null;
     }
   }
 

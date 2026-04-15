@@ -197,5 +197,84 @@ describe('App', () => {
         window.location.pathname
       );
     });
+
+    // Test H9 (CR-2): Custom prior with missing intervals does NOT mark section 1 complete
+    it('H9: does not mark section 1 complete when priorType is custom but intervals are missing', () => {
+      window.location.hash = '#s=validEncoded';
+      const customPriorNoIntervals = {
+        ...initialInputs,
+        baselineConversionRate: 0.05,
+        annualVisitors: 100000,
+        valuePerConversion: 50,
+        priorType: 'custom' as const,
+        priorIntervalLow: null,
+        priorIntervalHigh: null,
+        thresholdScenario: 'any-positive' as const,
+        testDurationDays: 14,
+        dailyTraffic: 2000,
+      };
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: customPriorNoIntervals });
+
+      render(<App />);
+
+      const { completedSections } = useWizardStore.getState();
+      // Section 0, 2, 3 should be complete (all their fields are present)
+      expect(completedSections).toContain(0);
+      expect(completedSections).toContain(2);
+      expect(completedSections).toContain(3);
+      // Section 1 should NOT be complete (custom prior but missing intervals)
+      expect(completedSections).not.toContain(1);
+    });
+
+    // Test H10 (CR-2): minimum-lift with missing value does NOT mark section 2 complete
+    it('H10: does not mark section 2 complete when thresholdScenario is minimum-lift but value is null', () => {
+      window.location.hash = '#s=validEncoded';
+      const minLiftNoValue = {
+        ...initialInputs,
+        baselineConversionRate: 0.05,
+        annualVisitors: 100000,
+        valuePerConversion: 50,
+        priorType: 'default' as const,
+        thresholdScenario: 'minimum-lift' as const,
+        thresholdUnit: null,
+        thresholdValue: null,
+        testDurationDays: 14,
+        dailyTraffic: 2000,
+      };
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: minLiftNoValue });
+
+      render(<App />);
+
+      const { completedSections } = useWizardStore.getState();
+      // Section 0, 1, 3 should be complete
+      expect(completedSections).toContain(0);
+      expect(completedSections).toContain(1);
+      expect(completedSections).toContain(3);
+      // Section 2 should NOT be complete (minimum-lift but no unit/value)
+      expect(completedSections).not.toContain(2);
+    });
+
+    // Test H11 (CR-2): Custom prior with inverted intervals does NOT mark section 1 complete
+    it('H11: does not mark section 1 complete when custom prior has low >= high', () => {
+      window.location.hash = '#s=validEncoded';
+      const invertedIntervals = {
+        ...initialInputs,
+        baselineConversionRate: 0.05,
+        annualVisitors: 100000,
+        valuePerConversion: 50,
+        priorType: 'custom' as const,
+        priorIntervalLow: 10,
+        priorIntervalHigh: 5,
+        thresholdScenario: 'any-positive' as const,
+        testDurationDays: 14,
+        dailyTraffic: 2000,
+      };
+      vi.mocked(decodeWizardState).mockReturnValue({ inputs: invertedIntervals });
+
+      render(<App />);
+
+      const { completedSections } = useWizardStore.getState();
+      expect(completedSections).not.toContain(1);
+    });
   });
 });
